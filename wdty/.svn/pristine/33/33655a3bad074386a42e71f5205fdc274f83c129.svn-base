@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.duanrong.business.mapper.PushTransactionMapper" >
+  <resultMap id="BaseResultMap" type="com.duanrong.business.model.PushTransaction" >
+    <result column="id" property="id" jdbcType="VARCHAR" />
+    <result column="mobile" property="mobile" jdbcType="VARCHAR" />
+    <result column="loan_id" property="loanId" jdbcType="VARCHAR" />
+    <result column="userkey" property="userkey" jdbcType="VARCHAR" />
+    <result column="order_id" property="orderId" jdbcType="VARCHAR" />
+    <result column="amount" property="amount" jdbcType="DECIMAL" />
+    <result column="trade_time" property="tradeTime" jdbcType="DATE" />
+    <result column="bonus" property="bonus" jdbcType="DECIMAL" />
+    <result column="cost" property="cost" jdbcType="VARCHAR" />
+    <result column="send_time" property="sendTime" jdbcType="DATE" />
+    <result column="status" property="status" jdbcType="CHAR" />
+  </resultMap>
+  
+  <!-- 1.保存推送交易信息 -->
+  <insert id="insert" parameterType="java.util.List" >
+    insert into push_transaction_log (id, mobile, loan_id, 
+      userkey, order_id, amount, 
+      trade_time, bonus, cost, 
+      send_time, status)
+    values 
+     <foreach collection="list" item="item" index="index" separator="," >
+      (#{item.id}, #{item.mobile}, #{item.loanId}, #{item.userkey}, #{item.orderId}, #{item.amount}, 
+       #{item.tradeTime}, #{item.bonus}, #{item.cost}, #{item.sendTime}, #{item.status})
+     </foreach>
+  </insert>
+  
+</mapper>

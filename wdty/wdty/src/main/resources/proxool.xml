@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+<proxool> 
+      <alias>WMS</alias> 
+      <driver-url>jdbc:mysql://115.28.4.51:3306/jiuyicaifu?characterEncoding=utf-8</driver-url> 
+      <driver-class>com.mysql.jdbc.Driver</driver-class> 
+      <driver-properties> 
+             <property name="user" value="duanrong" /> 
+             <property name="password" value="wms" /> 
+      </driver-properties> 
+      <minimum-connection-count>2</minimum-connection-count> 
+      <maximum-connection-count>40</maximum-connection-count> 
+      <simultaneous-build-throttle>20</simultaneous-build-throttle> 
+      <prototype-count>2</prototype-count> 
+      <house-keeping-test-sql>select CURRENT_DATE</house-keeping-test-sql> 
+</proxool>

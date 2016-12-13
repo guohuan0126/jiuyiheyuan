@@ -1,0 +1,145 @@
+@charset "utf-8";
+/* CSS Document */
+
+html{-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","Lucida Sans Unicode","Myriad Pro";background:#ffed71;color:#fff;font-size:13px;}
+html,body,header,footer,section,div,input,span,h1,h2,p,h3,h4,ul,li,b,dl,dt,dd,i{margin:0;padding:0;list-style:none;border:0;font-weight:normal;}
+a,a:active{ text-decoration:none;}
+input:focus {
+     outline:none;
+}
+img{display:block;}
+input[type="button"], input[type="submit"], input[type="reset"] {
+-webkit-appearance: none;
+}
+
+.section-bottom{width:97.5%;height:39px;background:#ffcc02;margin:0 auto;padding-top:4px;}
+.section-bottom input{width:106px;height:34px;background:url(../images/images-5.png) no-repeat;background-size:100%;margin:0 auto;display:block;}
+
+.section-top{width:100%;background:url(../images/images-1.jpg) no-repeat;background-size:100%;height:60px;}
+.section-top-scroll{width:170px;height:26px;line-height:26px;float:right;background:url(../images/images-6.jpg) no-repeat left center;padding-left:34px;color:#f30019;font-size:12px;margin-top:6px;background-size:32px;}
+.section-top ul li{float:left;white-space:nowrap;}
+.section-change{width:100%;background:url(../images/images-3.jpg) no-repeat;background-size:100%;height:180px;}
+.section-change .index-but{padding-top:56px;}
+.section-change .index-but input,.zhezhao-all-but input{width:160px;height:38px;line-height:38px;display:block;margin:0 auto;background:#f61c3b;color:#fff;font-size:18px;text-align:center;font-family:"Microsoft YaHei";border-radius:20px;}
+.section-change1{background:url(../images/images-11.jpg) no-repeat;background-size:100%;}
+.index-prize{width:76%;margin:0 auto;padding-top:34px;}
+.index-prize p{text-align:center;font-size:12px;color:#545252;line-height:20px;}
+.index-prize p b{color:#f61c3b;}
+.index-prize-but{width:100%;height:24px;padding-top:12px;}
+.index-prize-but input{width:38%;height:28px;line-height:28px;float:left;background:#f61c3b;color:#fff;font-size:14px;text-align:center;font-family:"Microsoft YaHei";border-radius:20px;margin-left:8%;}
+.index-prize-but2{width:38%;margin:0 auto;}
+.index-prize-but2 input{width:100%;display:block;margin:0;}
+.index-prize-check{width:76%;margin:0 auto;padding-top:6px;}
+.prize-check{width:85%;overflow:hidden;margin:0 auto 5px;}
+.prize-check-one{padding-top:20px;}
+.prize-check-one span{float:left;height:41px;line-height:41px;text-align:center;}
+.prize-check span{float:left;height:36px;line-height:36px;text-align:center;}
+.prize-check span.span-fl{width:30%;color:#fe6885;background:url(../images/images-12.jpg) no-repeat;background-size:100%;}
+.prize-check span.span-fr{width:70%;font-size:16px;background:#df3048;}
+.prize-check-bg span.span-fr{width:70%;background:url(../images/images-13.jpg) no-repeat;background-size:100%;}
+.index-prize-check p{color:#545252;width:98%;text-align:center;}
+.index-prize-check .index-prize-but{padding-top:3px}
+#lotteryContainer canvas{height:140px;top:14px;}
+.section-over{text-align:center;font-size:16px;color:#545252;line-height:168px;}
+/*遮罩层--手机号码*/
+.zhezhao{width:100%;height:100%;background-color:rgba(0,0,0,0.8); position:fixed;top:0;left:0;z-index:91;}
+.zhezhao-all{width:288px;height:144px;position:absolute;top:50%;left:50%;margin-top:-62px;margin-left:-144px;}
+.zhezhao-all-tel{width:240px;height:38px;line-height:30px;font-size:16px;border-bottom:1px solid #fff;margin:0 auto;text-indent:0.5em;}
+.zhezhao-all-tel span{width:80px;text-align:center;}
+.zhezhao-all-tel input,.zhezhao-all-tel span{float:left;}
+.zhezhao-all-tel input{background:none;color:#fff;font-size:16px;width:160px;height:30px;line-height:30px;}
+.zhezhao-all-but input{margin:26px auto;}
+.zhezhao-close{position:absolute;top:-47px;right:3%;}
+/*遮罩层--使用说明*/
+.zhezhao-text{width:90%;margin:18% auto 0;background:#f6c513;padding:1.1% 0 1.3%;}
+.zhezhao-text-con{width:97%;background:#e8a40e;margin:0 auto;padding:1.5% 0;}
+.text-con{width:97%;background:#fdf3c9;margin:0 auto;padding:5% 0 3%;position:relative;}
+.text-con-top{position:absolute;top:-34px;left:49px;}
+.text-con p{width:94%;margin:0 auto;color:#a4600d;font-size:12px;}
+.text-con p span{display:inline-table;}
+.text-con p span.num{width:2%;}
+.text-con p span.txt{width:90%;}
+.text-con p.txt-indent{text-indent: 6.9em;}
+
+
+/*遮罩层--分享*/
+.zhezhao-share{width:96%;margin:5% auto;height:134px;}
+.zhezhao-share img{float:right;}
+.share-txt{font-size:16px;text-indent:8em;}
+.zhezhao-text .zhezhao-close{top:18px;}
+
+/*------苹果5--------*/
+@media screen and (max-width: 320px){
+	.section-top{height:53px;}
+	.section-change{height:151px;padding-top:12px;}	
+	.section-change .index-but{padding-top:56px;}
+	.index-prize{padding-top:17px;}
+	.prize-check-one{margin:0 auto;}
+	.section-top-scroll{margin-top:3px;}
+	.zhezhao-close{top:-40px;right:6px;}
+	#lotteryContainer canvas{height:128px;top:0;}
+	.index-prize-but input{margin-left:6.5%;}
+	.index-prize-but{padding-top:8px;}
+	.index-prize-but2 input{margin:0;}
+	.index-prize-check p{width:102%;}
+	.prize-check span{height:30px;line-height:30px;}
+	
+	.index-prize-check{padding-top:4px;}
+	.prize-check{margin-bottom:4px;}
+	.index-prize-check .index-prize-but{padding-top:3px;}
+	.index-prize-check .index-prize-but input{height:24px;line-height:24px;}
+	.zhezhao-close1{top:21px;right:3%;}
+	.share-txt{text-indent:8em;}
+	.prize-check-one .index-prize-but{padding-top:22px;}
+	.prize-check-one .prize-check{margin:15px auto 0;}
+	.section-over{line-height:128px;}
+	}
+	
+/*------ 安卓 --------*/
+@media (min-width: 360px){	
+	.index-prize-check{width:76%;margin:0 auto;padding-top: 18px;}
+}
+
+/*------苹果6--------*/
+@media (min-width: 375px) and (max-width: 413px){
+	.section-top{height:62px;}
+	.section-change{height:174px;padding-top:15px;}
+	#lotteryContainer canvas{height:146px;top:0;}
+	.index-prize-but2 input{margin:0;}
+	.prize-check-one span{float:left;height:41px;line-height:41px;text-align:center;}
+	.zhezhao-text{margin:30% auto 0;}
+	.zhezhao-close1{top:40px;right:3%;}
+	.text-con-top{left:76px;}
+	.share-txt{text-indent:12em;}
+	.prize-check-one .index-prize-but{padding-top:22px;}
+	.section-over{line-height:148px;}
+	.index-prize-check{width:76%;margin:0 auto;padding-top: 6px;}
+}
+/*------苹果6p--------*/
+@media (min-width: 414px){
+	.section-top{height:69px;}
+	.section-change{height:195px;padding-top:16px;}
+	.section-change .index-but{padding-top:77px;}
+	.index-prize{padding-top:48px;}
+	.zhezhao-close{top:-60px;right:-27px;}
+	#lotteryContainer canvas{height:161px;top:0;}
+	.index-prize-but2 input{margin:0;}
+	.prize-check span{height:40px;line-height:40px;}
+	.prize-check{margin-bottom:10px;}
+	.prize-check-one span{float:left;height:41px;line-height:41px;text-align:center;}
+	.zhezhao-text{margin:40% auto 0;}
+	.zhezhao-close1{top:78px;right:3%;}
+	.text-con-top{left:97px;}
+	.share-txt{text-indent:13em;}
+	.prize-check-one .index-prize-but{padding-top:33px;}
+	.section-over{line-height:168px;}
+	.index-prize-check{width:76%;margin:0 auto;padding-top: 6px;}
+	}
+	
+
+/*------ 安卓 --------*/
+@media (min-width: 435px){	
+	.index-prize-check{width:76%;margin:0 auto;padding-top: 14px;}
+}	
+	

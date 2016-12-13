@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.duanrong.business.mapper.PushInvestorMapper" >
+  <resultMap id="PushInvestorMap" type="com.duanrong.business.model.PushInvestor" >
+    <result column="id" property="id"  />
+    <result column="user_id" property="userId" />
+    <result column="loan_id" property="loanId"  />
+    <result column="amount" property="amount"  />
+    <result column="invest_time" property="investTime"  />
+    <result column="send_time" property="sendTime" />
+    <result column="type" property="type" />
+  </resultMap>
+  
+  <!-- 1.投资人推送记录保存 -->
+  <insert id="insert" parameterType="java.util.List" >
+    insert into push_investors 
+       (id, user_id, loan_id, amount, invest_time, send_time, type)
+    values
+    <foreach collection="list" item="item" index="index" separator="," >
+        (#{item.id},#{item.userId}, #{item.loanId}, #{item.amount}, #{item.investTime}, #{item.sendTime}, #{item.type})
+    </foreach> 
+   
+  </insert>
+  
+</mapper>
