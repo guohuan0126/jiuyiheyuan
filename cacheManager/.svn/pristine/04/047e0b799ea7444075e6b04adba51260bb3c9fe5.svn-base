@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context
+                           http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/mvc
+                           http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+	
+	<import resource="beans-*.xml"/>
+
+	<!-- 对模型视图名称的解析，即在模型视图名称添加前后缀,在requestmapping输入的地址后自动调用该类进行视图解析 -->
+	<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="viewClass"
+			value="org.springframework.web.servlet.view.JstlView" />
+		<property name="prefix" value="/WEB-INF/jsp/" /><!-- 跳转页面的前缀路径 -->			
+		<property name="suffix" value=".jsp"></property><!-- 跳转页面后缀 -->
+	</bean>
+	
+	<!-- 扫描 controller -->
+	<context:component-scan base-package="com.duanrong.controller" />
+	
+	<bean class="com.duanrong.authentication.service.impl.AuthServiceImpl"/>
+	
+	<!-- 自定义拦截器 -->
+	<!-- 自定义拦截器 用户是否登陆 是否在ip的白名单内 使用超级密码  -->
+  	<!-- <mvc:interceptors>
+		权限拦截器
+		<mvc:interceptor>
+			<mvc:mapping path="/**"/>
+			<bean class="com.duanrong.authentication.interceptor.AuthenticationInterceptor"/>
+		</mvc:interceptor>
+	</mvc:interceptors> -->
+
+</beans>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.sys.mapper.BlackMapper">
+	<resultMap type="Black" id="BlackRM">
+		<id property="id" column="id" />
+		<result property="content" column="content" />
+		<result property="type" column="type" />
+		<result property="info" column="info" />
+		<result property="createTime" column="create_time" />		
+	</resultMap>
+		
+    <select id="pageLite" parameterType="Black" resultMap="BlackRM">
+		SELECT *
+		FROM blacklist
+		<where>
+		    <if test="id != null and id != 0">
+				AND `id` = #{key}
+			</if>
+			<if test="type !=null and type != ''">
+				AND `type` = #{type}
+			</if>
+			<if test="content != null and content != ''">
+				AND content like '%${content}%'
+			</if>
+		</where>
+		ORDER BY create_time DESC
+	</select>
+	
+	<delete id="delete" parameterType="string">
+		delete FROM blacklist where id = #{id}
+	</delete>
+	
+	<insert id="insert" parameterType="CacheKey">
+		INSERT INTO blacklist(`content`, type, info) 
+		values(#{content}, #{type}, #{info})
+	</insert>
+	
+</mapper>

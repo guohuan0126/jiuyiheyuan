@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.cache.mapper.CacheMapper">
+	<resultMap type="CacheKey" id="CacheKeyRM">
+		<id property="id" column="id" />
+		<result property="key" column="key" />
+		<result property="type" column="type" />
+		<result property="domain" column="domain" />
+		<result property="info" column="info" />
+		<result property="descrip" column="descrip" />
+		<result property="createUser" column="create_user" />
+		<result property="applicant" column="applicant" />
+		<result property="createTime" column="create_time" />
+		<result property="updateUser" column="update_user" />
+		<result property="updateTime" column="update_time" />
+		<result property="remark" column="remark" />
+		<result property="pid" column="pid" />
+	</resultMap>
+
+	
+    <select id="pageLite" parameterType="CacheKey" resultMap="CacheKeyRM">
+		SELECT *
+		FROM sys_cache_key
+		<where>
+		    <if test="key != null and key != ''">
+				AND `key` like '%${key}%'
+			</if>
+			<if test="type !=null and type != 0">
+				AND `type` = #{type}
+			</if>
+			<if test="domain != null and domain != 0">
+				AND domain = #{domain}
+			</if>
+		</where>
+		ORDER BY create_time DESC
+	</select>
+	
+	<select id="get" parameterType="string" resultMap="CacheKeyRM">
+		SELECT *
+		FROM sys_cache_key where id = #{id}
+		ORDER BY create_time DESC
+	</select>
+	
+	<delete id="delete" parameterType="string">
+		delete FROM sys_cache_key where id = #{id}
+	</delete>
+	
+	<insert id="insert" parameterType="CacheKey">
+		INSERT INTO sys_cache_key(`key`, type, domain, info, descrip, applicant, create_user, create_time, update_user, update_time, remark) 
+		values(#{key}, #{type}, #{domain}, #{info}, #{descrip}, #{applicant}, #{createUser}, #{createTime}, #{updateUser}, #{updateTime}, #{remark})
+	</insert>
+	
+	<update id="update" parameterType="CacheKey">
+		UPDATE sys_cache_key 
+		<set>
+			<if test="key != null and key != '' ">
+				`key` = #{key},
+			</if>
+			<if test="type != null and type != 0 ">
+				type = #{type},
+			</if>
+			<if test="domain != null and domain != 0 ">
+				domain = #{domain},
+			</if>
+			<if test="info != null and info != '' ">
+				info = #{info},
+			</if>
+			<if test="descrip != null and descrip != '' ">
+				descrip = #{descrip},
+			</if>
+			<if test="updateUser != null and updateUser != '' ">
+				update_user = #{updateUser},
+			</if>
+			<if test="updateTime != null and updateTime != '' ">
+				update_time = #{updateTime},
+			</if>
+			<if test="applicant != null and applicant != '' ">
+				applicant = #{applicant},
+			</if>
+			<if test="remark != null and remark != '' ">
+				remark = #{remark},
+			</if>
+		</set>
+		where id = #{id}
+	</update>
+</mapper>
