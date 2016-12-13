@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.duanrong.business.account.mapper.PlatformAccountMapper">
+
+	<resultMap type="platformAccount" id="platformAccountRM">
+		<id property="id" column="id" />
+		<result property="balance" column="balance" />
+		<result property="availableBalance" column="available_balance" />
+		<result property="freezeAmount" column="freeze_amount" />
+		<result property="time" column="time" />
+	</resultMap>
+
+	<resultMap type="platformBill" id="platformBillRM">
+		<id property="id" column="id" />
+		<result property="requestNo" column="request_no" />
+		<result property="type" column="type" />
+		<result property="typeInfo" column="type_info" />
+		<result property="money" column="money" />
+		<result property="balance" column="balance" />
+		<result property="time" column="time" />
+		<result property="freezeAmount" column="freeze_amount" />
+		<result property="businessType" column="business_type" />
+	</resultMap>
+
+
+	<select id="getPlatformAccount" resultMap="platformAccountRM">
+		SELECT
+		*
+		FROM
+		platform_account
+	</select>
+
+	<update id="updatePlatformAccount" parameterType="platformAccount">
+		UPDATE platform_account
+		<set>
+			<if test="balance!=null">balance=#{balance},</if>
+			<if test="availableBalance!=null">available_balance=#{availableBalance},</if>
+			<if test="freezeAmount!=null">freeze_amount=#{freezeAmount},</if>
+			<if test="time!=null">time=#{time},</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+
+	<insert id="insertPlatformBill" parameterType="platformBill">
+		INSERT INTO
+		platform_bill
+		(id, request_no, type,
+		type_info, money, balance,
+		freeze_amount,
+		time,business_type)
+		VALUES(#{id},
+		#{requestNo},
+		#{type},
+		#{typeInfo},
+		#{money},
+		#{balance},#{freezeAmount},
+		NOW(),#{businessType});
+	</insert>
+
+	<select id="pageLite" resultMap="platformBillRM" parameterType="platformBill">
+		select * from
+		platform_bill where 1=1
+		<where>
+			<if test="id != null and id != '' ">
+				and id=#{id}
+			</if>
+			<if test="requestNo != null and requestNo != '' ">
+				and request_no=#{requestNo}
+			</if>
+			<if test="type != null and type != '' ">
+				and type=#{type}
+			</if>
+			<if test="typeInfo != null and typeInfo != '' ">
+				and type_info =#{typeInfo}
+			</if>
+			<if test="money != null and money != '' ">
+				and money =#{money}
+			</if>
+			<if test="balance != null and balance != '' ">
+				and balance =#{balance}
+			</if>
+			<if test="freezeAmount != null and freezeAmount != '' ">
+				and freeze_amount =#{freezeAmount}
+			</if>
+			<if test="beginTime != null and endTime != '' ">
+				and time &gt;=#{beginTime}
+			</if>
+			<if test="endTime != null and endTime != '' ">
+				and time &lt;=#{endTime}
+			</if>
+		</where>
+	</select>
+
+</mapper>

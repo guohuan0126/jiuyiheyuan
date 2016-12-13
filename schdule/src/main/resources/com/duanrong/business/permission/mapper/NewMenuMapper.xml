@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.permission.mapper.NewMenuMapper">
+
+	<!-- 开启二级缓存 -->
+	<!-- <cache type="org.mybatis.caches.ehcache.EhcacheCache"/> -->
+
+	<resultMap type="newMenu" id="newMenuRM">
+		<id property="id" column="id" />
+		<result property="menuName" column="menu_name" />
+		<result property="parentId" column="parent_id" />
+		<result property="url" column="url" />
+		<result property="type" column="type" />
+		<result property="status" column="status" />
+		<result property="order" column="order" />
+	</resultMap>
+
+	<!-- 获取用户菜单 -->
+	<select id="getNewMenuByUserId" resultMap="newMenuRM"
+		parameterType="string">
+		SELECT DISTINCT newmenu.* FROM newmenu
+		JOIN
+		newmenu_permission JOIN permission JOIN role_permission JOIN role
+		JOIN
+		user_role ON newmenu.id=newmenu_permission.newmenu_id
+		AND
+		newmenu_permission.permission_id=permission.id AND
+		permission.id=role_permission.permission_id AND
+		role_permission.role_id=role.id AND role.id=user_role.role_id
+		WHERE
+		`user_role`.user_id=#{userId} AND
+		newmenu.`status`!=0 ORDER BY
+		newmenu.`order` ASC
+	</select>
+	
+	<!-- 获取不收权限控制的菜单 -->
+	<select id="getNewMenuNoPermission" resultMap="newMenuRM">
+		SELECT * FROM newmenu WHERE id NOT IN(
+		SELECT newmenu.id FROM newmenu JOIN newmenu_permission 
+		ON newmenu.id=newmenu_permission.newmenu_id) AND newmenu.`status`=1 
+		ORDER BY newmenu.`order` ASC
+	</select>
+
+	<select id="pageLite" parameterType="newMenu" resultMap="newMenuRM">
+		SELECT * FROM newmenu WHERE status!=0
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(menuName)">
+			AND menu_name LIKE '%${menuName}%'
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(type)">
+			AND type=#{type}
+		</if>
+		ORDER BY `order`, id
+	</select>
+
+	<!-- 根据id查询菜单信息 -->
+	<select id="get" parameterType="int" resultMap="newMenuRM">
+		SELECT * FROM
+		newmenu WHERE id=#{id} AND status!=0
+	</select>
+
+	<!-- 添加菜单 -->
+	<insert id="insertNewMenu" parameterType="newMenu"  useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO
+		newmenu(menu_name, parent_id, url, type, `order`) VALUES(#{menuName},
+		#{parentId}, #{url}, #{type}, #{order})
+	</insert>
+
+	<!-- 修改菜单信息 -->
+	<update id="updateNewMenu" parameterType="newMenu">
+		UPDATE newmenu
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(menuName)">
+				menu_name=#{menuName},
+			</if>
+			<if test="parentId != null">
+				parent_id=#{parentId},
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(url)">
+				url=#{url},
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(type)">
+				type=#{type},
+			</if>
+			<if test="order != 0">
+				`order`=#{order},
+			</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	
+	<!-- 删除菜单 （逻辑） -->
+	<update id="deleteNewMenuById" parameterType="int">		
+		update newmenu set status=0 where id=#{id}	
+	</update>
+</mapper>

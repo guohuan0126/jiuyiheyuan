@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.followInvestAward.model.FollowInvestActivity">
+
+	<!-- 查询有效期内最后一笔投资成功时间 -->
+	<select id="getFollowRechargeTime" parameterType="map"
+		resultType="date">
+		<![CDATA[
+		SELECT time FROM recharge WHERE user_id = #{userId} AND time <= #{endTime} AND status = 'success' ORDER BY time DESC LIMIT 1;
+		]]>
+	</select>
+
+	<!-- 根据用户名注册时间开始获取一段时间内,用户总充值金额 -->
+	<select id="getRecharges" parameterType="map" resultType="double">
+		<![CDATA[
+		SELECT SUM(actual_money) FROM recharge WHERE user_id = #{userId} AND time >= #{registerTime} AND time <= #{addRegisterTime} AND status = 'success';
+		]]>
+	</select>
+
+	<!-- 根据用户名注册时间开始获取一段时间内,用户总提现金额 -->
+	<select id="getWithdrawCashs" parameterType="map" resultType="double">
+		<![CDATA[
+		SELECT SUM(actual_money) FROM withdraw_cash WHERE user_id = #{userId} AND time >= #{registerTime} AND time <= #{addRegisterTime} AND status = 'success';
+		]]>
+	</select>
+
+	<!-- 根据用户名注册时间开始获取一段时间内,用户总提现金额 -->
+	<select id="getReturnPondByY" parameterType="string" resultType="double">
+		<![CDATA[
+		SELECT sum(maxInvestMoney) FROM invest WHERE user_id = #{userID} AND return_pond = 'Y';
+		]]>
+	</select>
+
+	<!-- 得到有效期内用户获得的投资所得利息 -->
+	<select id="getPaidInterest" parameterType="map" resultType="double">
+		<![CDATA[
+		SELECT sum(paid_interest) FROM invest WHERE user_id = #{userId} AND time >= #{registerTime} AND time <= #{addRegisterTime};
+		]]>
+	</select>
+
+	<!-- 获取有效时间内用户通过平台划款方式得到的收入 -->
+	<select id="getPlatformTransferByUsername" parameterType="map"
+		resultType="double">
+		<![CDATA[
+		SELECT sum(actual_money) FROM platform_transfer WHERE username = #{userId} AND success_time >= #{registerTime} AND success_time <= #{addRegisterTime} AND status = '平台划款成功';
+		]]>
+	</select>
+
+
+
+</mapper>

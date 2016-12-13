@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.lostcustomer.mapper.LostCustomerMapper">
+	<resultMap type="user" id="userRM">
+		<result property="userId" column="user_id" />
+	</resultMap>
+	
+	<!-- 获取最晚的一个项目结束时间至今已超过15天的所有用户 -->
+	<select id="getAllUser" parameterType="string" resultMap="userRM">
+		select i.user_id,MAX(l.finish_time)  
+		from loan l  
+		left join invest i  
+		on l.id=i.loan_id 
+		LEFT JOIN user_account u
+		ON i.user_id=u.user_id
+		where l.status='完成' and u.balance &lt;100   
+		group by i.user_id 
+		having MAX(l.finish_time) &lt;= #{finishTime}
+	</select>
+	<select id="getAllUser1" parameterType="string" resultMap="userRM">
+		select i.user_id,l.finish_time  ,l.status
+		from invest i  
+		left join loan l  
+		on l.id=i.loan_id  
+		where l.status='完成' AND l.finish_time=#{finishTime}
+	</select>
+
+	<!-- 根据userId和类型获取天天赚资产 -->
+	<select id="getDemandMoney" parameterType="string" resultType="double">
+		SELECT ROUND((
+			(SELECT IFNULL(SUM(money),0) 
+				FROM  demand_treasure_bill
+				WHERE user_id=#{userId}
+				AND type='in')+
+			(SELECT IFNULL(SUM(money),0) 
+				FROM demand_treasure_bill 
+				WHERE user_id=#{userId}
+				AND type='interest')-
+			(SELECT IFNULL(SUM(money),0) 
+				FROM demand_treasure_bill 
+				WHERE user_id=#{userId}
+				AND type='out')-
+			(SELECT IFNULL(SUM(money),0) 
+				FROM demand_treasure_bill 
+				WHERE user_id=#{userId}
+				AND type='outinterest')
+			),2) AS money
+		FROM DUAL
+	</select>
+
+	<!-- 根据user_id查询账户总资产 -->
+	<select id="gettotalMoneyByUserId" parameterType="string" resultType="double">
+		SELECT ROUND(((
+			SELECT IFNULL(SUM(money),0) 
+			FROM user_bill 
+			WHERE user_id=#{userId}
+				AND type='ti_balance')+
+			(SELECT IFNULL(SUM(money),0) 
+				FROM user_bill 
+				WHERE user_id=#{userId}
+				AND type='pt_balance')-
+			(SELECT IFNULL(SUM(money),0) 
+				FROM user_bill 
+				WHERE user_id=#{userId}
+				AND type='to_balance')-
+			(SELECT IFNULL(SUM(money),0) 
+				FROM user_bill 
+				WHERE user_id=#{userId}
+				AND type='freeze')+
+			(SELECT IFNULL(SUM(money),0) 
+				FROM user_bill 
+				WHERE user_id=#{userId}
+				AND type='unfreeze')
+			),2) AS money
+		FROM DUAL
+	</select>
+
+	<!-- 根据userId查询投资在投定期次数 -->
+	<select id="getInvestStatusCount" parameterType="string" resultType="int">
+		SELECT COUNT(*) 
+		FROM invest i 
+		WHERE i.user_id=#{userId} 
+		AND i.status IN ('还款中','投标成功') 
+	</select>
+
+	<!-- 根据userId查询用户定期投资次数 -->
+	<select id="getInvestNumByUserId" parameterType="string" resultType="int">
+		SELECT COUNT(*) FROM invest WHERE user_id=#{userId} AND status!='流标'
+	</select>
+	<!-- 根据userId查询用户活期投资次数 -->
+	<select id="getDemandNumByUserId" parameterType="string" resultType="int">
+		SELECT COUNT(*) FROM demand_treasure_bill WHERE user_id=#{userId} AND type='in'
+	</select>
+	<insert id="insertAllLostCustomer" parameterType="list">
+		INSERT INTO lost_customer (user_id,create_time,oreferrer_status)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator="," >  
+        (#{item.userId},#{item.createTime},#{item.oreferrerStatus})  
+    	</foreach> 
+	</insert>
+	<resultMap type="com.duanrong.business.lostcustomer.model.LostCustomer" id="LostCustomerRM1">
+		<id property="id" column="id"/>
+		<result property="userId" column="user_id" />
+		<result property="status" column="status" />
+		<result property="customerService" column="customer_service"/>
+		<result property="activationTime" column="activation_time"/>
+		<result property="evaluation" column="evaluation"/>
+		<result property="createTime" column="create_time"/>
+		<result property="oreferrerStatus" column="oreferrer_status"/>
+		<result property="returnTime" column="return_invest_time" />
+		
+	</resultMap>
+	<select id="getLostCustomerByUserId" parameterType="string" resultMap="LostCustomerRM1">
+		SELECT * FROM lost_customer WHERE user_id = #{userId}
+	</select>
+	
+	<insert id="insertLostCustomerToHistory" parameterType="com.duanrong.business.lostcustomer.model.LostCustomer">
+		INSERT INTO lost_customer_history (user_id,status,customer_service,activation_time,return_invest_time,evaluation,create_time,oreferrer_status) 
+		VALUES (#{userId},#{status},#{customerService},#{activationTime},#{returnTime},#{evaluation},#{createTime},#{oreferrerStatus})
+	</insert>
+	<select id="getOreferrerByUserId" parameterType="string" resultType="string">
+		SELECT  offline_referrer  FROM user WHERE id= #{userId} 
+	</select>
+	
+	<delete id="delete">
+		DELETE FROM lost_customer 
+		WHERE user_id=#{userId}
+	</delete>
+	<resultMap type="com.duanrong.business.lostcustomer.model.LostCustomer" id="LostCustomerRM">
+		<result property="userId" column="user_id" />
+		<result property="status" column="status" />
+		<result property="returnInvestTime" column="return_invest_time1" />
+		<result property="returnDemandTime" column="return_demand_time1"/>
+		<result property="returnTotalInvest" column="return_total_invest1"/>
+		<result property="returnTotalDemand" column="return_total_demand1" />
+	</resultMap>
+	<select id="pageInfo" parameterType="map" resultMap="LostCustomerRM">
+		SELECT 
+		l.*,
+		(select time from invest where user_id = l.user_id and time > l.activation_time order by time LIMIT 1) as return_invest_time1,
+		(select create_time from demand_treasure_bill where user_id = l.user_id and type='in' and create_time > l.activation_time  order by create_time LIMIT 1) as return_demand_time1,
+		(select sum(money) from invest where user_id = l.user_id and time > l.activation_time) as return_total_invest1,
+		(select sum(money) from demand_treasure_bill where user_id = l.user_id and type ='in' and create_time > l.activation_time) as return_total_demand1
+		FROM
+			lost_customer l
+		WHERE l.status=0
+		AND l.user_id in(select i.user_id 
+		from loan l  
+		left join invest i  
+		on l.id=i.loan_id 
+		LEFT JOIN user_account u
+		ON i.user_id=u.user_id
+		where l.status='完成'
+		group by i.user_id 
+		having MAX(l.finish_time) &gt;= #{finishTime})
+	</select>
+	<!-- 更新流失预警客户 -->
+	<update id="update" parameterType="com.duanrong.business.lostcustomer.model.LostCustomer">
+		UPDATE lost_customer
+		<set>
+			<if test="returnTotalInvest!=null">return_total_invest=#{returnTotalInvest},</if>
+			<if test="status!=null">status=#{status},</if>
+			<if test="returnTotalDemand!=null">return_total_demand=#{returnTotalDemand},</if>
+			<if test="returnTime!=null">return_invest_time=#{returnTime},</if>
+		</set>
+		WHERE user_id=#{userId};
+	</update>
+	<update id="updateByUserId" parameterType="string">
+		UPDATE lost_customer
+		 	set status=0,customer_service = null,activation_time = null ,return_invest_time = null,evaluation=0
+		WHERE user_id=#{userId};
+	</update>
+</mapper>

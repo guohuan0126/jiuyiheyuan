@@ -1,0 +1,385 @@
+package com.duanrong.business.account.service.impl;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+
+import javax.annotation.Resource;
+
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+
+import base.exception.InsufficientBalance;
+import base.exception.InsufficientFreeze;
+import base.exception.InsufficientFreezeAmountException;
+import base.exception.OutOfDateException;
+import base.pagehelper.PageInfo;
+
+import com.duanrong.business.account.AccountEnum;
+import com.duanrong.business.account.BusinessEnum;
+import com.duanrong.business.account.dao.PlatformAccountDao;
+import com.duanrong.business.account.model.PlatformAccount;
+import com.duanrong.business.account.model.PlatformBill;
+import com.duanrong.business.account.service.PlatformAccountService;
+import com.duanrong.util.jedis.DRJedisDLock;
+
+@Service
+public class PlatformAccountServiceImpl implements PlatformAccountService {
+
+	@Resource
+	PlatformAccountDao platformAccountDao;
+
+	@Resource
+	// 事务管理器
+	DataSourceTransactionManager txManager;
+
+	private static final String PLATFORM_ACCOUNT_LOCK = "platform_account";
+
+	/**
+	 * 入账
+	 * 
+	 * @param money
+	 *            入账金额
+	 * @param businessType
+	 *            业务类型
+	 * @param typeInfo
+	 *            描述
+	 * @param requestNo
+	 *            流水号
+	 */
+	@Override
+	public void transferIn(double money, BusinessEnum businessType,
+			String typeInfo, String requestNo) {
+		if (DRJedisDLock.getDLock(PLATFORM_ACCOUNT_LOCK, requestNo)) {
+			try {
+				PlatformAccount accountOld = platformAccountDao
+						.getPlatformAccount();
+				PlatformAccount accountNew = new PlatformAccount();
+				accountNew.setId(accountOld.getId());
+				accountNew.setBalance(accountOld.getBalance() + money);
+				accountNew.setAvailableBalance(accountOld.getAvailableBalance()
+						+ money);
+				accountNew.setTime(new Date());
+				accountNew.setFreezeAmount(accountOld.getFreezeAmount());
+				// 开启事务
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+				def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+				TransactionStatus status = txManager.getTransaction(def);
+				try {
+					platformAccountDao.update(accountNew);
+					PlatformBill bill = new PlatformBill();
+					bill.setBalance(accountOld.getBalance() + money);
+					bill.setMoney(money);
+					bill.setRequestNo(requestNo);
+					bill.setType(AccountEnum.ti_balance.toString());
+					bill.setTypeInfo(typeInfo);
+					bill.setFreezeAmount(accountOld.getFreezeAmount());
+					bill.setBusinessType(businessType.toString());
+					platformAccountDao.insert(bill);
+					// 提交事务
+					txManager.commit(status);
+				} catch (Exception e) {
+					// 回滚事务
+					txManager.rollback(status);
+					throw e;
+				}
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				DRJedisDLock.releaseDLock(PLATFORM_ACCOUNT_LOCK, requestNo);
+			}
+		}
+
+	}
+
+	/**
+	 * 出账
+	 * 
+	 * @param money
+	 *            出账金额
+	 * @param businessType
+	 *            业务类型
+	 * @param typeInfo
+	 *            描述
+	 * @param requestNo
+	 *            流水号
+	 * @throws InsufficientBalance
+	 */
+	@Override
+	public void transferOut(double money, BusinessEnum businessType,
+			String typeInfo, String requestNo) throws InsufficientBalance {
+		if (DRJedisDLock.getDLock(PLATFORM_ACCOUNT_LOCK, requestNo)) {
+			try {
+				PlatformAccount accountOld = platformAccountDao
+						.getPlatformAccount();
+				/*
+				 * if (accountOld.getAvailableBalance() < money) { throw new
+				 * InsufficientBalance("可用余额不足！"); }
+				 */
+				PlatformAccount accountNew = new PlatformAccount();
+				accountNew.setId(accountOld.getId());
+				accountNew.setFreezeAmount(accountOld.getFreezeAmount());
+				accountNew.setBalance(accountOld.getBalance() - money);
+				accountNew.setAvailableBalance(accountOld.getAvailableBalance()
+						- money);
+				accountNew.setTime(new Date());
+				// 开启事务
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+				def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+				TransactionStatus status = txManager.getTransaction(def);
+				try {
+					platformAccountDao.update(accountNew);
+					PlatformBill bill = new PlatformBill();
+					bill.setBalance(accountOld.getBalance() - money);
+					bill.setMoney(money);
+					bill.setRequestNo(requestNo);
+					bill.setType(AccountEnum.to_balance.toString());
+					bill.setTypeInfo(typeInfo);
+					bill.setFreezeAmount(accountOld.getFreezeAmount());
+					bill.setBusinessType(businessType.toString());
+					platformAccountDao.insert(bill);
+					// 提交事务
+					txManager.commit(status);
+				} catch (Exception e) {
+					// 回滚事务
+					txManager.rollback(status);
+					throw e;
+				}
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				DRJedisDLock.releaseDLock(PLATFORM_ACCOUNT_LOCK, requestNo);
+			}
+		}
+	}
+
+	/**
+	 * 冻结
+	 * 
+	 * @param money
+	 *            冻结金额
+	 * @param businessType
+	 *            业务类型
+	 * @param typeInfo
+	 *            描述
+	 * @param requestNo
+	 *            流水号
+	 * @throws InsufficientBalance
+	 * @throws InsufficientFreezeAmountException
+	 */
+	@Override
+	public void freeze(double money, BusinessEnum businessType,
+			String typeInfo, String requestNo)
+			throws InsufficientFreezeAmountException {
+		if (DRJedisDLock.getDLock(PLATFORM_ACCOUNT_LOCK, requestNo)) {
+			try {
+				PlatformAccount accountOld = platformAccountDao
+						.getPlatformAccount();
+				/*
+				 * if (accountOld.getAvailableBalance() < money) { throw new
+				 * InsufficientFreezeAmountException("可用余额不足！"); }
+				 */
+				accountOld.setBalance(accountOld.getBalance());
+				accountOld.setAvailableBalance(accountOld.getAvailableBalance()
+						- money);
+				accountOld
+						.setFreezeAmount(accountOld.getFreezeAmount() + money);
+				accountOld.setTime(new Date());
+				// 开启事务
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+				def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+				TransactionStatus status = txManager.getTransaction(def);
+				try {
+					platformAccountDao.update(accountOld);
+					PlatformBill bill = new PlatformBill();
+					bill.setMoney(money);
+					bill.setRequestNo(requestNo);
+					bill.setType(AccountEnum.freeze.toString());
+					bill.setTypeInfo(typeInfo);
+					bill.setBalance(accountOld.getBalance());
+					bill.setFreezeAmount(accountOld.getFreezeAmount() + money);
+					bill.setBusinessType(businessType.toString());
+					platformAccountDao.insert(bill);
+					// 提交事务
+					txManager.commit(status);
+				} catch (Exception e) {
+					// 回滚事务
+					txManager.rollback(status);
+					throw e;
+				}
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				DRJedisDLock.releaseDLock(PLATFORM_ACCOUNT_LOCK, requestNo);
+			}
+		}
+	}
+
+	/**
+	 * 解冻
+	 * 
+	 * @param money
+	 *            解冻金额
+	 * @param businessType
+	 *            业务类型
+	 * @param typeInfo
+	 *            描述
+	 * @param requestNo
+	 *            流水号
+	 * @throws InsufficientFreeze
+	 */
+	@Override
+	public void unfreeze(double money, BusinessEnum businessType,
+			String typeInfo, String requestNo) throws InsufficientFreeze {
+		if (DRJedisDLock.getDLock(PLATFORM_ACCOUNT_LOCK, requestNo)) {
+			try {
+				PlatformAccount accountOld = platformAccountDao
+						.getPlatformAccount();
+				if (accountOld.getFreezeAmount() < money) {
+					throw new InsufficientFreeze("冻结金额不足！");
+				}
+				accountOld.setAvailableBalance(accountOld.getAvailableBalance()
+						+ money);
+				accountOld
+						.setFreezeAmount(accountOld.getFreezeAmount() - money);
+				accountOld.setTime(new Date());
+				// 开启事务
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+				def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+				TransactionStatus status = txManager.getTransaction(def);
+				try {
+					platformAccountDao.update(accountOld);
+					PlatformBill bill = new PlatformBill();
+					bill.setMoney(money);
+					bill.setRequestNo(requestNo);
+					bill.setType(AccountEnum.unfreeze.toString());
+					bill.setTypeInfo(typeInfo);
+					bill.setBalance(accountOld.getBalance());
+					bill.setFreezeAmount(accountOld.getFreezeAmount() - money);
+					bill.setBusinessType(businessType.toString());
+					platformAccountDao.insert(bill);
+					// 提交事务
+					txManager.commit(status);
+				} catch (Exception e) {
+					// 回滚事务
+					txManager.rollback(status);
+					throw e;
+				}
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				DRJedisDLock.releaseDLock(PLATFORM_ACCOUNT_LOCK, requestNo);
+			}
+		}
+	}
+
+	/**
+	 * 查询平台账户
+	 * 
+	 * @return
+	 */
+	@Override
+	public PlatformAccount getPlatformAccount() {
+		return platformAccountDao.getPlatformAccount();
+	}
+
+	/**
+	 * 平台账户流水分页，默认查询当天流水，按时间短查询，时间前后差不能超过一个月
+	 * 
+	 * @param pageNo
+	 * @param pageSize
+	 * @param platformBill
+	 * @return
+	 * @throws OutOfDateException
+	 */
+	@Override
+	public PageInfo<PlatformBill> pageLite(int pageNo, int pageSize,
+			PlatformBill platformBill) throws OutOfDateException {
+		if (platformBill.getBeginTime() != null
+				&& platformBill.getEndTime() != null) {
+			Calendar calendar = Calendar.getInstance();
+			calendar.setTime(platformBill.getBeginTime());
+			calendar.set(Calendar.MONTH, -1);
+			Date nextMonth = calendar.getTime();
+			if (nextMonth.getTime() < platformBill.getEndTime().getTime()) {
+				throw new OutOfDateException("查询时间间隔超过一个月！");
+			}
+		}
+		if (platformBill.getBeginTime() == null) {
+			Calendar c = new GregorianCalendar();
+			c.set(Calendar.HOUR_OF_DAY, 0);
+			c.set(Calendar.MINUTE, 0);
+			c.set(Calendar.SECOND, 0);
+			platformBill.setBeginTime(c.getTime());
+		}
+		if (platformBill.getEndTime() == null) {
+			Calendar c = new GregorianCalendar();
+			c.set(Calendar.HOUR_OF_DAY, 23);
+			c.set(Calendar.MINUTE, 59);
+			c.set(Calendar.SECOND, 59);
+			platformBill.setEndTime(c.getTime());
+		}
+		return platformAccountDao.pageLite(pageNo, pageSize, platformBill);
+	}
+
+	/**
+	 * 从冻结中转出
+	 * 
+	 * @param money
+	 *            转出金额
+	 * @param businessType
+	 *            业务类型
+	 * @param typeInfo
+	 *            描述
+	 * @param requestNo
+	 *            流水号
+	 * @throws InsufficientFreeze
+	 */
+	@Override
+	public void tofreeze(double money, BusinessEnum businessType,
+			String typeInfo, String requestNo) throws InsufficientFreeze {
+		if (DRJedisDLock.getDLock(PLATFORM_ACCOUNT_LOCK, requestNo)) {
+			try {
+				PlatformAccount accountOld = platformAccountDao
+						.getPlatformAccount();
+				if (accountOld.getFreezeAmount() < money) {
+					throw new InsufficientFreeze("冻结金额不足！");
+				}
+				accountOld.setBalance(accountOld.getBalance() - money);
+				accountOld
+						.setFreezeAmount(accountOld.getFreezeAmount() - money);
+				accountOld.setTime(new Date());
+				// 开启事务
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+				def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+				TransactionStatus status = txManager.getTransaction(def);
+				try {
+					platformAccountDao.update(accountOld);
+					PlatformBill bill = new PlatformBill();
+					bill.setBalance(accountOld.getBalance() - money);
+					bill.setMoney(money);
+					bill.setRequestNo(requestNo);
+					bill.setType(AccountEnum.to_frozen.toString());
+					bill.setTypeInfo(typeInfo);
+					bill.setFreezeAmount(accountOld.getFreezeAmount() - money);
+					bill.setBusinessType(businessType.toString());
+					platformAccountDao.insert(bill);
+					// 提交事务
+					txManager.commit(status);
+				} catch (Exception e) {
+					// 回滚事务
+					txManager.rollback(status);
+					throw e;
+				}
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				DRJedisDLock.releaseDLock(PLATFORM_ACCOUNT_LOCK, requestNo);
+			}
+		}
+	}
+
+}

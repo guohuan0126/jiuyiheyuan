@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.trusteeship.mapper.TrusteeshipAccountMapper">
+	<resultMap type="trusteeshipAccount" id="trusteeshipAccountRM">
+		<id property="id" column="trusteeshipAccount_id" />
+		<result property="trusteeship" column="trusteeship" />
+		<result property="accountId" column="account_id" />
+		<result property="status" column="status" />
+		<result property="createTime" column="create_time" />
+		<result property="userId" column="user_id" />
+	</resultMap>
+
+	<select id="get" parameterType="string" resultMap="trusteeshipAccountRM">
+		SELECT *, id AS trusteeshipAccount_id
+		FROM trusteeship_account
+		WHERE id = #{id}
+	</select>
+
+	<insert id="insert" parameterType="trusteeshipAccount">
+		INSERT INTO
+		trusteeship_account
+		(id,trusteeship,account_id,status,create_time,user_id)
+		VALUES
+		(#{id},#{trusteeship},#{accountId},#{status},#{createTime},#{userId})
+	</insert>
+
+	<update id="update" parameterType="trusteeshipAccount">
+		UPDATE trusteeship_account
+		<set>
+			<if test="trusteeship!=null">trusteeship=#{trusteeship},</if>
+			<if test="accountId!=null">account_id=#{accountId},</if>
+			<if test="status!=null">status=#{status},</if>
+			<if test="createTime!=null">create_time=#{createTime},</if>
+			<if test="userId!=null">user_id=#{userId},</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+
+</mapper>

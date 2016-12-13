@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.award.mapper.AwardItemUserMapper">
+	<resultMap type="awardItemUser" id="awardItemUserRM">
+		<id property="id" column="id" />
+		<result property="createTime" column="createTime" />
+		<result property="detail" column="detail" />
+		<result property="money" column="money" />
+		<result property="sendTime" column="sendTime" />
+		<result property="status" column="status" />
+		<result property="realName" column="real_name" />
+		<result property="awardItemId" column="awardItem_id" />
+		<result property="userId" column="user_id" />
+		<result property="investTotalMoneyByloanID" column="investTotalMoneyByloanID" />
+		<result property="alterCause" column="alterCause" />
+		<result property="alterTime" column="alterTime" />
+		<result property="alterUserID" column="alterUserID" />
+		<result property="realName" column="real_name" />
+		<result property="friendIntroduce" column="friendIntroduce" />
+	</resultMap>
+	
+	
+	<!-- 奖励明细 -->
+	<select id="pageLite" parameterType="awardItemUser" resultMap="awardItemUserRM">					
+		SELECT awarditemuser.*, `user`.realname AS real_name FROM awarditemuser 
+		JOIN `user` ON awarditemuser.user_id=`user`.id 
+		WHERE awardItem_id = #{awardItemId}					
+		ORDER BY createTime DESC
+	</select>
+	
+	<select id="getAwardItemUser" parameterType="string" resultMap="awardItemUserRM">					
+		SELECT * FROM awarditemuser WHERE awardItem_id = #{itemId} AND status != '发送成功'
+	</select>
+	
+	<update id="update" parameterType="awardItemUser">
+		UPDATE awarditemuser
+		<set>
+			<if test="createTime != null">createTime=#{createTime},</if>
+			<if test="detail != null">detail=#{detail},</if>
+			<if test="money != null">money=#{money},</if>
+			<if test="sendTime != null">sendTime=#{sendTime},</if>
+			<if test="awardItemId != null">awardItem_id=#{awardItemId},</if>
+			<if test="userId != null">user_id=#{userId},</if>
+			<if test="status != null">status=#{status},</if>
+			<if test="investTotalMoneyByloanID != null">investTotalMoneyByloanID=#{investTotalMoneyByloanID},</if>
+			<if test="alterCause != null">alterCause=#{alterCause},</if>
+			<if test="alterUserID != null">alterUserID=#{alterUserID},</if>
+			<if test="alterTime != null">alterTime=#{alterTime},</if>
+			<if test="friendIntroduce != null">friendIntroduce=#{friendIntroduce},</if>
+		</set>
+		WHERE id=#{id};
+	</update>
+	
+	
+	<!-- 添加奖励明细 -->
+	<insert id="insertAwardItemUser" parameterType="awardItemUser"
+		useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO
+		`jiuyicaifu`.`awarditemuser` ( `createTime`, `detail`, `money`,
+		`sendTime`, `status`, `awardItem_id`, `user_id`,
+		`investTotalMoneyByloanID`, `alterCause`, `alterTime`, `alterUserID`,
+		`friendIntroduce`) VALUES ( #{createTime}, #{detail}, #{money},
+		#{sendTime},
+		#{status}, #{awardItemId}, #{userId},
+		#{investTotalMoneyByloanID}, #{alterCause}, #{alterTime},
+		#{alterUserID}, #{friendIntroduce});
+	</insert>
+</mapper>

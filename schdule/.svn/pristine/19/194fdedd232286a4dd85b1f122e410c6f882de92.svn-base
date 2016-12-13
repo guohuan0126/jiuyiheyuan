@@ -1,0 +1,43 @@
+package com.duanrong.business.account.dao.impl;
+
+import java.util.List;
+
+import org.springframework.stereotype.Repository;
+
+import base.dao.impl.BaseDaoImpl;
+
+import com.duanrong.business.account.dao.PaymentAccountDao;
+import com.duanrong.business.account.model.PaymentAccount;
+import com.duanrong.business.account.model.PaymentBill;
+@Repository
+public class PaymentAccountDaoImpl extends BaseDaoImpl<PaymentAccount>
+		implements PaymentAccountDao {
+
+	public PaymentAccountDaoImpl(){
+		this.setMapperNameSpace("com.duanrong.account.paymentacount.mapper.PaymentAccountMapper");
+	}
+	
+	@Override
+	public List<PaymentAccount> getPaymentAccount() {
+		return this.getSqlSession().selectList(
+				this.getMapperNameSpace() + ".getPaymentAccount");
+	}
+
+	@Override
+	public PaymentAccount getPaymentAccountByPaymentId(String pamenyId) {
+		return this.getSqlSession().selectOne(
+				this.getMapperNameSpace() + ".getPaymentAccountByPaymentId", pamenyId);
+	}
+
+	@Override
+	public void insert(PaymentBill paymentBill) {
+		this.getSqlSession().insert(this.getMapperNameSpace() + ".insertPaymentBill",
+				paymentBill);
+	}
+
+	public void update(PaymentAccount paymentAccount) {
+		this.getSqlSession().update(this.getMapperNameSpace() + ".updatePaymentAccount",
+				paymentAccount);
+	}
+
+}

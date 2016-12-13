@@ -1,0 +1,539 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.user.mapper.UserMapper">
+	<resultMap type="user" id="userRM">
+		<id property="userId" column="user_id" />
+		<result property="username" column="username" />
+		<result property="email" column="email" />
+		<result property="registerTime" column="register_time" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="status" column="status" />
+		<result property="password" column="password" />
+		<result property="cashPassword" column="cash_password" />
+		<result property="postAddress" column="post_address" />
+		<result property="postCode" column="post_code" />
+		<result property="realname" column="realname" />
+		<result property="idCard" column="id_card" />
+		<result property="balance" column="balance" />
+		<result property="frozenMoney" column="froze_money" />
+		<!-- 跟投相关,跟投活动结束后可以删除 -->
+		<!-- <result property="investMoneyTotal" column="invest_money_total" /> -->
+		<result property="investMoneyTotal1" column="invest_money_total1" />
+		<result property="investMoneyTotal" column="invest_money_total2" />
+		<result property="userType" column="user_type" />
+
+		<result property="enterpriseName" column="enterprise_name" />
+		<result property="bankLicense" column="bank_license" />
+		<result property="orgNo" column="org_no" />
+		<result property="businessLicense" column="business_license" />
+		<result property="taxNo" column="tax_no" />
+		<result property="legal" column="legal" />
+		<result property="legalIdcard" column="legal_idcard" />
+		<result property="contact" column="contact" />
+		<result property="referrer" column="referrer" />
+		<result property="authenname" column="authenname" />
+		<result property="investNum" column="investNum" />
+		<result property="phoneNoAttribution" column="phone_no_attribution" />
+		<result property="phoneNoCity" column="phone_no_city" />
+		<result property="qq" column="QQ" /><!-- add by wangjing -->
+		<result property="userSource" column="user_source" /><!-- add by 
+			wangjing -->
+		<result property="remarkNum" column="remarkNum" /><!-- add by wangjing -->
+		<result property="currMoney" column="currMoney" /><!-- add by wangjing -->
+		<result property="oreferrer" column="offline_referrer" />
+		<result property="userRemark" column="userRemark" />
+		<result property="inviteCode" column="invite_code" />
+		<result property="investTime" column="invest_time" />
+		<association property="userOtherInfo" javaType="userOtherInfo">
+			<id property="id" column="userOtherInfo_id" />
+			<result property="postAddress" column="o_post_address" />
+			<result property="postCode" column="o_post_code" />
+			<result property="userIP" column="o_user_ip" />
+			<result property="userSource" column="o_user_source" />
+		</association>
+
+		<association property="userLoginLog" column="id"
+			resultMap="com.duanrong.business.user.mapper.UserLoginLogMapper.userLoginLogRM" />
+
+	</resultMap>
+
+	<!-- 消息模板 -->
+	<resultMap type="template" id="templateRM">
+		<result property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="description" column="description" />
+		<result property="content" column="content" />
+		<result property="status" column="status" />
+		<result property="messageNode" column="message_node" />
+		<result property="messageWay" column="message_way" />
+	</resultMap>
+	<resultMap type="user" id="userRM1">
+		<result property="registerTime" column="registerTime" />
+		<result property="num" column="num" />
+	</resultMap>
+	<resultMap type="user" id="userRM2">
+		<result property="totalBlance" column="totalBlance" />
+		<result property="totalMoney" column="totalMoney" />
+		<result property="totalCurrMoney" column="totalCurrMoney" />
+	</resultMap>
+	
+	<resultMap type="MaxInvestRecord" id="userRM3">
+		<result property="userId" column="user_id" />
+		<result property="userSource" column="user_source" />
+		<result property="registerTime" column="register_time" />
+	</resultMap>
+
+	<!-- 分页查询 -->
+	<select id="pageLite" parameterType="user" resultMap="userRM">
+		SELECT *,
+		id AS user_id
+		FROM user where user_authentic = 0
+		ORDER BY register_time
+		DESC
+	</select>
+
+	<!-- 校验身份证号是否存在 -->
+	<select id="verifyIdCard" parameterType="map" resultType="long">
+		SELECT
+		COUNT(*) FROM user
+		WHERE id_card = #{idCard} AND id != #{userId} and
+		user_authentic = 0
+	</select>
+
+	<!-- 获取用户数量 -->
+	<select id="getPerson" resultType="long">
+		SELECT COUNT(*) FROM `user`
+		where user_authentic = 0
+	</select>
+
+	<!-- 自定义添加用户数量查询 -->
+	<select id="getPerson2" resultType="string">
+		SELECT value FROM config
+		WHERE id = 'reg_person'
+	</select>
+
+	<!-- 更新注册用户数量 -->
+	<update id="updatePersonCount4Config">
+		UPDATE config
+		SET `value` = `value` + 47
+		WHERE
+		id =
+		'reg_person'
+	</update>
+
+	<select id="getUserByMobileNumber" parameterType="string"
+		resultMap="userRM">
+		SELECT *, id AS user_id
+		FROM user
+		WHERE mobile_number =
+		#{mobileNumber} AND user_authentic = 0
+	</select>
+
+	<!-- 查询是否内部员工 -->
+	<select id="getAvlidUserByMobileNumber" parameterType="string"
+		resultType="int">
+		SELECT count(*) from user_interior where mobile_number =
+		#{mobileNumber}
+	</select>
+
+	<select id="getUserByMail" parameterType="string" resultMap="userRM">
+		SELECT *, id AS user_id
+		FROM user
+		WHERE email =
+		#{email} AND
+		user_authentic = 0
+	</select>
+
+	<select id="getUserByCard" parameterType="string" resultMap="userRM">
+		SELECT *, id AS user_id
+		FROM user
+		WHERE id_card =
+		#{idCard} AND
+		user_authentic = 0
+	</select>
+
+	<select id="findAll" resultMap="userRM">
+		SELECT *, id AS user_id
+		FROM user
+		AND user_authentic = 0
+	</select>
+
+	<select id="verifyLogin" parameterType="user" resultMap="userRM">
+		SELECT *, id AS user_id
+		FROM user where user_authentic = 0
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(userId)">
+			AND id = #{userId}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(username)">
+			AND username = #{username}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(mobileNumber)">
+			AND mobile_number = #{mobileNumber}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(email)">
+			AND email = #{email}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(password)">
+			AND password = #{password}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(idCard)">
+			AND id_card = #{idCard}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(realname)">
+			AND realname = #{realname}
+		</if>
+	</select>
+
+	<delete id="delete" parameterType="string">
+		DELETE FROM user
+		WHERE id =
+		#{id}
+	</delete>
+
+	<select id="get" parameterType="string" resultMap="userRM">
+		SELECT *, id
+		AS user_id
+		FROM user
+		WHERE id = #{id}
+	</select>
+
+	<select id="getRoles" parameterType="string" resultType="string">
+		SELECT
+		role_id
+		FROM user_role
+		WHERE user_id = #{userId}
+	</select>
+
+	<insert id="insert" parameterType="user">
+		INSERT INTO user
+		(id,username,email,register_time,mobile_number,status,password,user_type,referrer)
+		VALUES
+		(#{userId},#{username},#{email},#{registerTime},#{mobileNumber},#{status},#{password},#{userType},#{referrer})
+	</insert>
+
+	<insert id="addRole" parameterType="map">
+		INSERT INTO user_role
+		(user_id,role_id)
+		VALUES
+		(#{userId},#{roleId})
+	</insert>
+
+	<update id="update" parameterType="user">
+		UPDATE user
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(realname)">realname=#{realname},</if>
+			<!-- 跟投奖励相关字段:跟投奖励结束后可删除 -->
+			<if test="investMoneyTotal != null">invest_money_total=#{investMoneyTotal},</if>
+			<if test="investMoneyTotal1 != null">invest_money_total1=#{investMoneyTotal1},</if>
+			<if test="balance != null">balance=#{balance},</if>
+			<if test="frozenMoney != null">froze_money=#{frozenMoney},</if>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(phoneNoAttribution)">phone_no_attribution=#{phoneNoAttribution},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(phoneNoCity)">phone_no_city=#{phoneNoCity},</if>
+		</set>
+		WHERE id = #{userId}
+	</update>
+	<select id="getUserByRealname" parameterType="string" resultMap="userRM">
+		SELECT *, id AS user_id
+		FROM user
+		WHERE realname =
+		#{realname} AND user_authentic = 0
+	</select>
+	<!-- 获取每天的注册人数 -->
+	<select id="getTheNumberOfRegisteredEveryDay" parameterType="map"
+		resultType="long">
+		SELECT COUNT(*) FROM user
+		where DATE_SUB(CURDATE(), INTERVAL
+		1 DAY) &lt;= date(register_time)
+		and register_time &lt;CURDATE() AND user_authentic = 0
+	</select>
+
+
+	<select id="pageInfo" parameterType="map" resultMap="userRM">
+		SELECT
+		r.*,o.id as userOtherInfo_id ,o.post_address as
+		o_post_address,o.post_code as
+		o_post_code,o.user_ip as
+		o_user_ip,o.user_source as
+		o_user_source,o.user_source as user_source
+		,r.id as user_id
+		FROM
+		USER r
+		LEFT JOIN
+		user_other_info o ON r.id = o.id where user_authentic = 0
+			<if test="userId != null and userId != ''">
+				AND r.id like '%${userId}%'
+			</if>
+			<if test="email != null and email != ''">
+				AND r.email like '%${email}%'
+			</if>
+			<if test="userIp != null and userIp != ''">
+				AND o.user_ip = #{userIp}
+			</if>
+			<if test="usertype != null and usertype != ''">
+				AND r.user_type = #{usertype}
+			</if>
+			<if test="mnumber != null and mnumber != ''">
+				AND r.mobile_number = #{mnumber}
+			</if>
+			<if test="source != null and source != ''">
+				AND o.user_source like '%${source}%'
+			</if>
+			<if test="realname != null and realname != ''">
+				AND r.realname like '%${realname}%'
+			</if>
+			<if test="card != null and card != ''">
+				AND r.id_card like '%${card}%'
+			</if>
+			<if test="referrer != null and referrer != ''">
+				AND r.referrer = #{referrer}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.register_time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.register_time &lt;= #{end}
+			</if>
+
+			<if test="minMoney != null">
+				AND r.invest_money_total &gt;=#{minMoney}
+			</if>
+			<if test="maxMoney != null">
+				AND r.invest_money_total &lt;=#{maxMoney}
+			</if>
+	</select>
+
+	<select id="verifyUser" parameterType="user" resultType="int">
+		SELECT
+		count(*)
+		FROM user
+		WHERE id !=
+		#{userId} and
+		mobile_number=#{mobileNumber} AND user_authentic = 0
+	</select>
+
+	<select id="getTemplateById" resultMap="templateRM"
+		parameterType="String">
+		SELECT user_message_template.*,
+		user_message_template.template AS content FROM user_message_template
+		WHERE id=#{id}
+	</select>
+
+	<!-- 系统参数配置 -->
+	<resultMap type="config" id="configRM">
+		<result property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="description" column="description" />
+		<result property="value" column="value" />
+		<result property="type" column="type" />
+	</resultMap>
+
+	<!-- 系统配置参数 -->
+	<select id="getConfigForPageLite" resultMap="configRM"
+		parameterType="config">
+		SELECT * FROM config where id != 'ip_check'
+		<if test="id != null and id != ''">
+			AND id = #{id}
+		</if>
+		<if test="name != null and name != ''">
+			AND name LIKE '%${name}%'
+		</if>
+		<if test="type != null and type != ''">
+			AND type LIKE '%${type}%'
+		</if>
+		ORDER BY type
+	</select>
+
+
+	<update id="updateConfig" parameterType="config">
+		UPDATE config
+		<set>
+			<if test="value != null and value != '' ">value=#{value},</if>
+			<if test="description != null and description != '' ">description=#{description},</if>
+			<if test="type != null and type != '' ">value=#{value},</if>
+			<if test="name != null and name != '' ">name=#{name},</if>
+		</set>
+		WHERE id = #{id}
+	</update>
+
+	<insert id="insertConfig" parameterType="config">
+		insert into config(id,
+		name, value, description) values(#{id}, #{name}, #{value},
+		#{description})
+	</insert>
+
+	<!-- 系统配置参数 -->
+	<select id="getConfigById" resultMap="configRM" parameterType="string">
+		SELECT * FROM config where id=#{id}
+	</select>
+
+	<select id="getUserNum" parameterType="map" resultMap="userRM1">
+		SELECT register_time as registerTime,count(*) as num
+		FROM user where user_authentic = 0
+			<if test="type != null and type != '' and type=='today'">
+				AND DATE(register_time)=CURDATE()
+			</if>
+			<if test="type != null and type != '' and type=='yesterday'">
+				AND DATE_SUB(CURDATE(), INTERVAL 1 DAY) &lt;=
+				date(register_time)
+			</if>
+			<if test="type != null and type != '' and type=='week'">
+				AND DATE_SUB(CURDATE(), INTERVAL 1 WEEK) &lt;=
+				date(register_time)
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND register_time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND register_time &lt;= #{end}
+			</if>
+		GROUP BY date(register_time)
+	</select>
+
+	<!-- 获取每天的注册人数 -->
+	<select id="getTheNumberOfAccountEveryDay" parameterType="map"
+		resultType="long">
+		SELECT COUNT(*) FROM trusteeship_account
+		WHERE <![CDATA[create_time < #{now}]]>
+		AND create_time > #{yesterday} AND `status`= #{status}
+	</select>
+	<select id="findAdminUsers" parameterType="map" resultMap="userRM">
+		select *, id as user_id from user where id in (select DISTINCT u.id
+		from user u left join user_role r on u.id=r.user_id
+		where r.role_id not
+		in ('INVESTOR','MEMBER','LOANER'))
+	</select>
+	<update id="updateUserPhoneArea" parameterType="user">
+		UPDATE user
+		<set>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(phoneNoAttribution)">phone_no_attribution=#{phoneNoAttribution},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(phoneNoCity)">phone_no_city=#{phoneNoCity},</if>
+		</set>
+
+		WHERE id = #{userId}
+	</update>
+
+	<select id="getUserByInviteCode" parameterType="string"
+		resultMap="userRM">
+		SELECT *, id AS user_id
+		FROM user
+		WHERE invite_code =
+		#{inviteCode} AND user_authentic = 0
+	</select>
+
+	<select id="getCountByReffer" parameterType="map" resultType="int">
+		SELECT count(distinct(user.id))
+		FROM user join invest on user.id =
+		invest.user_id
+		WHERE user.register_time > '2015-06-20' AND
+		invest.status in('还款中','投标成功',
+		'完成') AND user.register_time >
+		#{firstInvestTime} AND user.referrer =
+		#{referrer} and
+		invest.redpacket_for_visitor=1 AND user_authentic = 0
+	</select>
+
+	<update id="updateUserMobileNumber" parameterType="map">
+		UPDATE user
+		<set>
+			mobile_number = #{mobileNumber}
+			<!-- 根据需要增加 -->
+		</set>
+		WHERE id = #{userId}
+	</update>
+
+	<update id="updateReferrerMobileNumber" parameterType="map">
+		UPDATE user
+		<set>
+			referrer = #{newNumber}
+			<!-- 根据需要增加 -->
+		</set>
+		WHERE referrer = #{oldNumber}
+	</update>
+
+	<select id="getBigClientBirthday" resultMap="userRM">
+		SELECT DISTINCT
+		u.*,u.id as user_id
+		FROM
+		USER u
+		WHERE
+		<!-- AND i.`status` != '流标' -->
+		<!-- AND i.money >= 100000 -->
+		length(u.mobile_number) = 11
+		AND length(u.id_card) = 18
+		AND
+		substring(u.id_card, 11, 4) = date_format(now(), '%m%d') 
+		AND u.user_authentic = 0
+	</select>
+
+	<select id="getExpireRedpacket" resultMap="userRM">
+		SELECT DISTINCT
+		u.*,u.id as user_id
+		FROM
+		USER u,
+		red_packet_detail r
+		WHERE
+		u.mobile_number = r.mobile_number
+		AND length(u.mobile_number) = 11
+		AND deadline is not
+		null
+		AND date_format(deadline, '%Y-%m-%d') =DATE_ADD(CURDATE(),
+		INTERVAL 2 DAY)
+		AND send_status = 'unused' AND u.user_authentic = 0
+	</select>
+	<select id="readUserMobileNumber" parameterType="int"
+		resultType="String">
+		SELECT mobile_number from user
+		where
+		datediff(now(),`register_time`)=#{day}
+		AND ifnull((SELECT sum(money) from invest where invest.`user_id` =user.id
+		and `status` !='流标'),0) &lt;= 0
+		and
+		ifnull((SELECT sum(money) from demand_treasure_transferin where
+		demand_treasure_transferin.user_id =user.id and `status`
+		='confirm'),0) &lt;= 0
+		and mobile_number IS NOT NULL
+		AND mobile_number !='' 
+		AND user_authentic = 0
+	</select>
+
+
+
+	<select id="readUserMobukeNumbers" resultType="String">
+		SELECT
+		mobile_number,user.id from user
+		LEFT JOIN user_other_info u1 ON user.id=u1.id
+		where
+		(u1.user_source NOT in('bisouyi','p2peye') OR u1.user_source is NULL)
+		AND
+		datediff(now(),`register_time`)=20
+		and
+		ifnull((SELECT sum(money) from
+		invest where invest.`user_id` =user.id and `status` !='流标'),0) &lt;= 0
+		and
+		ifnull((SELECT sum(money) from demand_treasure_transferin where
+		demand_treasure_transferin.user_id =user.id and `status`
+		='confirm'),0) &lt;= 0
+		and mobile_number IS NOT NULL
+		AND mobile_number
+		!='' AND user_authentic = 0
+	</select>
+
+	<select id="readRedpacketByMob" parameterType="String"
+		resultType="int">
+		SELECT COUNT(*)FROM red_packet_detail WHERE
+		mobile_number=#{mobileNumber} and send_status='unused' and
+		is_available!=0
+	</select>
+	
+	<select id="getUserInfo" resultMap="userRM3">
+		SELECT u1.id as user_id,u1.register_time as register_time,u2.user_source as user_source 
+		from user u1 join user_other_info u2 on u1.id=u2.id where u1.id=#{uId}
+	</select>
+	
+	
+	
+</mapper>

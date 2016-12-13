@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.demand.mapper.DemandtreasureLoanMapper">
+	<resultMap type="DemandtreasureLoan" id="DemandTreasureLoanRM">
+		<id property="id" column="id" />
+		<result property="loanName" column="loan_name" />
+		<result property="loanType" column="loan_type" />
+		<result property="loanStatus" column="loan_status" />
+		<result property="totalMoney" column="total_money" />
+		<result property="startTime" column="start_time" />
+		<result property="finishTime" column="finish_time" />
+		<result property="display" column="display" />
+		<result property="creator" column="creator" />
+		<result property="createTime" column="create_time" />
+		<result property="modifyPerson" column="modify_person" />
+		<result property="modifyTime" column="modify_time" />
+		<result property="operationType" column="operation_type" />
+		<result property="month" column="month" />
+		<result property="day" column="day" />
+		<result property="borrower" column="borrower" />
+		<result property="idCard" column="id_card" />
+		<result property="brand" column="brand" />
+		<result property="licensePlateNumber" column="license_plate_number" />
+		<result property="kilometreAmount" column="kilometre_amount" />
+		<result property="buyTime" column="buy_time" />
+		<result property="assessPrice" column="assess_price" />
+		<result property="guaranteeType" column="guarantee_type" />
+		<result property="guaranteeRate" column="guarantee_rate" />
+
+		<result property="forkId" column="fork_id" />
+		<result property="openAmount" column="open_amount" />
+		<result property="openStatus" column="open_status" />
+		<result property="validMoney" column="valid_money" />
+
+
+	</resultMap>
+	<select id="pageInfo" parameterType="DemandtreasureLoan"
+		resultMap="DemandTreasureLoanRM">
+		select * from demand_treasure_loan t
+		<where>
+			AND t.display = 1
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(loanName)">
+				AND t.loan_name = #{loanName}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(borrower)">
+				AND t.borrower = #{borrower}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(loanStatus)">
+				AND t.loan_status = #{loanStatus}
+			</if>
+		</where>
+		order by t.create_time desc
+	</select>
+	<update id="update" parameterType="DemandtreasureLoan">
+		UPDATE demand_treasure_loan
+		<set>
+			<if test="modifyPerson != null">
+				modify_person=#{modifyPerson},
+			</if>
+			<if test="modifyTime != null">
+				modify_time=#{modifyTime},
+			</if>
+			<if test="display != null">
+				display =#{display},
+			</if>
+			<if test="loanStatus != null">
+				loan_status =#{loanStatus},
+			</if>
+			<if test="finishTime != null">
+				finish_time =#{finishTime},
+			</if>
+
+		</set>
+		WHERE id=#{id}
+	</update>
+	<update id="updateLoan" parameterType="DemandtreasureLoan">
+		UPDATE
+		demand_treasure_loan set
+		loan_name=#{loanName},
+		loan_type=#{loanType},
+		loan_status=#{loanStatus},
+		total_money=#{totalMoney},
+		start_time=#{startTime},
+		finish_time=#{finishTime},
+		creator=#{creator},
+		create_time=#{createTime},
+		loan_status=#{loanStatus},
+		operation_type=#{operationType},
+		month=#{month},
+		day=#{day},
+		borrower=#{borrower},
+		id_card=#{idCard},
+		brand=#{brand},
+		license_plate_number=#{licensePlateNumber},
+		kilometre_amount=#{kilometreAmount},
+		guarantee_rate=#{guaranteeRate},
+		assess_price=#{assessPrice},
+		guarantee_type=#{guaranteeType},
+		buy_time=#{buyTime},
+		modify_person=#{modifyPerson},
+		modify_time=#{modifyTime},
+		display =#{display} WHERE id=#{id}
+	</update>
+	<insert id="insert" parameterType="DemandtreasureLoan">
+		INSERT INTO
+		demand_treasure_loan(id, loan_name, loan_type,
+		loan_status,total_money,start_time,finish_time,display,
+		creator,create_time,operation_type,month,
+		day,borrower,id_card,brand,license_plate_number,kilometre_amount,buy_time,
+		assess_price,guarantee_type,guarantee_rate)
+		VALUES(#{id}, #{loanName},
+		#{loanType},
+		#{loanStatus}, #{totalMoney},#{startTime},
+		#{finishTime},1,#{creator},
+		#{createTime},#{operationType},#{month},
+		#{day},#{borrower},#{idCard},#{brand},
+		#{licensePlateNumber},#{kilometreAmount},#{buyTime},#{assessPrice},#{guaranteeType},#{guaranteeRate})
+	</insert>
+	<select id="get" parameterType="string" resultMap="DemandTreasureLoanRM">
+		SELECT * FROM
+		demand_treasure_loan where id=#{id}
+	</select>
+
+
+	<select id="getDemandTreasureLoanByStatus" resultMap="DemandTreasureLoanRM"
+		parameterType="map">
+
+		SELECT * from demand_treasure_loan where
+		TO_DAYS(finish_time) > TO_DAYS(NOW()) and display =1 and
+		loan_status = 'repay' AND
+		open_status = 'opened' AND valid_money > 0 order by
+		valid_money ${sort}
+	</select>
+
+	<update id="batchUpdateOpenAmount" parameterType="java.util.List">
+		<foreach collection="list" item="item" index="index" open=""
+			close="" separator=";">
+			update demand_treasure_loan 
+			<set>
+			open_amount= IFNULL(open_amount,0)+#{item.money} 
+			</set>
+			where id = #{item.demandLoanId}
+		</foreach>
+	</update>
+
+	<update id="batchUpdateValidMoney" parameterType="java.util.List">
+		<foreach collection="list" item="item" index="index" open=""
+			close="" separator=";">
+			update demand_treasure_loan 
+			<set>
+				valid_money= #{item.validMoney} 
+			</set>
+			where id = #{item.id}
+		</foreach>
+	</update>
+
+	<update id="finishLoan">
+		UPDATE demand_treasure_loan l set l.loan_status =
+		'finish' WHERE 
+		TO_DAYS(l.finish_time) = TO_DAYS(NOW()) AND
+		l.open_status = 'opened'
+		and loan_status='repay'
+	</update>
+</mapper>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.msg.mapper.EmailMapper">
+	<resultMap type="Email" id="eRM">				
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="status" column="status" />
+		<result property="email" column="email" />
+		<result property="time" column="time" />
+		<result property="content" column="content" />
+		<result property="status" column="status"/>
+		<result property="title" column="title" />
+		<result property="type" column="type" />
+		<result property="title" column="title" />
+		<result property="createUserID" column="createUserID" />
+		<result property="sendTime" column="send_time" />
+		<result property="title" column="title" />
+		<result property="sendUserID" column="sendUserID" />
+		<result property="loanId" column="loan_id" />
+		
+		
+		<result property="bank" column="bank" />
+		<result property="cardNo" column="card_no" />
+		<result property="deleteBankCard" column="bank_city" />
+		<result property="cancelBandDingTime" column="bank_no" />
+		<result property="cancelStatus" column="bank_province" />
+		<result property="name" column="name" />
+		<result property="accountName" column="account_name" />
+	</resultMap>
+
+	<sql id="allColumns">
+		r.user_id, r.bank, r.card_no, r.time, r.status, r.bank_city,
+		r.bank_no,
+		r.bank_province, IFNULL(r.name, bank) AS name, r.id AS id,u.realname as realname
+	</sql>
+
+
+<select id="pageInfo" parameterType="map" resultMap="eRM">
+		SELECT 
+		<include refid="allColumns" />
+		FROM email_history r JOIN user u ON r.user_id = u.id
+		<where>
+		    <if test="userId != null and userId != ''">
+				AND r.user_id like '%${userId}%'
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status= #{status}
+			</if>
+			<if test="mnumber != null and mnumber != ''">
+				AND u.mobile_number = #{mnumber}
+			</if>
+			<if test=" realname != null and realname != ''">
+				AND u.realname like '%${realname}%'
+			</if>
+		</where>
+		ORDER BY r.time DESC
+	</select>
+	
+	<!-- 获取投资确认函Email发送历史 -->
+	<select id="getEmailByLoanId" resultMap="eRM" parameterType="string">
+		SELECT email_history.id, email_history.user_id,email_history.email, 
+		email_history.time, email_history.createUserID,
+		email_history.title, email_history.status, 
+		email_history.loan_id, email_history.sendTime, 
+		email_history.sendUserID FROM email_history 
+		WHERE status!='作废' AND type='invest_confirmation' AND loan_id=#{loanId} 			
+	</select>
+	
+	<!-- 获取未发送投资确认函 -->
+	<select id="getSendEmailByLoanId" resultMap="eRM" parameterType="string">
+		SELECT * FROM email_history 
+		WHERE status IN('未发送', '发送失败') AND type='invest_confirmation' AND loan_id=#{loanId} 			
+	</select>
+	
+	<!-- 获取email发送内容  -->
+	<select id="getEmailById" resultMap="eRM" parameterType="string">
+		SELECT * FROM email_history WHERE id=#{id} 			
+	</select>
+	
+	<!-- 根据投资项目作废邮件 -->
+	<update id="deleteEmailByLoanId" parameterType="string">
+		UPDATE email_history SET status='作废' WHERE status!='作废' AND type='invest_confirmation' AND loan_id=#{loanId}
+	</update>
+	
+	<!-- 发送邮件 -->
+	<update id="senEmail" parameterType="Email">
+		UPDATE email_history
+		<set>
+			<if test="status != null ">
+				status=#{status},
+			</if>
+			<if test="sendTime != null ">
+				sendTime=#{sendTime},
+			</if>
+			<if test="sendUserID != null ">
+				sendUserID=#{sendUserID},
+			</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	
+	<!-- 添加 -->
+	<insert id="insert" parameterType="Email">
+		insert email_history values(
+		#{id}, #{content}, #{email}, '未发送', 
+		#{time}, #{title}, 'invest_confirmation', #{userId}, #{createUserID},NULL, NULL, #{loanId})
+	</insert>
+	
+	
+	<!-- 查询配置信息  -->
+	<select id="getConfigById" parameterType="string" resultType="string">
+		select value from config where id=#{id}
+	</select>
+</mapper>

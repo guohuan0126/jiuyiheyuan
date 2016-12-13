@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.yeepay.mapper.WithholdMapper">
+	<resultMap type="Withhold" id="WithholdRM">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="mobileNum" column="mobile_numbe" />
+		<result property="card" column="id_card" />
+		<result property="realname" column="user_realname" />
+		<result property="status" column="status" />
+		<result property="time" column="time" />
+		
+	</resultMap>
+	
+	 <select id="pageInfo" resultMap="WithholdRM" parameterType="Withhold">
+		SELECT *
+		FROM loaner_withhold
+		<where>
+		    <if test="userId != null and userId != ''">
+				AND user_id=#{userId}
+			</if>
+		    <if test="status != null">
+				AND status=1
+			</if>
+			
+		</where>
+		ORDER BY time DESC
+	</select>
+	 <select id="get" resultMap="WithholdRM" parameterType="String">
+		SELECT *
+		FROM loaner_withhold WHERE id
+		= #{id}
+	
+	</select>
+   <update id="delete" parameterType="string">
+		update  loaner_withhold set status=0
+		WHERE id
+		= #{id}
+	</update>
+	<insert id="insert" parameterType="Withhold">
+		INSERT INTO loaner_withhold
+		(id,
+		user_id,
+		mobile_numbe, id_card, user_realname, time,status)
+		VALUES
+		(#{id}, #{userId},
+		#{mobileNum}, #{card}, #{realname}, #{time},#{status})
+	</insert>
+</mapper>

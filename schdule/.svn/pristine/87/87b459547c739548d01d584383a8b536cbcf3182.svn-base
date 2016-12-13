@@ -1,0 +1,37 @@
+package com.duanrong.yeepay.service;
+
+import java.io.IOException;
+
+import org.apache.commons.httpclient.HttpException;
+import org.springframework.transaction.annotation.Transactional;
+
+import base.exception.ExceedMoneyNeedRaised;
+import base.exception.InsufficientBalance;
+
+import com.duanrong.business.autoinvest.model.AutoInvest;
+import com.duanrong.business.loan.model.Loan;
+
+/**
+ * 自动投标
+ * 
+ * @author Lin Zhiming
+ * @version Mar 2, 2015 10:55:03 AM
+ */
+public interface TrusteeshipAutoInvestService {
+
+	/**
+	 * 自动投标
+	 * 
+	 * @param autoInvest
+	 * @param loan
+	 * @param investMoney
+	 * @throws IOException
+	 * @throws HttpException
+	 * @throws InsufficientBalance
+	 * @throws ExceedMoneyNeedRaised
+	 */
+	@Transactional(rollbackFor = Exception.class)
+	public void autoInvest(AutoInvest autoInvest, Loan loan, double investMoney)
+			throws HttpException, IOException, InsufficientBalance,
+			ExceedMoneyNeedRaised;
+}

@@ -1,0 +1,86 @@
+package com.duanrong.business.lostcustomer;
+
+
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.message.BasicNameValuePair;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import util.Log;
+
+import com.duanrong.business.lostcustomer.model.LostCustomer;
+import com.duanrong.business.lostcustomer.service.LostCustomerService;
+import com.duanrong.util.client.DRHTTPClient;
+
+@Component
+public class LostCustomerSchdule {
+
+	@Resource
+	LostCustomerService lostCustomerService ;
+	@Resource
+	Log log ;
+	/**
+	 * 获取流失预警客户，每天晚上6点轮询一次
+	 * @author guohuan
+	 * @param
+	 * @return
+	 */
+	@Scheduled(cron="0 0 6 * * ?")
+	public void findAndUpdateAllLostCustomer(){
+		log.infoLog("流失客户预警",
+				"流失客户预警调度开始............"
+						+ new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+		try {
+			List<LostCustomer> allLostCustomers = lostCustomerService.readAllLostCustomer();
+			List<LostCustomer> lostCustomers = new ArrayList<>();
+			for (int i = 0; i < allLostCustomers.size(); i++) {
+				LostCustomer lostCustomer = allLostCustomers.get(i);
+				LostCustomer lost = lostCustomerService.readLostCustomerByUserId(lostCustomer.getUserId());
+				if (lost==null) {
+					lostCustomers.add(lostCustomer);
+				}else if (lost!=null&&lost.getEvaluation()==1) {
+					lostCustomerService.insertLostCustomerToHistoryAndDelete(lost);
+					lostCustomers.add(lostCustomer);
+				}
+			}
+			if (lostCustomers.size()!=0) {
+				lostCustomerService.insertAllLostCustomer(lostCustomers);
+			}
+			log.infoLog("流失客户流预警","插入流失预警客户"+lostCustomers.size());
+			String url="http://soa-log2.duanrong.com/basic/mail/send";
+			List<NameValuePair> params = new ArrayList<>();
+			params.add(new BasicNameValuePair("subject", "插入流失预警客户"));
+			params.add(new BasicNameValuePair("content", "插入流失预警客户成功，插入数据"+lostCustomers.size()+"条"));
+			params.add(new BasicNameValuePair("mailtos","guohuan@duanrong.com"));
+			try {
+				DRHTTPClient.sendHTTPRequestPost(url,new BasicHeader[] {new BasicHeader("sign","")},params);
+			} catch (IOException e2) {
+				log.errLog("发送邮件异常", e2);
+			}
+		} catch (Exception e) {
+			log.errLog("流失客户预警调度轮询异常", e);
+			e.printStackTrace();
+			String url="http://soa-log2.duanrong.com/log/error?level=1&mail=guohuan@duanrong.com";
+			List<NameValuePair> params = new ArrayList<>();
+			params.add(new BasicNameValuePair("title", "插入流失预警客户"));
+			params.add(new BasicNameValuePair("content", "插入流失预警客户出现异常"+e));
+			try {
+				DRHTTPClient.sendHTTPRequestPost(url,new BasicHeader[] {new BasicHeader("sign","")},params);
+			} catch (IOException e1) {
+				log.errLog("发送邮件异常", e1);
+			}
+		}
+		log.infoLog("流失客户流预警","流失客户预警调度结束............"+ new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+	}
+	 
+
+}

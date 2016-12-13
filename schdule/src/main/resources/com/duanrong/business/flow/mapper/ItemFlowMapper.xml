@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.flow.mapper.ItemFlowMapper">
+	<resultMap type="itemFlow" id="itemFlowRM">
+		<id property="id" column="id" />
+		<result property="itemId" column="item_id" />
+		<result property="flowId" column="flow_id" />
+		<result property="nodeId" column="node_id" />
+		<result property="operateUser" column="operate_user" />
+		<result property="status" column="status" />
+		<result property="userId" column="user_id" />		
+		<result property="createTime" column="create_time" />
+		<result property="operateTime" column="operate_time" />
+		<result property="message" column="message" />
+		<result property="itemType" column="item_type" />
+		<association property="user" column="user_id"
+			resultMap="com.duanrong.business.user.mapper.UserMapper.userRM"/>
+		<association property="flowNode" column="node_id"
+			resultMap="com.duanrong.business.flow.mapper.FlowNodeMapper.flowNodeRM"/> 		
+	</resultMap>
+             
+    <!-- 设置项目流程关联  -->
+	<insert id="insertItem" parameterType="itemFlow">		
+		INSERT INTO flow_item(
+		item_id, flow_id, node_id, `status`, user_id, 
+		create_time, operate_time, message, item_type) VALUES(
+		#{itemId}, #{flowId}, #{nodeId}, #{status}, 
+		#{userId}, #{createTime}, #{operateTime}, #{message}, #{itemType})	
+	</insert>
+	
+	<!-- 执行流程  -->
+	<update id="oprate" parameterType="itemFlow">	
+		UPDATE flow_item SET operate_time=#{operateTime}, `status`=#{status}, operate_user=#{operateUser}
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(message)">
+			, message=#{message}
+		</if>
+		WHERE id=#{id}		
+	</update>
+	
+	<!-- 查询项目流程  -->
+	<select id="getItemFlowByItemIdAndItemType" parameterType="map" resultType="java.util.List" resultMap="itemFlowRM">
+		SELECT flow_item.*, flow_node.*, flow_node.`status` AS node_status 
+		FROM flow_item 
+		JOIN flow_node 		
+		ON flow_item.node_id=flow_node.node_id 		
+		WHERE flow_item.item_id=#{itemId} 
+		AND flow_item.item_type=#{itemType}		
+		ORDER BY flow_item.node_id
+	</select>
+	
+	<!-- 查询项目流程  -->
+	<select id="getItemFlowByItemIdAndUser" parameterType="map" resultType="java.util.List" resultMap="itemFlowRM">
+		SELECT flow_item.*, flow_node.*, flow_node.`status` AS node_status 
+		FROM flow_item 
+		JOIN flow_node 
+		JOIN flownode_role 
+		JOIN role JOIN user_role 
+		ON flow_item.node_id=flow_node.node_id 
+		AND flow_node.node_id = flownode_role.node_id 
+		AND flownode_role.role_id = role.id 
+		AND role.id = user_role.role_id
+		WHERE flow_item.id=#{id} 
+		AND flow_item.item_type=#{itemType}
+		AND user_role.user_id = #{userId}		
+		ORDER BY flow_item.node_id
+	</select>
+	
+	
+	<!-- 查询流程节点 -->
+	<select id="get" parameterType="int" resultMap="itemFlowRM">
+		SELECT * FROM flow_item  WHERE flow_item.id = #{id}
+	</select>
+	
+	
+	<select id="pageLite" parameterType="itemFlow" resultMap="itemFlowRM">
+		SELECT *　FROM flow_item JOIN user ON item_flow.user_id = user.id
+		<where>
+			<if test="id != 0">
+				AND id = #{id}
+			</if>
+			<if test="itemId != 0">
+				AND item_id = #{itemId}
+			</if>			
+			<if test="flowId != 0">
+				AND flow_id = #{flowId}
+			</if>
+			<if test="nodeId != 0">
+				AND node_id = #{nodeId}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(status)">
+				AND status = #{status}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(message)">
+				AND message = #{message}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(userId)">
+				AND user_id = #{userId}
+			</if>	
+		</where> 	
+	</select>
+	
+</mapper>

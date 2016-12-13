@@ -1,0 +1,15 @@
+package com.duanrong.business.maxinvestrecord.dao;
+
+import java.util.List;
+
+
+import base.dao.BaseDao;
+
+import com.duanrong.business.maxinvestrecord.model.MaxInvestRecord;
+
+public interface MaxInvestRecordDao extends BaseDao<MaxInvestRecord>{
+	public List<MaxInvestRecord> selectAll();
+	
+	//根据用户id查询再投峰值记录
+	public MaxInvestRecord getInvestRecord(String userId);
+}

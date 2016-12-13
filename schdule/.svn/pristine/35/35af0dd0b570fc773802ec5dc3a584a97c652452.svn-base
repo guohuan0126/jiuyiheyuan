@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.app.mapper.APP">
+
+	<!-- 开启二级缓存 -->
+	<cache type="org.mybatis.caches.ehcache.EhcacheCache" />
+
+	<resultMap type="APP" id="APPRM">
+		<id property="id" column="id" />
+		<result property="versionName" column="version_name" />
+		<result property="versionCode" column="version_code" />
+		<result property="downloadAddress" column="download_address" />
+		<result property="osName" column="os_name" />
+		<result property="time" column="time" />
+	</resultMap>
+
+
+	<select id="get" parameterType="string" resultMap="APPRM">
+		SELECT * FROM
+		app
+		WHERE id = #{id}
+		ORDER BY time DESC
+		LIMIT 1
+	</select>
+
+	<insert id="insert" parameterType="APP">
+		INSERT INTO app
+		(version_name,
+		version_code, download_address, os_name, time)
+		VALUES(#{versionName},
+		#{versionCode}, #{downloadAddress}, #{osName},
+		#{time})
+	</insert>
+
+	<update id="update" parameterType="APP">
+		UPDATE app
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(versionName)">version_name = #{versionName},</if>
+			<if test="versionCode != null">version_code = #{versionCode},</if>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(downloadAddress)">
+				download_address = #{downloadAddress},
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(osName)">os_name = #{osName},</if>
+			<if test="time != null">time = #{time},</if>
+		</set>
+		WHERE id = #{id}
+	</update>
+	<select id="pageInfo" parameterType="map" resultMap="APPRM">
+		SELECT *
+		FROM app 
+		<where>
+			<if test="name != null and name != ''">
+				AND os_name= #{name}
+			</if>
+		</where>
+		ORDER BY time DESC
+	</select>
+</mapper>

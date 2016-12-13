@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.risk.mapper.SystemBillMapper">
+	<resultMap type="SystemBill" id="SystemBillRM">
+		<id property="id" column="id" />
+		<result property="time" column="time" />
+		<result property="type" column="type" />
+		<result property="money" column="money" />
+		<result property="detail" column="detail" />
+		<result property="seqNum" column="seq_num" />
+		<result property="reason" column="reason" />
+	</resultMap>
+
+	<insert id="insert" parameterType="SystemBill">
+		INSERT INTO system_bill
+		(id,
+		time, type, money, detail, seq_num, reason)
+		VALUES
+		(#{id}, NOW(), #{type},
+		#{money}, #{detail}, #{seqNum}, #{reason})
+	</insert>
+
+	<select id="get" parameterType="string" resultMap="SystemBillRM">
+		SELECT * FROM
+		system_bill
+		WHERE id = #{id}
+	</select>
+
+	<!-- 获取最后的bill记录 -->
+	<select id="getLastestBill" resultMap="SystemBillRM">
+		SELECT * FROM
+		system_bill
+		ORDER BY seq_num DESC
+		LIMIT 1
+	</select>
+
+	<!-- 根据类型获取总金额 -->
+	<select id="getSumByType" parameterType="string" resultType="double">
+		SELECT IFNULL(SUM(money), 0) FROM
+		system_bill
+		WHERE type = #{type}
+	</select>
+</mapper>

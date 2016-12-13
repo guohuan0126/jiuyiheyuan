@@ -1,0 +1,62 @@
+package com.duanrong.business.lostcustomer;
+
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import util.Log;
+
+import com.duanrong.business.lostcustomer.model.LostCustomer;
+import com.duanrong.business.lostcustomer.service.LostCustomerService;
+
+@Component
+public class LostCustomerSchdule {
+
+	@Resource
+	LostCustomerService lostCustomerService ;
+	@Resource
+	Log log ;
+	/**
+	 * 获取流失预警客户，每天晚上12点轮询一次
+	 * @author guohuan
+	 * @param
+	 * @return
+	 */
+	@Scheduled(cron="0 0 6 * * ?")
+	public void findAndUpdateAllLostCustomer(){
+		log.infoLog("流失客户预警",
+				"流失客户预警调度开始............"
+						+ new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+		try {
+			List<LostCustomer> allLostCustomers = lostCustomerService.readAllLostCustomer();
+			List<LostCustomer> lostCustomers = new ArrayList<>();
+			for (int i = 0; i < allLostCustomers.size(); i++) {
+				LostCustomer lostCustomer = allLostCustomers.get(i);
+				LostCustomer lost = lostCustomerService.readLostCustomerByUserId(lostCustomer.getUserId());
+				if (lost==null) {
+					lostCustomers.add(lostCustomer);
+				}else if (lost!=null&&lost.getEvaluation()==1) {
+					lostCustomerService.insertLostCustomerToHistoryAndDelete(lost);
+					lostCustomers.add(lostCustomer);
+				}
+			}
+			if (lostCustomers.size()!=0) {
+				lostCustomerService.insertAllLostCustomer(lostCustomers);
+				log.infoLog("插入流失预警客户", ""+lostCustomers.size());
+			}
+			
+		} catch (Exception e) {
+			log.errLog("流失客户预警调度轮询异常", e);
+			e.printStackTrace();
+		}
+		log.infoLog("流失客户流预警","流失客户预警调度结束............"+ new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+	}
+
+}

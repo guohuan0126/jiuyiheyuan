@@ -1,0 +1,169 @@
+package com.duanrong.business.yeepay.service.impl;
+
+import java.io.IOException;
+import java.util.Date;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.stereotype.Service;
+
+import util.Log;
+import util.XMLUtil;
+import base.exception.InsufficientBalance;
+
+import com.duanrong.business.invest.dao.InvestDao;
+import com.duanrong.business.invest.model.Invest;
+import com.duanrong.business.invest.service.InvestService;
+import com.duanrong.business.loan.model.Loan;
+import com.duanrong.business.loan.service.LoanService;
+import com.duanrong.business.trusteeship.model.TrusteeshipOperation;
+import com.duanrong.business.trusteeship.model.TrusteeshipYeepayConstants;
+import com.duanrong.business.trusteeship.service.TrusteeshipOperationService;
+import com.duanrong.business.user.dao.RedPacketDao;
+import com.duanrong.business.user.model.RedPacket;
+import com.duanrong.business.user.service.UserMoneyService;
+import com.duanrong.business.yeepay.service.FailLoanService;
+import com.duanrong.newadmin.constants.InvestConstants;
+import com.duanrong.newadmin.constants.LoanConstants;
+import com.duanrong.newadmin.utility.Dom4jUtil;
+import com.duanrong.newadmin.utility.GeneratorXML;
+import com.duanrong.newadmin.utility.IdGenerator;
+import com.duanrong.util.DateUtil;
+import com.duanrong.yeepaysign.CFCASignUtil;
+
+
+@Service
+public class FailLoanServiceImpl implements FailLoanService {
+
+	@Resource
+	InvestDao investDao;
+	@Resource
+	UserMoneyService userMoneyService;
+	@Resource
+	InvestService investService;
+	@Resource
+	LoanService loanService;
+	@Resource
+	TrusteeshipOperationService trusteeshipOperationService;
+	@Resource
+	RedPacketDao redPacketDao;
+	@Resource
+	Log log;
+
+	@Override
+	public String failLoan(String platformNo,String platformUserNo, String requestNo,String money,String loanId) throws InsufficientBalance {
+		
+		/*********************** XML拼接 ***********************/
+
+		// 参数拼接
+		GeneratorXML xml = new GeneratorXML();
+		xml.setPlatformNo(platformNo);
+		xml.setPlatformUserNo(platformUserNo);
+		xml.setRequestNo(requestNo);
+		String content = null;
+		try {
+			content = XMLUtil.getXML(xml);
+		} catch (Exception e) {
+			log.errLog("流标XML拼接异常", e);
+			throw new InsufficientBalance();
+		}
+		HttpClient client = new HttpClient();
+		/* 创建一个post方法 */
+		PostMethod postMethod = new PostMethod(
+				TrusteeshipYeepayConstants.RequestUrl.RequestDirectUrl);
+		postMethod.setParameter("req", content.toString());
+		String sign = CFCASignUtil.sign(content.toString());
+		if (StringUtils.equals(platformNo,
+				TrusteeshipYeepayConstants.Config.MER_CODE)) {
+			postMethod.setParameter("sign", sign);
+		} else {
+			postMethod.setParameter("sign", "");
+		}
+		postMethod.setParameter("service", "REVOCATION_TRANSFER");
+		/* 执行post方法 */
+		int statusCode;
+		try {
+			statusCode = client.executeMethod(postMethod);
+			if (statusCode != HttpStatus.SC_OK) {
+				log.infoLog("单项目易宝流标请求响应状态", statusCode+"");
+				return "fail";
+			}
+			/* 获得返回的结果 */
+			byte[] responseBody = postMethod.getResponseBody();
+			log.infoLog("单项目易宝流标请求返回数据",new String(responseBody, "UTF-8"));
+			Map<String, String> respMap = Dom4jUtil.xmltoMap(new String(
+					responseBody, "UTF-8"));
+
+			String code = respMap.get("code");
+			String description = respMap.get("description");
+			/**
+			 * 发送前本地保存记录到to表中
+			 */
+			TrusteeshipOperation to = new TrusteeshipOperation();
+			to.setId(IdGenerator.randomUUID());
+			to.setMarkId(requestNo);
+			to.setOperator(platformUserNo);
+			to.setRequestUrl(TrusteeshipYeepayConstants.RequestUrl.RequestDirectUrl);
+			to.setRequestData(content.toString());
+			to.setRequestTime(new Date());
+			to.setType(TrusteeshipYeepayConstants.OperationType.UNFREEZE);
+			to.setTrusteeship("yeepay");
+			to.setResponseData(new String(responseBody, "UTF-8"));
+			to.setResponseTime(new Date());
+			
+			if (code.equals("1")) {
+				userMoneyService.unfreezeMoney(platformUserNo, Double.parseDouble(money), "本地单笔投资流标解冻", "解冻:"
+						+ platformUserNo + "金额:"
+						+ money);
+				to.setStatus(TrusteeshipYeepayConstants.Status.PASSED);
+				trusteeshipOperationService.insert(to);
+				String status=investDao.getLoanStatus(requestNo);
+				Invest invest=new Invest();
+				invest.setId(requestNo);
+				invest.setStatus(InvestConstants.InvestStatus.CANCEL);
+				investService.update(invest);
+				if (status.equals(LoanConstants.LoanStatus.RECHECK)) {
+					Loan loan=new Loan();
+					loan.setId(loanId);
+					loan.setStatus(LoanConstants.LoanStatus.RAISING);
+					loanService.update(loan);
+				}
+				Invest i=investService.get(requestNo);
+				if(i.getRedpacketId() > 0){
+					RedPacket redpacket = redPacketDao.get(i.getRedpacketId());
+					if(redpacket!=null && redpacket.getSendStatus().equals("used")){
+						if (DateUtil.calculateIntervalDays1(new Date(),
+								redpacket.getDeadLine()) < 0) {
+							
+						}else{
+							redpacket.setSendStatus("unused");
+						}
+						redPacketDao.update(redpacket);
+					}
+				}
+			} else {
+				to.setStatus(TrusteeshipYeepayConstants.Status.REFUSED);
+				trusteeshipOperationService.insert(to);
+				return description;
+			}
+		} catch (HttpException e) {
+			log.errLog("Fatal protocol violation:", e);
+			e.printStackTrace();
+			return "fail";
+		} catch (IOException e) {
+			log.errLog("Fatal protocol violation:", e);
+			e.printStackTrace();
+			return "fail";
+		} finally {
+			/* Release the connection. */
+			postMethod.releaseConnection();
+		}
+		return "ok";
+	}
+}

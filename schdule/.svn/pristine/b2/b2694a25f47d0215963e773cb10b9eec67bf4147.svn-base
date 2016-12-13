@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.account.mapper.PaymentAccountMapper">
+
+	<resultMap type="paymentAccount" id="paymentAccountRM">
+		<id property="id" column="id" />
+		<result property="channel" column="channel" />
+		<result property="balance" column="balance" />
+		<result property="availableBalance" column="available_balance" />
+		<result property="freezeAmount" column="freeze_amount" />
+		<result property="time" column="time" />
+	</resultMap>
+
+	<resultMap type="paymentBill" id="paymentBillRM">
+		<id property="id" column="id" />
+		<result property="channel" column="channel" />
+		<result property="requestNo" column="request_no" />
+		<result property="balance" column="balance" />
+		<result property="freezeAmount" column="freeze_amount" />
+		<result property="money" column="money" />
+		<result property="type" column="type" />
+		<result property="typeInfo" column="type_info" />
+		<result property="business_type" column="business_type" />
+		<result property="time" column="time" />
+	</resultMap>
+
+
+	<select id="getPaymentAccount" resultMap="paymentAccountRM">
+		SELECT * FROM
+		payment_account
+	</select>
+
+	<select id="getPaymentAccountByPaymentId" parameterType="string"
+		resultMap="paymentAccountRM">
+		SELECT * FROM payment_account
+		WHERE channel = #{channel}
+	</select>
+
+	<update id="updatePaymentAccount" parameterType="paymentAccount">
+		UPDATE payment_account
+		<set>
+			<if test="channel!=null">channel=#{channel},</if>
+			<if test="balance!=null">balance=#{balance},</if>
+			<if test="availableBalance!=null">available_balance=#{availableBalance},</if>
+			<if test="freezeAmount!=null">freeze_amount=#{freezeAmount},</if>
+			<if test="time!=null">time=#{time},</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+
+	<insert id="insertPaymentBill" parameterType="paymentBill">
+		INSERT INTO
+		payment_bill
+		(id, channel, request_no, balance, money, type,
+		type_info,business_type, freeze_amount, time)
+		VALUES(#{id},
+		#{channel},
+		#{requestNo},
+		#{balance},
+		#{money},
+		#{type},
+		#{typeInfo},
+		#{businessType},#{freezeAmount},
+		NOW());
+	</insert>
+
+	<!-- <select id="pageLite" resultMap="paymentBillRM" parameterType="paymentBill">
+		select * from
+		payment_bill where 1=1
+		<where>
+			<if test="id != null and id != '' ">
+				and id=#{id}
+			</if>
+			<if test="channel != null and channel != '' ">
+				and channel=#{channel}
+			</if>
+			<if test="requestNo != null and requestNo != '' ">
+				and request_no=#{requestNo}
+			</if>
+			<if test="type != null and type != '' ">
+				and type=#{type}
+			</if>
+			<if test="typeInfo != null and typeInfo != '' ">
+				and type_info =#{typeInfo}
+			</if>
+			<if test="money != null and money != '' ">
+				and money =#{money}
+			</if>
+			<if test="freezeAmount != null and freezeAmount != '' ">
+				and freeze_amount =#{freezeAmount}
+			</if>
+			<if test="balance != null and balance != '' ">
+				and balance =#{balance}
+			</if>
+			<if test="business_type != null and business_type != '' ">
+				and business_type =#{businessType}
+			</if>
+			<if test="beginTime != null and endTime != '' ">
+				and time &gt;=#{beginTime}
+			</if>
+			<if test="endTime != null and endTime != '' ">
+				and time &lt;=#{endTime}
+			</if>
+		</where>
+	</select> -->
+
+</mapper>

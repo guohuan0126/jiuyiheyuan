@@ -1,0 +1,21 @@
+package com.duanrong.business.yeepay.service;
+
+import java.io.IOException;
+import java.util.List;
+
+import base.exception.InsufficientBalance;
+
+import com.duanrong.business.user.model.User;
+import com.duanrong.business.yeepay.model.Withhold;
+import com.duanrong.business.yeepay.model.WithholdBank;
+
+
+
+public interface WithholdBankService {
+
+	public boolean delete(String id);
+	List<WithholdBank> findList(WithholdBank  withholdBank);
+	public boolean insert(WithholdBank withholdBank);
+	public String withHold(WithholdBank withholdBank, String amount,User user) throws InsufficientBalance, IOException;
+	
+}

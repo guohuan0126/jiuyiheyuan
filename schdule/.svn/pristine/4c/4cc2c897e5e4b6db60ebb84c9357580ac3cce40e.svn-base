@@ -1,0 +1,236 @@
+package com.duanrong.yeepay.service.impl;
+
+import java.io.IOException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpException;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.springframework.stereotype.Service;
+
+import util.Log;
+import util.XMLUtil;
+import base.exception.ExceedMoneyNeedRaised;
+import base.exception.InsufficientBalance;
+
+import com.duanrong.business.autoinvest.dao.AutoInvestDao;
+import com.duanrong.business.autoinvest.model.AutoInvest;
+import com.duanrong.business.followInvestAward.service.FollowInvestAwardService;
+import com.duanrong.business.invest.InvestConstants;
+import com.duanrong.business.invest.model.Invest;
+import com.duanrong.business.invest.service.InvestService;
+import com.duanrong.business.loan.LoanConstants;
+import com.duanrong.business.loan.model.Loan;
+import com.duanrong.business.loan.service.LoanService;
+import com.duanrong.business.sms.SmsConstants;
+import com.duanrong.business.sms.service.SmsService;
+import com.duanrong.business.trusteeship.model.TrusteeshipOperation;
+import com.duanrong.business.trusteeship.model.TrusteeshipYeepayConstants;
+import com.duanrong.business.trusteeship.service.TrusteeshipOperationService;
+import com.duanrong.business.user.service.UserMoneyService;
+import com.duanrong.util.ArithUtil;
+import com.duanrong.util.Dom4jUtil;
+import com.duanrong.util.IdGenerator;
+import com.duanrong.util.MapUtil;
+import com.duanrong.yeepay.service.TrusteeshipAutoInvestService;
+import com.duanrong.yeepay.xml.GeneratorXML;
+import com.duanrong.yeepaysign.CFCASignUtil;
+
+/**
+ * 账户查询
+ * 
+ * @author Lin Zhiming
+ * @version Mar 2, 2015 10:53:28 AM
+ */
+@Service
+public class TrusteeshipAutoInvestServiceImpl implements
+		TrusteeshipAutoInvestService {
+
+	@Resource
+	AutoInvestDao autoInvestDao;
+
+	@Resource
+	InvestService investService;
+
+	@Resource
+	LoanService loanService;
+
+	@Resource
+	TrusteeshipOperationService trusteeshipOperationService;
+
+	@Resource
+	FollowInvestAwardService followInvestAwardService;
+
+	@Resource
+	UserMoneyService userMoneyService;
+
+	@Resource
+	SmsService smsService;
+
+	@Resource
+	Log log;
+
+	@Override
+	public void autoInvest(AutoInvest autoInvest, Loan loan, double investMoney)
+			throws HttpException, IOException, InsufficientBalance,
+			ExceedMoneyNeedRaised {
+         //1.只有筹款中和贷前公告可以投资
+		if(LoanConstants.LoanStatus.RAISING.equals(loan.getStatus())
+				|| LoanConstants.LoanStatus.DQGS.equals(loan.getStatus())){
+			
+			//2.创建一笔投资并验证投资参数
+			Invest invest = new Invest();
+			try {
+				invest.setInvestUserID(autoInvest.getUserId());
+				invest.setIsAutoInvest(autoInvest.isAutoInvest());
+				invest.setLoanId(loan.getId());
+				invest.setMoney(investMoney);
+				investService.create(invest);
+			} catch (Exception e) {
+				return;
+			}
+			
+			//3.插入投资记录，状态为等待确认
+			//investService.syncInvest(invest, "create");
+			
+			//4.拼接请求字符串
+			GeneratorXML xml = new GeneratorXML();
+			xml.setPlatformNo(TrusteeshipYeepayConstants.Config.MER_CODE);
+			xml.setPlatformUserNo(autoInvest.getUserId());
+			xml.setTargetPlatformUserNo(loan.getBorrowMoneyUserID());
+			xml.setRequestNo(invest.getId());
+			xml.setOrderNo(loan.getId());
+			xml.setTransferAmount(loan.getTotalmoney());
+			xml.setPaymentAmount(investMoney);
+			xml.setNotifyUrl(TrusteeshipYeepayConstants.ResponseS2SUrl.PRE_RESPONSE_URL
+					+ TrusteeshipYeepayConstants.OperationType.AUTOINVEST);
+			String content = null;
+			try {
+				content = XMLUtil.getXML(xml);
+			} catch (Exception e) {
+				log.errLog("创建投标查询XML拼接异常", e);
+				//investService.syncInvest(invest, "S2SFail");
+				return;
+			}
+						
+			//创建交易记录对象
+			TrusteeshipOperation to = new TrusteeshipOperation();
+			to.setId(IdGenerator.randomUUID());
+			to.setMarkId(invest.getId());
+			to.setOperator(invest.getId());
+			to.setRequestUrl(TrusteeshipYeepayConstants.RequestUrl.RequestDirectUrl);		
+			to.setRequestTime(new Date());
+			to.setStatus(TrusteeshipYeepayConstants.Status.SENDED);
+			to.setType(TrusteeshipYeepayConstants.OperationType.AUTOINVEST);
+			to.setUserId(autoInvest.getUserId());
+			to.setTrusteeship("yeepay");
+			
+			try {
+				//获取签名加密
+				String sign = CFCASignUtil.sign(content);
+				//包装参数
+				Map<String, String> params = new HashMap<String, String>();
+				params.put("req", content);
+				params.put("sign", sign);
+				
+				to.setRequestData(MapUtil.mapToString(params)); //交易xml
+				
+				trusteeshipOperationService.insert(to);
+				log.infoLog("充值XML", content);
+				log.infoLog("充值sign", sign);
+				
+				//5.创建直连请求，请求易宝接口
+				HttpClient client = new HttpClient();
+				PostMethod postMethod = new PostMethod(
+						TrusteeshipYeepayConstants.RequestUrl.RequestDirectUrl);
+
+				postMethod.setParameter("req", content);
+				postMethod.setParameter("sign", sign);
+				postMethod.setParameter("service", "AUTO_TRANSFER");
+				int statusCode = client.executeMethod(postMethod);
+				//返回参数
+				if (statusCode != HttpStatus.SC_OK) {
+					log.errLog("Class TrusteeshipAutoInvestServiceImpl.autoInvest","Method failed: " + postMethod.getStatusLine());
+				}
+				// 获得返回的结果
+				byte[] responseBody = postMethod.getResponseBody();
+				log.infoLog(autoInvest.getUserId() + "自动投标", new String(
+						responseBody, "UTF-8"));
+				@SuppressWarnings("unchecked")
+				Map<String, String> respMap = Dom4jUtil.xmltoMap(new String(
+						responseBody, "UTF-8"));
+				String code = respMap.get("code");				
+				to.setResponseData(new String(responseBody, "UTF-8"));
+				to.setResponseTime(new Date());
+				
+				//6.判断参数
+				if ("1".equals(code)) {
+					//成功后本地处理
+					//更新自动投标队列
+					autoInvest.setLastAutoInvestTime(new Date());
+					autoInvestDao.update(autoInvest);					
+					//更新 invest 表状态
+					if (InvestConstants.InvestStatus.WAIT_AFFIRM.equals(invest
+							.getStatus())) {
+						invest.setStatus(InvestConstants.InvestStatus.BID_SUCCESS);
+						investService.update(invest);
+						to.setStatus(TrusteeshipYeepayConstants.Status.PASSED);
+						trusteeshipOperationService.update(to); 
+						followInvestAwardService.updateInvestMoneyTotalAndInvestMoneyTotal1ByUserID(invest);
+						try {
+							if (loan.getOperationType().equals("月")) {
+								//7.发送短信和站内信
+								smsService.sendSms(invest.getInvestUserID(),"自动投标系统已为您投中"
+														+ investMoney + "元，【"
+														+ loan.getName() + "】，"
+														+ loan.getDeadline() + "个月，年化利率"
+														+ loan.getRate() * 100
+														+ "%。",SmsConstants.INVEST);
+							}
+							if (loan.getOperationType().equals("天")) {
+								int day = loan.getDay();
+								if (loan.getBeforeRepay().equals("是")) {
+									day += loan.getSymbol();
+								}
+								smsService.sendSms(invest.getInvestUserID(),
+										"自动投标系统已为您投中" + investMoney + "元，【"
+												+ loan.getName() + "】，" + day
+												+ "天，年化利率" + loan.getRate() * 100
+												+ "%。关注短融网微信duanrongwangD ",
+										SmsConstants.INVEST);
+							}
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+				} else {					
+					//失败后的本地处理
+					if (invest.getStatus().equals(
+							InvestConstants.InvestStatus.WAIT_AFFIRM)) {				
+						// 改项目状态，项目如果是等待复核的状态，改为募集中
+						investService.syncInvest(invest, "S2SFail");
+						to.setStatus(TrusteeshipYeepayConstants.Status.REFUSED);
+						trusteeshipOperationService.update(to);
+					}
+				}
+			} catch (Exception e) {
+				log.errLog("自动投标", e);
+				//异常捕获，失败处理
+				if (invest.getStatus().equals(
+						InvestConstants.InvestStatus.WAIT_AFFIRM)) {
+					// 改项目状态，项目如果是等待复核的状态，改为募集中
+					//investService.syncInvest(invest, "S2SFail");
+					to.setStatus(TrusteeshipYeepayConstants.Status.REFUSED);
+					trusteeshipOperationService.update(to);
+				}
+			}
+
+		}
+	}
+
+}

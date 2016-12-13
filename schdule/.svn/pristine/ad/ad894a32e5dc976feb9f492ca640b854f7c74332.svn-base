@@ -1,0 +1,247 @@
+package com.duanrong.business.user;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.mail.MessagingException;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import util.Log;
+import util.PhoneNoAttributionUtils;
+
+import com.duanrong.business.sms.SmsConstants;
+import com.duanrong.business.sms.dao.SmsDao;
+import com.duanrong.business.sms.model.Sms;
+import com.duanrong.business.user.dao.AccountCheckingDao;
+import com.duanrong.business.user.dao.UserDao;
+import com.duanrong.business.user.model.AccountChecking;
+import com.duanrong.business.user.model.User;
+import com.duanrong.business.user.service.AllUserBillService;
+import com.duanrong.business.user.service.RedPacketService;
+import com.duanrong.business.user.service.UserService;
+import com.duanrong.jsonservice.util.RegexInput;
+import com.duanrong.sms.SMSSend;
+import com.duanrong.util.ArithUtil;
+import com.duanrong.util.IdGenerator;
+import com.duanrong.util.ShortUrlGenerator;
+import com.duanrong.util.mail.MailSendInfo;
+import com.duanrong.util.mail.SimpleEmailSend;
+
+/**
+ * 
+ * @author xiao
+ * 
+ */
+@Component
+public class UserSchdule {
+
+	@Resource
+	AllUserBillService allUserBillService;
+
+	@Resource
+	Log log;
+
+	@Resource
+	UserService userService;
+
+	@Resource
+	RedPacketService redPacketService;
+	
+	@Resource
+	SmsDao smsDao;
+	
+	@Resource
+	UserDao userDao;
+	
+	
+	@Resource
+	AccountCheckingDao accountCheckingDao;
+	/**
+	 * 账户平衡调度 每日凌晨0点执行
+	 */
+	/*@Scheduled(cron="0 5 0 * * ?")*/
+	public void AccountCheckingSchdule() {
+		System.out.println("********** 每日账户平衡调度开始  ************");
+		log.infoLog(
+				"schdule",
+				"账户平衡调度开始............"
+						+ new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+								.format(new Date()));
+		try {
+			allUserBillService.accountChecking();
+		} catch (Exception e) {
+			log.errLog("用户平衡调度 allUserBillService.accountChecking()", e);
+		}
+		log.infoLog(
+				"schdule",
+				"账户平衡调度结束............"
+						+ new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+								.format(new Date()));
+		System.out.println("********** 每日账户平衡调度结束  ************");
+	}
+
+	
+	/**
+	 * 手机号归属地 每日凌晨0点执行
+	 */
+	@Scheduled(cron="0 0 4-8/2 * * ?")
+	public void PhoneSchdule() {
+		log.infoLog(
+				"schdule",
+				"手机号归属地调度开始............"
+						+ new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+		try {
+			updateUsers();
+		} catch (Exception e) {
+			log.errLog("手机号归属地调度 userService.updateUsers()", e);
+		}
+		log.infoLog(
+				"schdule",
+				"手机号归属地调度结束............"
+						+ new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+								.format(new Date()));		
+	}
+	
+	
+	public void updateUsers() {
+		List<User> users=userDao.getUsersPhone();
+		if(users!=null){
+			log.infoLog("手机号归属地调度开始查询用户数：", users.size()+"");
+		}
+		int count=0;
+		for(User user:users){
+			try{
+				if (!StringUtils.isBlank(user.getMobileNumber()) && (RegexInput.checkMobilePhone(user.getMobileNumber()))) {
+					String[] strs=PhoneNoAttributionUtils.getAttributions(user.getMobileNumber());
+					if(strs[0]!=null){
+						user.setPhoneNoAttribution(strs[0]);
+					}
+					if(strs[1]!=null){
+						user.setPhoneNoCity(strs[1]);
+					}
+					if(StringUtils.isBlank(strs[0]) && StringUtils.isBlank(strs[1])){
+						continue;
+					}else{
+						userDao.updateUserPhoneArea(user);
+						count++;
+					}				
+				}
+				Thread.sleep(100);
+			}catch(Exception e){
+				log.errLog("手机号归属地调度执行",e);
+			}					
+		}
+		log.infoLog("手机号归属地调度执行完毕后更新数量：",count+"");
+		
+	}
+
+	
+	/**
+	 * 红包过期调度 每天凌晨3点5点隔执行一次
+	 */
+	@Scheduled(cron = "0 0 3,5 * * ?")
+	public void redpacketSchdule() {
+
+		System.out.println("********** 红包过期调度开始  ************"+new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()));		
+		try {
+			redPacketService.updateExpired();
+		} catch (Exception e) {
+			log.errLog("红包过期轮询异常" , e);
+			e.printStackTrace();
+		}	
+		log.infoLog(
+				"schdule",
+				"红包过期调度结束............"
+						+ new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+								.format(new Date()));
+	}
+
+	/**
+	 * 红包过到期提醒每天9点隔执行一次
+	 */
+	@Scheduled(cron = "0 0 9 * * ? ")
+	public void redpacketExpireSchdule() {
+
+		List<User> users = userService.getExpireRedpacket();
+		for(User user: users){
+			String content = "小主，发现您有未使用的优惠券，2天后过期，记得及时使用哦，回TD退订";
+			SMSSend.batchSend(user.getMobileNumber(), content);
+			Sms sms = new Sms();
+			String id = ShortUrlGenerator.shortUrl(IdGenerator.randomUUID())
+					+ ShortUrlGenerator.shortUrl(IdGenerator.randomUUID());
+			sms.setId(id);
+			sms.setUserId(user.getUserId());
+			sms.setMobileNumber(user.getMobileNumber());
+			sms.setContent(content);
+			sms.setTime(new Date());
+			sms.setType(SmsConstants.REDPACKET);
+			smsDao.insert(sms);
+		}
+		log.infoLog("schdule","红包到期提醒............"+ new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+	}
+	
+	/**
+	 * 账户不平衡用户信息
+	 * 每天9点隔执行一次
+	 */
+	@Scheduled(cron = "0 0 9 * * ? ")
+	public void account() {
+		String host = userService.getConfigById("mail_smtp").getValue();
+		String from = userService.getConfigById("mail_username").getValue();
+		String password = userService.getConfigById("mail_password").getValue();
+		StringBuffer sb = new StringBuffer();
+		sb.append("[" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + "日], 账户不平衡信息<br>");
+		List<AccountChecking> accounts = accountCheckingDao.getAccountListByWhere();
+		sb.append("<table style=\"border:solid 1px #E8F2F9\">");
+		sb.append("<tr style=\"background-color: #428BCA; color:#ffffff\"><th>userId</th><th>本地账户总额</th><th>易宝账户总额</th><th>本地账户余额</th><th>易宝账户余额</th><th>本地冻结金额</th><th>易宝冻结金额</th></tr>");
+		for(AccountChecking account : accounts){
+			sb.append("<tr><td>" + account.getUserId() + "</td><td>" + ArithUtil.round(account.getAvailableAmount(), 2)+"</td>");
+			sb.append("<td>" + account.getEbaoAvailableAmount() +"</td>");
+			sb.append("<td>" + ArithUtil.round(account.getBalance(), 2) +"</td>");
+			sb.append("<td>" + account.getEbaoBalance() +"</td>");
+			sb.append("<td>" + ArithUtil.round(account.getFreezeAmount(), 2) +"</td>");
+			sb.append("<td>" + account.getEbaoFreezeAmount() +"</td></tr>");			
+		}		
+		sendEmail(host, from, password, sb.toString(), "账户不平衡信息");
+	}
+	
+	
+	/**
+	 * 发送邮件
+	 * 
+	 * @param host
+	 * @param from
+	 * @param password
+	 * @param loan
+	 * @param e
+	 */
+	private void sendEmail(String host, String from, String password,
+			String content, String subject) {
+		MailSendInfo sendInfo = new MailSendInfo();
+		sendInfo.setFromAddress(from);
+		sendInfo.setMailServerHost(host);
+		sendInfo.setPassword(password);
+		sendInfo.setUserName(from);
+		sendInfo.setContent(content);
+		sendInfo.setSubject(subject);
+		SimpleEmailSend send = new SimpleEmailSend();
+		try {
+			sendInfo.setToAddress("guolixiao@duanrong.com");
+			send.sendHtmlMail(sendInfo);
+			sendInfo.setToAddress("zhangjunying@duanrong.com");
+			send.sendHtmlMail(sendInfo);		
+			sendInfo.setToAddress("zhaolei@duanrong.com");
+			send.sendHtmlMail(sendInfo);
+		} catch (MessagingException ex) {
+			log.errLog("邮件发送失败", ex);
+		}
+	}
+
+}

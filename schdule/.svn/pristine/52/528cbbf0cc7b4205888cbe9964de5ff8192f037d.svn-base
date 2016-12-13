@@ -1,0 +1,196 @@
+package com.duanrong.yeepay.service.impl;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+
+import util.Log;
+import base.exception.InsufficientBalance;
+
+import com.duanrong.business.invest.InvestConstants;
+import com.duanrong.business.invest.dao.InvestDao;
+import com.duanrong.business.invest.model.Invest;
+import com.duanrong.business.loan.LoanConstants;
+import com.duanrong.business.loan.dao.LoanDao;
+import com.duanrong.business.loan.model.Loan;
+import com.duanrong.business.trusteeship.model.TrusteeshipConstants;
+import com.duanrong.business.trusteeship.model.TrusteeshipOperation;
+import com.duanrong.business.trusteeship.model.TrusteeshipYeepayConstants;
+import com.duanrong.business.trusteeship.service.TrusteeshipOperationService;
+import com.duanrong.business.user.dao.UserDao;
+import com.duanrong.business.user.model.User;
+import com.duanrong.business.user.service.UserMoneyService;
+import com.duanrong.newadmin.utility.Dom4jUtil;
+import com.duanrong.yeepay.service.TrusteeshipCancelInvestService;
+import com.duanrong.yeepaysign.CFCASignUtil;
+
+/**
+ * 
+ * Copyright : duanrong.com.cn All Rights Reserved Company : 久亿财富（北京）投资有限公司
+ * 
+ * @Author : SunZ
+ * @CreateTime : 2015-4-2 下午11:16:06
+ * @Description : NewAdmin com.duanrong.yeepay.service
+ *              TrusteeshipCancelInvestService.java
+ * 
+ */
+@Service
+public class TrusteeshipCancelInvestServiceImpl implements
+		TrusteeshipCancelInvestService {
+
+	@Resource
+	Log log;
+
+	@Resource
+	LoanDao loanDao;
+
+	@Resource
+	InvestDao investDao;
+
+	@Resource
+	UserMoneyService userMoneyService;
+
+	@Resource
+	TrusteeshipOperationService trusteeshipOperationService;
+
+	@Resource
+	UserDao userDao;
+
+
+	
+	/**
+	 * 
+	 * @description 易宝流标
+	 * @author 孙铮
+	 * @time 2015-4-2 下午11:15:37
+	 * @param userId
+	 *            操作人
+	 * @param loanId
+	 *            借款项目id
+	 * @return 流标结果
+	 */
+	public String cancelInvest(String userId, String loanId) {
+		if (StringUtils.isBlank(loanId)) {
+			log.infoLog("流标失败", userId + "在执行流标时失败,借款项目id错误:" + loanId);
+			return "流标失败:借款项目id错误";
+		}
+		Loan loan = loanDao.get(loanId);
+		if (loan == null) {
+			log.infoLog("流标失败", userId + "在执行流标时失败,借款项目不存在");
+			return "流标失败:借款项目不存在";
+		}
+		if (LoanConstants.LoanStatus.COMPLETE.equals(loan.getStatus())
+				|| LoanConstants.LoanStatus.REPAYING.equals(loan.getStatus())) {
+			log.infoLog("流标失败", userId + "在执行流标时失败,借款项目状态不正确");
+			return "流标失败:借款项目状态不正确";
+		}
+		loan.setStatus(LoanConstants.LoanStatus.CANCEL);
+
+		Invest i = new Invest();
+		i.setStatus(InvestConstants.InvestStatus.BID_SUCCESS);
+		i.setLoanId(loanId);
+		List<Invest> invests = investDao.getInvestLoan(i);
+		boolean flag = true;
+		HttpClient client = new HttpClient();
+		for (Invest invest : invests) {
+			PostMethod postMethod = new PostMethod(
+					TrusteeshipYeepayConstants.RequestUrl.RequestDirectUrl);
+			StringBuffer content = new StringBuffer();
+			content.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+			// 商户编号:商户在易宝唯一标识
+			content.append("<request platformNo=\""
+					+ TrusteeshipYeepayConstants.Config.MER_CODE + "\">");
+			content.append("<platformUserNo>" + invest.getInvestUserID()
+					+ "</platformUserNo>");
+			content.append("<requestNo>" + invest.getId() + "</requestNo>");
+			content.append("</request>");
+
+			// 保存操作信息
+			TrusteeshipOperation to = trusteeshipOperationService.get(
+					TrusteeshipYeepayConstants.OperationType.INVEST,
+					invest.getId(), invest.getId(), "yeepay");
+			if (to == null) {
+				to = trusteeshipOperationService.get(
+						TrusteeshipYeepayConstants.OperationType.AUTOINVEST,
+						invest.getId(), invest.getId(), "yeepay");
+			}
+			to.setStatus(TrusteeshipYeepayConstants.Status.SENDED);
+			to.setRequestTime(new Date());
+			to.setRequestData(content.toString());
+			trusteeshipOperationService.update(to);
+
+			postMethod.setParameter("req", content.toString());
+			String sign = CFCASignUtil.sign(content.toString());
+			postMethod.setParameter("sign", sign);
+			postMethod.setParameter("service", "REVOCATION_TRANSFER");
+			// 执行post方法
+			try {
+				int statusCode = client.executeMethod(postMethod);
+				if (statusCode != HttpStatus.SC_OK) {
+					log.infoLog("流标失败", userId + "在执行流标时失败,httpStatus错误:"
+							+ HttpStatus.SC_OK + postMethod.getStatusLine());
+				}
+				// 获得返回的结果
+				byte[] responseBody = postMethod.getResponseBody();
+				// 响应信息
+				@SuppressWarnings("unchecked")
+				Map<String, String> resultMap = Dom4jUtil.xmltoMap(new String(
+						responseBody, "UTF-8"));
+				// 返回码
+				String code = resultMap.get("code");
+				// 描述
+				if (code.equals("1")) {// 如果取消投标成功，执行业务逻辑。
+					userMoneyService.unfreezeMoney(invest.getInvestUserID(),
+							invest.getMoney(), "解冻：投资" + loan.getName(), "");
+					// 更改投资状态
+					invest.setStatus(InvestConstants.InvestStatus.CANCEL);
+					User user = userDao.get(invest.getInvestUserID());
+
+					Double investMoneyTotal = user.getInvestMoneyTotal();
+					if (investMoneyTotal != null) {
+						user.setInvestMoneyTotal(investMoneyTotal
+								- invest.getMoney());
+					}
+					if ("Y".equals(invest.getReturnPond())) {
+						user.setInvestMoneyTotal1(user.getInvestMoneyTotal1()
+								+ invest.getMoney());
+					}
+					invest.setReturnPond(null);
+					investDao.update(invest);
+					userDao.update(user);
+				} else {
+					flag = false;
+				}
+				to.setStatus(TrusteeshipConstants.Status.PASSED);
+				to.setResponseData(new String(responseBody, "UTF-8"));
+				to.setResponseTime(new Date());
+				trusteeshipOperationService.update(to);
+			} catch (Exception e) {
+				log.infoLog(invest.getId() + "流标失败", e);
+				e.printStackTrace();
+			} finally {
+				postMethod.releaseConnection();
+			}
+		}
+		try {
+			if (flag) {
+				userMoneyService
+						.unfreezeMoney(loan.getBorrowMoneyUserID(),
+								loan.getDeposit(), "借款" + loan.getId()
+										+ "流标，解冻保证金", "");
+			}
+		} catch (InsufficientBalance ib) {
+			throw new RuntimeException(ib);
+		}
+		loanDao.update(loan);
+		return flag ? "流标成功" : "流标失败";
+	}
+}

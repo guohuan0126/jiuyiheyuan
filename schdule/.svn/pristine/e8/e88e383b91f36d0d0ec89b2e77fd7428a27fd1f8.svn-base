@@ -1,0 +1,473 @@
+package com.duanrong.business.invest;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.lang3.StringUtils;
+import org.dom4j.Document;
+import org.dom4j.DocumentHelper;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+
+import util.DateUtilPlus;
+import util.Log;
+import util.MyStringUtils;
+import util.XMLUtil;
+
+import com.duanrong.business.invest.dao.InvestDao;
+import com.duanrong.business.invest.model.Invest;
+import com.duanrong.business.invest.service.InvestService;
+import com.duanrong.business.sms.SmsConstants;
+import com.duanrong.business.sms.dao.SmsDao;
+import com.duanrong.business.sms.model.Sms;
+import com.duanrong.business.sms.service.SmsService;
+import com.duanrong.business.trusteeship.model.TrusteeshipConstants;
+import com.duanrong.business.trusteeship.model.TrusteeshipOperation;
+import com.duanrong.business.trusteeship.model.TrusteeshipYeepayConstants;
+import com.duanrong.business.trusteeship.service.TrusteeshipOperationService;
+import com.duanrong.business.user.dao.RedPacketDao;
+import com.duanrong.business.user.model.RedPacket;
+import com.duanrong.business.user.model.User;
+import com.duanrong.business.user.service.InformationService;
+import com.duanrong.business.user.service.RedPacketService;
+import com.duanrong.business.user.service.UserService;
+import com.duanrong.sms.SMSSend;
+import com.duanrong.util.DateUtil;
+import com.duanrong.util.Dom4jUtil;
+import com.duanrong.util.IdGenerator;
+import com.duanrong.util.jedis.DRJedisMQ;
+import com.duanrong.util.json.FastJsonUtil;
+import com.duanrong.yeepay.xml.GeneratorXML;
+import com.duanrong.yeepaysign.CFCASignUtil;
+
+/**
+ * 投资活动调度
+ * 
+ * @author xiao
+ * 
+ */
+@Component
+public class InvestActiveSchdule {
+
+	@Resource
+	SmsService smsService;
+	
+	@Resource
+	RedPacketService redpacketService;
+
+	@Resource
+	InvestService investService;
+
+	@Resource
+	InvestDao investDao;
+
+	@Resource
+	SmsDao smsDao;
+	@Resource
+	UserService userService;
+	@Resource
+	Log log;
+
+	@Resource
+	TrusteeshipOperationService trusteeshipOperationService;
+
+	@Resource
+	RedPacketDao redPacketDao;
+
+	@Resource
+	InformationService informationService;
+	
+	/**
+	 * 调度发送短信 1.注册未投资（两天）用户 发送短信 （全体） 2.注册未投资（20天）用户发送红包 排除掉辅仁 比搜益 3.注册未投资用户发送短信
+	 * （全体）
+	 */
+	@Scheduled(cron = "0 30 10 * * ?")
+	public void smsServiceSchdule() {
+		// 注册两天 为投资的用户手机号
+		int day = 2;
+		String mobileNumbers = "";
+		String content = "感谢您的信赖，我司获３.９亿Ｂ轮融资，是上市集团辅仁成员企业。银行级别安全保障，期限灵活高收益，值得信赖！回复TD退订。";
+		List<String> mobNumberList = userService.readUserMobileNumber(day);
+		log.infoLog("短信", "开始注册为投资用户2天短信");
+		if (mobNumberList.size() > 0) {
+			for (String mobNumber : mobNumberList) {
+				mobileNumbers += mobNumber + ",";
+				User user = userService.getUserByMobileNumber(mobNumber);
+				Sms sms = new Sms();
+				sms.setId(IdGenerator.randomUUID());
+				sms.setUserId(user.getUserId());
+				sms.setMobileNumber(mobNumber);
+				sms.setContent(content);
+				sms.setTime(new Date());
+				sms.setType(SmsConstants.INFORMATION);
+				smsDao.insert(sms);
+			}
+			mobileNumbers = mobileNumbers.substring(0,
+					mobileNumbers.length() - 1);
+			System.out.println(mobileNumbers);
+			SMSSend.batchSend1(mobileNumbers, content);
+			log.infoLog("短信", "结束注册未投资用户2天" + mobileNumbers + "短信");
+			System.out
+					.println("**********************发送短信*******************************");
+
+		}
+
+		day = 30;
+		String mobileNumbers30 = "";
+		log.infoLog("短信", "开始注册为投资用户30天短信");
+		String content30 = "思君不见倍思君，新手专享，年化收益14%，更多理财好项目，就上短融网，t.cn/R4L4Usl！回复TD退订。";
+		List<String> mobNumberList30 = userService.readUserMobileNumber(day);
+		if (mobNumberList30.size() > 0) {
+			for (String mobNumber30 : mobNumberList30) {
+				mobileNumbers30 += mobNumber30 + ",";
+				User user = userService.getUserByMobileNumber(mobNumber30);
+				Sms sms = new Sms();
+				sms.setId(IdGenerator.randomUUID());
+				sms.setUserId(user.getUserId());
+				sms.setMobileNumber(mobNumber30);
+				sms.setContent(content30);
+				sms.setTime(new Date());
+				sms.setType(SmsConstants.INFORMATION);
+				smsDao.insert(sms);
+			}
+			mobileNumbers30 = mobileNumbers30.substring(0,
+					mobileNumbers30.length() - 1);
+			SMSSend.batchSend1(mobileNumbers30, content30);
+			System.out
+					.println("**********************发送短信*******************************");
+			log.infoLog("短信", "结束注册未投资用户30天" + mobileNumbers30 + "短信");
+		}
+
+		day = 20;
+
+		String content20 = "HI，想我了没有？给您发了一个68元大红包，注意查收哦！t.cn/R4L4Usl！回复TD退订。";
+		List<String> mobNumberList20 = userService.readUserMobukeNumbers();
+		List<String> userList = new ArrayList<>();
+		log.infoLog("短信", "开始注册为投资用户20天红包短信");
+		if (mobNumberList20.size() > 0) {
+			for (String mobileNumber : mobNumberList20) {
+				// 根据手机号 查询有没有 该手机号下没有可用的红包 没有在给发送红包
+				int count = userService.readRedpacketByMob(mobileNumber);
+				if (count == 0) {
+					User user = userService.getUserByMobileNumber(mobileNumber);
+					createReadpacket(user, mobileNumber, 8, 1000.00, 0, "0");
+					createReadpacket(user, mobileNumber, 10, 1000.00, 1, "1");
+					createReadpacket(user, mobileNumber, 20, 2000.00, 1, "1");
+					createReadpacket(user, mobileNumber, 30, 3000.00, 1, "1");
+					Sms sms = new Sms();
+					sms.setId(IdGenerator.randomUUID());
+					sms.setUserId(user.getUserId());
+					sms.setMobileNumber(mobileNumber);
+					sms.setContent(content20);
+					sms.setTime(new Date());
+					sms.setType(SmsConstants.INFORMATION);
+					smsDao.insert(sms);
+					System.out
+							.println("**********************发送短信*******************************");
+					SMSSend.batchSend1(mobileNumber, content20);
+					userList.add(user.getUserId());
+				}
+			}
+			log.infoLog("短信", "结束注册未投资20天发送红包的用户数量：" + userList.size()
+					+ "结束注册未投资20天发送红包的用户" + userList.toString(), 1);
+		}
+
+	}
+
+	public int createReadpacket(User user, String mobileNumber, double money,
+			double investMoney, int investCycle, String useLoanType) {
+		try {
+			RedPacket redpacket = new RedPacket();
+			redpacket.setName("新人特惠大礼包第2季");
+			redpacket.setMoney(money);
+			redpacket.setUserId(user.getUserId());
+			redpacket.setMobileNumber(mobileNumber);
+			Date d = new Date();
+			redpacket.setCreateTime(d);
+			redpacket.setDeadLine(DateUtil.addDay(d, 30));
+			redpacket.setSendStatus("unused");
+			redpacket.setType("money");
+			redpacket.setRuleId(48);
+			redpacket.setUseLoanType(useLoanType);
+
+			redpacket.setUsageDetail("invest");
+			redpacket.setInvestMoney(investMoney);
+			redpacket.setUsageRule("投资可用");
+			redpacket.setInvestCycle(investCycle);
+			redPacketDao.insert(redpacket);
+			return 1;
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return 0;
+
+		}
+
+	}
+
+	@Scheduled(cron="0 0/5 * * * ?")
+	public void handleSendedOperations() {
+		// 查找请求表里面，等待返回的数据，且请求时间在十分钟以外。
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		log.infoLog("yeepay-轮询开始", sdf.format(new Date()));
+		List<TrusteeshipOperation> tos = trusteeshipOperationService
+				.getUnCallbackOperations(10);
+		if (CollectionUtils.isEmpty(tos)) {
+			log.infoLog("yeepay-轮询结束", "没有可以轮询的数据");
+			return;
+		}
+		for (TrusteeshipOperation to : tos) {
+			try {
+				if (to.getType().equals(
+						TrusteeshipYeepayConstants.OperationType.INVEST)
+						|| to.getType()
+								.equals(TrusteeshipYeepayConstants.OperationType.AUTOINVEST)) {
+					// 投标
+					investRecord(to);
+				}
+			} catch (Exception e) {
+				log.errLog("轮询异常", e);
+			}
+		}
+	}
+
+	/**
+	 * 投资
+	 */
+	@Transactional(readOnly = false, rollbackFor = Exception.class)
+	private void investRecord(TrusteeshipOperation to) {
+		HttpClient client = new HttpClient();
+		PostMethod postMethod = new PostMethod(
+				TrusteeshipYeepayConstants.RequestUrl.RequestDirectUrl);
+
+		/*********************** XML拼接 ***********************/
+		GeneratorXML xml = new GeneratorXML();
+		xml.setPlatformNo(TrusteeshipYeepayConstants.Config.MER_CODE);
+		xml.setRequestNo(to.getMarkId());
+		xml.setMode("CP_TRANSACTION");
+		String content = null;
+		try {
+			content = XMLUtil.getXML(xml);
+		} catch (Exception e) {
+			log.errLog("投资轮询XML拼接异常", e);
+			return;
+		}
+
+		/*********************** 生成签名 ***********************/
+		String sign = CFCASignUtil.sign(content);
+		log.infoLog("投资轮询XML", content);
+		log.infoLog("投资轮询sign", sign);
+		postMethod.setParameter("req", content);
+		postMethod.setParameter("sign", sign);
+		postMethod.setParameter("service", "QUERY");
+
+		/*********************** 执行POST ***********************/
+		try {
+			int statusCode = client.executeMethod(postMethod);
+			if (HttpStatus.SC_OK != statusCode) {
+				log.errLog("投资轮询HTTP状态码异常", postMethod.getStatusLine()
+						.toString());
+			}
+
+			// 易宝响应结果
+			byte[] responseBody = postMethod.getResponseBody();
+			String respInfo = new String(responseBody, "UTF-8");
+			log.infoLog("投资轮询返回数据", respInfo);
+			// 响应信息
+			Document respXML = DocumentHelper.parseText(respInfo);
+			Map<String, String> resultMap = Dom4jUtil.xmltoMap(respInfo);
+			String code = resultMap.get("code");
+			// records 记录列表
+			String records = resultMap.get("records");
+			// 获取投资记录
+			Invest invest = investService.get(to.getMarkId());
+
+			// 返回码为1标识成功
+			if ("1".equals(code) && StringUtils.isNotBlank(records)) {
+				String status = respXML.selectSingleNode(
+						"/response/records/record/status").getStringValue();
+				if ("CONFIRM".equals(status)) {
+					// 还款中
+					if (MyStringUtils.equalsAnyString(invest.getStatus(),
+							InvestConstants.InvestStatus.WAIT_AFFIRM,
+							InvestConstants.InvestStatus.BID_SUCCESS)) {
+						invest.setStatus(InvestConstants.InvestStatus.REPAYING);
+						investService.update(invest);
+					}
+
+					/**
+					 * 第三方推送对列
+					 */
+					Map<String, Object> map = new HashMap<>();
+
+					map.put("investId", invest.getId());
+					map.put("loanId", invest.getLoanId());
+					map.put("pushTime", new Date());
+
+					DRJedisMQ
+							.product("pushinvest", FastJsonUtil.objToJson(map));
+
+					/**
+					 * 十一随即返现活动
+					 */
+					Date investTime = invest.getTime();
+					SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+					Date startDate = null, endDate = null;
+					try {
+						startDate = format.parse("2016-09-26 23:59:59");
+						endDate = format.parse("2016-10-03 23:59:59");
+					} catch (ParseException e) {
+						e.printStackTrace();
+					}
+					if (investTime != null && startDate.getTime() < investTime.getTime()
+							&& investTime.getTime() < endDate.getTime()) {
+						DRJedisMQ
+						.product("national_invest", invest.getId());
+					}
+					to.setStatus(TrusteeshipConstants.Status.PASSED);
+					to.setResponseData(respInfo);
+					to.setResponseTime(new Date());
+					trusteeshipOperationService.update(to);
+				} else if ("PREAUTH".equals(status)) {
+					// 投标成功
+					if (InvestConstants.InvestStatus.WAIT_AFFIRM.equals(invest
+							.getStatus())) {
+						invest.setStatus(InvestConstants.InvestStatus.BID_SUCCESS);
+						investService.update(invest);
+					}
+
+					/**
+					 * 第三方推送队列
+					 */
+					Map<String, Object> map = new HashMap<>();
+
+					map.put("investId", invest.getId());
+					map.put("loanId", invest.getLoanId());
+					map.put("pushTime", new Date());
+
+					DRJedisMQ
+							.product("pushinvest", FastJsonUtil.objToJson(map));
+
+					/**
+					 * 十一随即返现活动
+					 */
+					Date investTime = invest.getTime();
+					SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+					Date startDate = null, endDate = null;
+					try {
+						startDate = format.parse("2016-09-26 23:59:59");
+						endDate = format.parse("2016-10-03 23:59:59");
+					} catch (ParseException e) {
+						e.printStackTrace();
+					}
+					if (investTime != null && startDate.getTime() < investTime.getTime()
+							&& investTime.getTime() < endDate.getTime()) {
+						DRJedisMQ
+						.product("national_invest", invest.getId());
+					}
+					
+					to.setStatus(TrusteeshipConstants.Status.PASSED);
+					to.setResponseData(respInfo);
+					to.setResponseTime(new Date());
+					trusteeshipOperationService.update(to);
+				} else if ("CANCEL".equals(status)) {
+					// 投标成功后流标
+					if (InvestConstants.InvestStatus.BID_SUCCESS.equals(invest
+							.getStatus())) {
+						try {
+							investService.syncInvest(invest, "S2SFail");
+						} catch (Exception ex) {
+							log.errLog("投资callback", ex);
+							return;
+						}
+					}
+					to.setStatus(TrusteeshipConstants.Status.PASSED);
+					to.setResponseData(respInfo);
+					to.setResponseTime(new Date());
+					trusteeshipOperationService.update(to);
+				}
+			} else {
+				if (InvestConstants.InvestStatus.WAIT_AFFIRM.equals(invest
+						.getStatus())) {
+					try {
+						investService.syncInvest(invest, "S2SFail");
+					} catch (Exception ex) {
+						log.errLog("投资callback", ex);
+						return;
+					}
+				}
+				to.setStatus(TrusteeshipConstants.Status.REFUSED);
+				to.setResponseData(respInfo);
+				to.setResponseTime(new Date());
+				trusteeshipOperationService.update(to);
+			}
+		} catch (Exception e) {
+			log.errLog("投资轮询", e);
+		} finally {
+			postMethod.releaseConnection();
+		}
+	}
+
+	
+	@Scheduled(cron = "0 1 0,10 1-4,28-30 9,10 ?")
+	public void nationalActive() {
+		Date now = new Date();
+		Date n = DateUtilPlus
+				.DateAdd4DayOfYear(now, -1);
+		List<Invest> invests = investDao.getNationalActive(n);
+		String ns = new SimpleDateFormat("MM月dd日").format(n);
+		Calendar ca = Calendar.getInstance();
+		ca.setTime(now);
+		int hour = ca.get(Calendar.HOUR_OF_DAY);
+		//大于5点，发前一天获奖短信
+		//小于5点，发站内信
+		if(hour > 5){
+			String sms = "恭喜您在“畅玩十一•冲榜送壕礼”#{date}榜单中累计投资排名第#{top}，获得现金奖励#{money}元（10月8日到账），届时您可登录短融网查询。";
+			for(int i = 0; i < invests.size(); i++){
+				int money = 0;
+				if(i== 0) money = 288;
+				else if(i == 1) money = 268;
+				else if(i == 2) money = 218;
+				else if(i == 3) money = 168;
+				else if(i == 4) money = 128;
+				else if(i == 5) money = 108;
+				else money = 88;
+				String s = sms.replace("#{date}", ns).replace("#{top}", i+1+"").replace("#{money}", ""+money);
+				smsService.sendSms(invests.get(i).getInvestUserID(), s, null);
+			}
+		}else{
+			String sms = "恭喜您在“畅玩十一•冲榜送壕礼”#{date}榜单中累计投资额排名第#{top}位，获得现金奖励#{money}元，奖励将于10月8日发放到您的个人账户中，届时您可到交易记录里查询到账明细。";
+			for(int i = 0; i < invests.size(); i++){
+				int money = 0;
+				if(i== 0) money = 288;
+				else if(i == 1) money = 268;
+				else if(i == 2) money = 218;
+				else if(i == 3) money = 168;
+				else if(i == 4) money = 128;
+				else if(i == 5) money = 108;
+				else money = 88;
+				String s = sms.replace("#{date}", ns).replace("#{top}", i+1+"").replace("#{money}", ""+money);
+				try{
+					informationService.sendInformation(invests.get(i).getInvestUserID(), "畅玩十一上榜通知", s);
+				}catch(Exception e){
+					
+				}		
+			}
+		}
+		
+	}
+
+}

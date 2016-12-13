@@ -1,0 +1,17 @@
+package com.duanrong.business.yeepay.service;
+
+
+import base.exception.InsufficientBalance;
+
+
+
+/**
+ * @Description: 冻结
+ * @Author: wangjing
+ * @CreateDate: Nov 24, 2014
+ */
+public interface FailLoanService {
+
+	public String failLoan(String platformNo,String platformUserNo, String requestNo,String money,String loanId) throws InsufficientBalance;
+	
+}

@@ -1,0 +1,427 @@
+package com.duanrong.business.account.service.impl;
+
+import java.util.Date;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+
+import base.exception.InsufficientBalanceException;
+import base.exception.InsufficientFreezeAmountException;
+import base.exception.NoOpenAccountException;
+import base.pagehelper.PageInfo;
+
+import com.duanrong.business.account.AccountEnum;
+import com.duanrong.business.account.BusinessEnum;
+import com.duanrong.business.account.dao.UserAccountDao;
+import com.duanrong.business.account.model.UserAccount;
+import com.duanrong.business.account.model.UserBill;
+import com.duanrong.business.account.service.UserAccountService;
+import com.duanrong.util.IdUtil;
+import com.duanrong.util.jedis.DRJedisDLock;
+
+@Service
+public class UserAccountServiceImpl implements UserAccountService {
+
+	@Resource
+	UserAccountDao userAccountDao;
+
+	@Resource
+	// 事务管理器
+	DataSourceTransactionManager txManager;
+
+	private static final String USER_ACCOUNT_DLOCK = "user_account";
+
+	@Override
+	public UserAccount getUserAccount(String userId) {
+		return userAccountDao.get(userId);
+	}
+
+	@Override
+	public PageInfo<UserBill> pageLite(int pageNo, int pageSize,
+			UserBill userBill) {
+		return userAccountDao.pageLite(pageNo, pageSize, userBill);
+	}
+
+	@Override
+	public void transferIn(String userId, double money,
+			BusinessEnum businessType, String operatorInfo,
+			String operatorDetail, String requestNo)
+			throws NoOpenAccountException {
+		// TODO 需要分布式锁来控制用户账户
+		if (DRJedisDLock.getDLock(USER_ACCOUNT_DLOCK + userId, requestNo)) {
+			try {
+				UserAccount userAccount = userAccountDao.get(userId);
+				if (userAccount == null)
+					throw new NoOpenAccountException("userId: " + userId
+							+ " 未开户");
+				Date now = new Date();
+				// 更新可用余额
+				userAccount.setAvailableBalance(userAccount
+						.getAvailableBalance() + money);
+				// 更新总金额
+				userAccount.setBalance(userAccount.getBalance() + money);
+				// 设置最后更新时间
+				userAccount.setTime(now);
+				// 开启事务
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+				def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+				TransactionStatus status = txManager.getTransaction(def);
+				try {
+					userAccountDao.update(userAccount);
+					this.insertUserBill(userId, money,
+							userAccount.getBalance(),
+							userAccount.getFreezeAmount(),
+							AccountEnum.ti_balance, businessType, requestNo,
+							operatorDetail, operatorInfo);
+					// 提交事务
+					txManager.commit(status);
+				} catch (Exception e) {
+					// 回滚事务
+					txManager.rollback(status);
+					throw e;
+				}
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				DRJedisDLock.releaseDLock(USER_ACCOUNT_DLOCK + userId,
+						requestNo);
+			}
+		}
+
+	}
+
+	@Override
+	public void ptTransferIn(String userId, double money,
+			BusinessEnum businessType, String operatorInfo,
+			String operatorDetail, String requestNo)
+			throws NoOpenAccountException {
+		if (DRJedisDLock.getDLock(USER_ACCOUNT_DLOCK + userId, requestNo)) {
+			try {
+				UserAccount userAccount = userAccountDao.get(userId);
+				if (userAccount == null)
+					throw new NoOpenAccountException("userId: " + userId
+							+ " 未开户");
+				Date now = new Date();
+				// 更新可用余额
+				userAccount.setAvailableBalance(userAccount
+						.getAvailableBalance() + money);
+				// 更新总金额
+				userAccount.setBalance(userAccount.getBalance() + money);
+				// 设置最后更新时间
+				userAccount.setTime(now);
+				// 开启事务
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+				def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+				TransactionStatus status = txManager.getTransaction(def);
+				try {
+					userAccountDao.update(userAccount);
+					this.insertUserBill(userId, money,
+							userAccount.getBalance(),
+							userAccount.getFreezeAmount(),
+							AccountEnum.pt_balance, businessType, requestNo,
+							operatorDetail, operatorInfo);
+					// 提交事务
+					txManager.commit(status);
+				} catch (Exception e) {
+					// 回滚事务
+					txManager.rollback(status);
+					throw e;
+				}
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				DRJedisDLock.releaseDLock(USER_ACCOUNT_DLOCK + userId,
+						requestNo);
+			}
+		}
+
+	}
+
+	@Override
+	public void transferOut(String userId, double money,
+			BusinessEnum businessType, String operatorInfo,
+			String operatorDetail, String requestNo)
+			throws NoOpenAccountException, InsufficientBalanceException {
+		if (DRJedisDLock.getDLock(USER_ACCOUNT_DLOCK + userId, requestNo)) {
+			try {
+				UserAccount userAccount = userAccountDao.get(userId);
+				if (userAccount == null)
+					throw new NoOpenAccountException("userId: " + userId
+							+ " 未开户");
+				if (userAccount.getAvailableBalance() < money)
+					throw new InsufficientBalanceException("userId: " + userId
+							+ "可用余额不足");
+
+				Date now = new Date();
+				// 更新可用余额
+				userAccount.setAvailableBalance(userAccount
+						.getAvailableBalance() - money);
+				// 更新总金额
+				userAccount.setBalance(userAccount.getBalance() - money);
+				// 设置最后更新时间
+				userAccount.setTime(now);
+
+				// 开启事务
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+				def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+				TransactionStatus status = txManager.getTransaction(def);
+				try {
+					userAccountDao.update(userAccount);
+					this.insertUserBill(userId, money,
+							userAccount.getBalance(),
+							userAccount.getFreezeAmount(),
+							AccountEnum.to_balance, businessType, requestNo,
+							operatorDetail, operatorInfo);
+					// 提交事务
+					txManager.commit(status);
+				} catch (Exception e) {
+					// 回滚事务
+					txManager.rollback(status);
+					throw e;
+				}
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				DRJedisDLock.releaseDLock(USER_ACCOUNT_DLOCK + userId,
+						requestNo);
+			}
+		}
+	}
+
+	@Override
+	public void freeze(String userId, double money, BusinessEnum businessType,
+			String operatorInfo, String operatorDetail, String requestNo)
+			throws NoOpenAccountException, InsufficientBalanceException {
+		if (DRJedisDLock.getDLock(USER_ACCOUNT_DLOCK + userId, requestNo)) {
+			try {
+				UserAccount userAccount = userAccountDao.get(userId);
+				if (userAccount == null)
+					throw new NoOpenAccountException("userId: " + userId
+							+ " 未开户");
+				if (userAccount.getAvailableBalance() < money)
+					throw new InsufficientBalanceException("userId: " + userId
+							+ "可用余额不足");
+
+				Date now = new Date();
+				// 更新可用余额
+				userAccount.setAvailableBalance(userAccount
+						.getAvailableBalance() - money);
+				// 更新冻结金额
+				userAccount.setFreezeAmount(userAccount.getFreezeAmount()
+						+ money);
+				// 设置最后更新时间
+				userAccount.setTime(now);
+				// 开启事务
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+				def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+				TransactionStatus status = txManager.getTransaction(def);
+				try {
+					userAccountDao.update(userAccount);
+					this.insertUserBill(userId, money,
+							userAccount.getBalance(),
+							userAccount.getFreezeAmount(), AccountEnum.freeze,
+							businessType, requestNo, operatorDetail,
+							operatorInfo);
+					// 提交事务
+					txManager.commit(status);
+				} catch (Exception e) {
+					// 回滚事务
+					txManager.rollback(status);
+					throw e;
+				}
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				DRJedisDLock.releaseDLock(USER_ACCOUNT_DLOCK + userId,
+						requestNo);
+			}
+		}
+	}
+
+	@Override
+	public void unfreeze(String userId, double money,
+			BusinessEnum businessType, String operatorInfo,
+			String operatorDetail, String requestNo)
+			throws NoOpenAccountException, InsufficientFreezeAmountException {
+		if (DRJedisDLock.getDLock(USER_ACCOUNT_DLOCK + userId, requestNo)) {
+			try {
+				UserAccount userAccount = userAccountDao.get(userId);
+				if (userAccount == null)
+					throw new NoOpenAccountException("userId: " + userId
+							+ " 未开户");
+				if (userAccount.getFreezeAmount() < money)
+					throw new InsufficientFreezeAmountException();
+
+				Date now = new Date();
+				// 更新可用余额
+				userAccount.setAvailableBalance(userAccount
+						.getAvailableBalance() + money);
+				// 更新冻结金额
+				userAccount.setFreezeAmount(userAccount.getFreezeAmount()
+						- money);
+				// 设置最后更新时间
+				userAccount.setTime(now);
+				// 开启事务
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+				def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+				TransactionStatus status = txManager.getTransaction(def);
+				try {
+					userAccountDao.update(userAccount);
+					this.insertUserBill(userId, money,
+							userAccount.getBalance(),
+							userAccount.getFreezeAmount(),
+							AccountEnum.unfreeze, businessType, requestNo,
+							operatorDetail, operatorInfo);
+					// 提交事务
+					txManager.commit(status);
+				} catch (Exception e) {
+					// 回滚事务
+					txManager.rollback(status);
+					throw e;
+				}
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				DRJedisDLock.releaseDLock(USER_ACCOUNT_DLOCK + userId,
+						requestNo);
+			}
+		}
+	}
+
+	@Override
+	public void tofreeze(String userId, double money,
+			BusinessEnum businessType, String operatorInfo,
+			String operatorDetail, String requestNo)
+			throws NoOpenAccountException, InsufficientFreezeAmountException {
+		if (DRJedisDLock.getDLock(USER_ACCOUNT_DLOCK + userId, requestNo)) {
+			try {
+				UserAccount userAccount = userAccountDao.get(userId);
+				if (userAccount == null)
+					throw new NoOpenAccountException("userId: " + userId
+							+ " 未开户");
+				if (userAccount.getFreezeAmount() < money)
+					throw new InsufficientFreezeAmountException();
+
+				Date now = new Date();
+				// 更新总金额
+				userAccount.setBalance(userAccount.getBalance() - money);
+				// 更新冻结金额
+				userAccount.setFreezeAmount(userAccount.getFreezeAmount()
+						- money);
+				// 设置最后更新时间
+				userAccount.setTime(now);
+				// 开启事务
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+				def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+				TransactionStatus status = txManager.getTransaction(def);
+				try {
+					userAccountDao.update(userAccount);
+					this.insertUserBill(userId, money,
+							userAccount.getBalance(),
+							userAccount.getFreezeAmount(),
+							AccountEnum.to_frozen, businessType, requestNo,
+							operatorDetail, operatorInfo);
+					// 提交事务
+					txManager.commit(status);
+				} catch (Exception e) {
+					// 回滚事务
+					txManager.rollback(status);
+					throw e;
+				}
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				DRJedisDLock.releaseDLock(USER_ACCOUNT_DLOCK + userId,
+						requestNo);
+			}
+		}
+	}
+
+	/**
+	 * 插入资金流水
+	 * 
+	 * @param userId
+	 *            用户id
+	 * @param money
+	 *            变动资金
+	 * @param balance
+	 *            账户余额
+	 * @param freezeAmount
+	 *            冻结金额
+	 * @param accountType
+	 *            变动类型
+	 * @param businessType
+	 *            业务类型
+	 * @param requestNo
+	 *            流水号
+	 * @param operatorDetail
+	 *            描述
+	 * @param operatorInfo
+	 *            描述(用户看)
+	 */
+	private void insertUserBill(String userId, double money, double balance,
+			double freezeAmount, AccountEnum accountType,
+			BusinessEnum businessType, String requestNo, String operatorDetail,
+			String operatorInfo) {
+		// 插入资金流水
+		UserBill userBill = new UserBill();
+		userBill.setId(IdUtil.randomUUID());
+		userBill.setMoney(money);
+		userBill.setBalance(balance);
+		userBill.setFreezeAmount(freezeAmount);
+		userBill.setDetail(operatorDetail);
+		userBill.setType(accountType.toString());
+		userBill.setTypeInfo(operatorInfo);
+		userBill.setBusinessType(businessType.toString());
+		userBill.setRequestNo(requestNo);
+		userBill.setUserId(userId);
+		userBill.setTime(new Date());
+		long seqNum = 1L;
+		UserBill ub = userAccountDao.getLastUserBillByUserId(userId);
+		if (ub != null)
+			seqNum += ub.getSeqNum();
+		userBill.setSeqNum(seqNum);
+
+		userAccountDao.insertUserBill(userBill);
+	}
+
+	@Override
+	public void createUserAccount(String userId, String password) {
+		UserAccount userAccount = new UserAccount();
+		userAccount.setUserId(userId);
+		userAccount.setAutoInvest(0);
+		userAccount.setAutoRepay(0);
+		userAccount.setPassword(password);
+		userAccount.setAvailableBalance(0D);
+		userAccount.setBalance(0D);
+		userAccount.setFreezeAmount(0D);
+		userAccount.setTime(new Date());
+		userAccountDao.insert(userAccount);
+	}
+
+	@Override
+	public void initUserAccount(String userId, double balance, double freeze) {
+		UserAccount userAccount = new UserAccount();
+		userAccount.setUserId(userId);
+		userAccount.setAutoInvest(0);
+		userAccount.setAutoRepay(0);
+		userAccount.setPassword(null);
+		userAccount.setAvailableBalance(balance);
+		userAccount.setBalance(balance + freeze);
+		userAccount.setFreezeAmount(freeze);
+		userAccount.setTime(new Date());
+		userAccountDao.insert(userAccount);
+	}
+
+	@Override
+	public PageInfo<UserAccount> getUserAccounts(int pageNo, int pageSize,
+			Map<String, Object> map) {
+		return userAccountDao.getUserAccounts(pageNo, pageSize, map);
+	}
+}

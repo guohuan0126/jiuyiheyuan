@@ -1,0 +1,64 @@
+package com.duanrong.business.user.dao.impl;
+
+
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Repository;
+
+import base.dao.impl.BaseDaoImpl;
+
+import com.duanrong.business.user.dao.RedPacketDao;
+import com.duanrong.business.user.model.RedPacket;
+import com.duanrong.business.user.model.Rule;
+
+/**
+ * @author xiao
+ * @date 2015年1月22日 下午3:06:54
+ */
+
+@Repository
+public class PecketDaoImpl extends BaseDaoImpl<RedPacket> implements RedPacketDao {
+
+	
+	public PecketDaoImpl() {
+		this.setMapperNameSpace("com.duanrong.business.user.mapper.RedPacketMapper");
+	}
+	
+	@Override
+	public Rule getRuleById(int id) {
+		
+		return this.getSqlSession().selectOne(this.getMapperNameSpace() + ".getRuleById", id);
+	}
+
+	@Override
+	public int getRedPacketByRuleId(String mobile) {
+		Integer count = getSqlSession().selectOne(getMapperNameSpace() + ".getRedPacketByRuleId", mobile);
+		return count == null ? 0 : count;
+	}
+
+
+	@Override
+	public void updateExpired() {
+		getSqlSession().update(getMapperNameSpace() + ".updateExpired");
+		
+	}
+	
+	@Override
+	public void updateDetailMobileNumber(String oldNumber, String newNumber) {
+		Map<String, Object> params = new HashMap<>();
+		params.put("oldNumber", oldNumber);
+		params.put("newNumber", newNumber);
+		this.getSqlSession().update(this.getMapperNameSpace() + ".updateDetailMobileNumber", params);
+	}
+	
+	@Override
+	public void updateShareMobileNumber(String oldNumber, String newNumber) {
+		Map<String, Object> params = new HashMap<>();
+		params.put("oldNumber", oldNumber);
+		params.put("newNumber", newNumber);
+		this.getSqlSession().update(this.getMapperNameSpace() + ".updateShareMobileNumber", params);
+	}
+}

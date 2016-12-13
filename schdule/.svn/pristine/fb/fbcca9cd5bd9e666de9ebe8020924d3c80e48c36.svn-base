@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.maxinvestrecord.mapper.MaxInvestRecordMapper">
+	<resultMap type="MaxInvestRecord" id="MaxInvestRecordRM">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="userSource" column="user_source" />
+		<result property="registerTime" column="register_time" />
+		<result property="maxInvest" column="max_invest" />
+		<result property="currentInvest" column="current_invest" />
+		<result property="createTime" column="create_time" />
+		<result property="updateTime" column="update_time" />
+	</resultMap>
+	
+	<select id="selectAll"  resultMap="MaxInvestRecordRM">
+		select * from user_maxinvest_record
+	</select>
+	
+	<insert id="insert"  useGeneratedKeys="true" keyProperty="id">
+		insert into user_maxinvest_record 
+		(user_id,user_source,register_time,max_invest,current_invest,create_time,update_time)
+		values
+		(
+		#{userId}, #{userSource}, #{registerTime}, #{maxInvest}, 
+		#{currentInvest}, #{createTime}, #{updateTime})	
+	</insert>
+	
+	<update id="update">
+		update user_maxinvest_record set
+			max_invest=#{maxInvest},current_invest=#{currentInvest},update_time=#{updateTime}
+		where id=#{id}	
+	</update>
+	
+	<select id="getInvestRecord" resultMap="MaxInvestRecordRM">
+	select * from user_maxinvest_record where user_id=#{userId}
+	</select>
+	
+</mapper>

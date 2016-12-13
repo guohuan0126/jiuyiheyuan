@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.duanrong.business.demand.mapper.DemandtreasureTransferInMapper">
+	<resultMap type="DemandtreasureTransferIn" id="DemandtreasureTransferInRM">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="money" column="money" />
+		<result property="sendedTime" column="sended_time" />
+		<result property="freezeTime" column="freeze_time" />
+		<result property="confirmTime" column="confirm_time" />
+		<result property="transferWay" column="transfer_way" />
+		<result property="status" column="status" />
+		<association property="user" column="user_id"
+			resultMap="com.duanrong.business.user.mapper.UserMapper.userRM" />
+	</resultMap>
+	<resultMap type="DemandtreasureTransferIn" id="DemandtreasureTransferInRM1">
+		<result property="summoney" column="summoney" />
+		<result property="total" column="total" />
+	</resultMap>
+
+	<select id="demandInit" resultMap="DemandtreasureTransferInRM">
+		select (SELECT IFNULL(SUM(money), 0)
+		from demand_treasure_bill where type = 'in' and user_id = b.user_id)
+		- (SELECT IFNULL(SUM(money), 0) from demand_treasure_bill where type =
+		'out' and user_id = b.user_id) as money, b.user_id as user_id, b.bill_id as id
+		from demand_treasure_bill b where b.type='in' GROUP BY b.user_id HAVING money > 0;
+	</select>
+
+
+	<select id="gettotal" resultMap="DemandtreasureTransferInRM1">
+		select count(*) as
+		total,ROUND(SUM(money),2) as summoney from demand_treasure_transferIn
+		where status='freeze'
+	</select>
+
+	<select id="find" resultMap="DemandtreasureTransferInRM"
+		parameterType="DemandtreasureTransferIn">
+		SELECT *
+		FROM demand_treasure_transferIn where
+		status=#{status}
+	</select>
+	<select id="findStatus" resultMap="DemandtreasureTransferInRM"
+		parameterType="DemandtreasureTransferIn">
+		SELECT *
+		FROM demand_treasure_transferIn where status
+		in('sended','freeze')
+	</select>
+	<select id="findTran" resultMap="DemandtreasureTransferInRM"
+		parameterType="DemandtreasureTransferIn">
+		SELECT *
+		FROM demand_treasure_transferIn where
+		status=#{status} and sended_time &lt;=date_sub(now(),interval 3
+		minute)
+	</select>
+
+
+	<select id="pageInfo" resultMap="DemandtreasureTransferInRM">
+		select
+		r.*,u.realname,u.mobile_number from demand_treasure_transferIn r left
+		join user u on r.user_id=u.id
+		where r.status='freeze'
+		ORDER BY
+		r.sended_time
+	</select>
+
+	<update id="update" parameterType="DemandtreasureTransferIn">
+		UPDATE demand_treasure_transferIn
+		<set>
+			<if test="userId != null">
+				user_id=#{userId},
+			</if>
+			<if test="money != null and money != 0">
+				money=#{money},
+			</if>
+			<if test="sendedTime != null">
+				sended_time =#{sendedTime},
+			</if>
+			<if test="freezeTime != null">
+				freeze_time =#{freezeTime},
+			</if>
+			<if test="confirmTime != null">
+				confirm_time =#{confirmTime},
+			</if>
+			<if test="transferWay != null">
+				transfer_way =#{transferWay},
+			</if>
+			<if test="status != null">
+				status =#{status},
+			</if>
+			<if test="fork != 0">
+				fork =#{fork},
+			</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	<select id="get" parameterType="string" resultMap="DemandtreasureTransferInRM">
+		SELECT * FROM
+		demand_treasure_transferIn where id=#{id}
+	</select>
+	<!-- 按状态获取用户转入总额 -->
+	<select id="getInMoneySumByStatus" parameterType="map"
+		resultType="double">
+		SELECT SUM(money) FROM demand_treasure_transferin
+		WHERE
+		(status = 'sended' or status = 'freeze') AND user_id = #{userId}
+	</select>
+
+	<!-- 获取用户转入总额 -->
+	<select id="getInSumMoney" parameterType="string" resultType="double">
+		SELECT SUM(money) from demand_treasure_transferin where
+		`status`='confirm' and user_id=#{userId}
+	</select>
+
+	<!-- 获取用户转入总额 -->
+	<select id="GetTransferInTop" parameterType="map"
+		resultMap="DemandtreasureTransferInRM">
+		SELECT * from demand_treasure_transferin WHERE user_id=
+		#{userId} and status='confirm' ORDER BY money desc LIMIT #{limit};
+	</select>
+	
+	<!-- 获取用户转入总额 -->
+	<select id="getTransferInByFork" resultMap="DemandtreasureTransferInRM">
+		select * from
+		demand_treasure_transferin where status = 'confirm' and fork = 0;
+	</select>
+	
+	<!-- 查询用户活期在投金额 -->
+	<select id="getDemandMoney" resultType="double">
+	SELECT  ROUND(((SELECT IFNULL(sum(trin.money),0) FROM demand_treasure_transferin trin WHERE trin.status='confirm' AND trin.user_id=#{userId})
+	-(SELECT IFNULL(sum(trout.principal),0) FROM demand_treasure_transferout trout WHERE trout.user_id=#{userId})),0) AS demandMoney
+	</select>
+</mapper>

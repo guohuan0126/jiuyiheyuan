@@ -1,0 +1,11 @@
+package com.duanrong.business.maxinvestrecord.service;
+
+import com.duanrong.business.maxinvestrecord.model.MaxInvestRecord;
+
+public interface MaxInvestRecordService {
+	
+	//根据用户id查询再投峰值记录
+	public MaxInvestRecord getInvestRecord(String userId);
+	public void insert(MaxInvestRecord record);
+	public void update(MaxInvestRecord record);
+}

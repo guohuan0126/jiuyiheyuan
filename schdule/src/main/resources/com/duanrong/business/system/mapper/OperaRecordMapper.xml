@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.system.mapper.OperaRecordMapper">
+	<resultMap type="OperaRecord" id="OperaRecordRM">
+		<id property="id" column="id" />
+		<result property="title" column="title" />
+		<result property="userid" column="userid" />
+		<result property="content" column="content" />
+		<result property="time" column="time" />
+	</resultMap>
+
+	<insert id="insert" parameterType="OperaRecord">
+		INSERT INTO admin_operationrecord
+		(title,userid,content, time)
+		VALUES
+		(#{title},
+		#{userid}, #{content}, #{time})
+	</insert>
+     <select id="pageInfo" parameterType="map" resultMap="OperaRecordRM">
+		SELECT *
+		FROM admin_operationrecord
+		<where>
+		    <if test="userId != null and userId != ''">
+				AND userid= #{userId}
+			</if>
+			<if test="title != null and title != ''">
+				AND title like '%${title}%'
+			</if>
+		</where>
+		ORDER BY time DESC
+	</select>
+</mapper>

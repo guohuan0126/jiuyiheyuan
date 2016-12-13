@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.user.mapper.AccountCheckingMapper">
+	<resultMap type="AccountChecking" id="AccountCheckingRM">
+		<id property="id" column="id" />
+		<result property="balance" column="balance" />
+		<result property="availableAmount" column="available" />
+		<result property="freezeAmount" column="freeze" />
+		<result property="ebaoBalance" column="yeepay_balance" />
+		<result property="ebaoAvailableAmount" column="yeepay_available" />
+		<result property="ebaoFreezeAmount" column="yeepay_freeze" />
+		<result property="userId" column="user_id" />
+		<result property="time" column="time" />
+	</resultMap>
+
+	<insert id="insert" parameterType="AccountChecking">
+		INSERT INTO
+		account_checking(id,
+		balance, available, freeze,
+		yeepay_balance,
+		yeepay_available,
+		yeepay_freeze, user_id,
+		time)
+		VALUES(#{id}, #{balance},
+		#{availableAmount},
+		#{freezeAmount},
+		#{ebaoBalance},
+		#{ebaoAvailableAmount}, #{ebaoFreezeAmount},
+		#{userId},
+		#{time})
+	</insert>
+
+	<!-- 分页查询参数为Map -->
+	<select id="pageLite4Map" parameterType="map" resultMap="AccountCheckingRM">
+		SELECT * FROM account_checking
+		<where>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND time >= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				<![CDATA[AND time <= #{end}]]>
+			</if>
+		</where>
+		ORDER BY time DESC
+	</select>
+
+	<select id="getAccountListByWhere" resultMap="AccountCheckingRM">
+		SELECT * from account_checking where ABS(yeepay_available - available ) > 10 and user_id not in ('QRzY3uq6zmAnazfy', 'ANZraaYr2I3aktaq') 
+		and time > curdate() ORDER BY time desc;
+	</select>
+</mapper>

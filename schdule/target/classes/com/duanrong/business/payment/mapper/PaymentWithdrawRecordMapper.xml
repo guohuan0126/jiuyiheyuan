@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.payment.mapper.PaymentWithdrawRecordMapper">
+	<resultMap type="PaymentWithdrawRecord" id="PaymentWithdrawRecordRM">
+		<id property="id" column="id" />
+		<result property="markId" column="mark_id" />
+		<result property="operator" column="operator" />
+		<result property="money" column="money" />
+		<result property="userId" column="user_id" />
+		<result property="requestData" column="request_data" />
+		<result property="requestTime" column="request_time" />
+		<result property="requestUrl" column="request_url" />
+		<result property="responseData" column="response_data" />
+		<result property="responseTime" column="response_time" />
+		<result property="confirmResponseData" column="confirm_response_data" />
+		<result property="confirmResponseTime" column="confirm_response_time" />
+		<result property="status" column="status" />
+		<result property="paymentId" column="payment_id" />
+		<result property="transferWay" column="transfer_way" />	
+		<result property="isDefrayPay" column="is_defray_pay" />
+		<result property="type" column="type" />
+		<result property="cardNo" column="card_no" />
+		<result property="cardType" column="card_type" />
+		<result property="cardCode" column="card_code" />
+		<result property="cardId" column="card_id" />
+	</resultMap>
+	
+	<update id="update" parameterType="PaymentWithdrawRecord">
+		UPDATE payment_withdraw_record
+		<set>
+			<if test="markId!=null">mark_id=#{markId},</if>
+			<if test="operator!=null">operator=#{operator},</if>
+			<if test="status!=null">status=#{status},</if>
+			<if test="requestUrl!=null">request_url=#{requestUrl},</if>
+			<if test="requestTime!=null">request_time=#{requestTime},</if>
+			<if test="requestData!=null">request_data=#{requestData},</if>
+			<if test="responseTime!=null">response_time=#{responseTime},</if>
+			<if test="responseData!=null">response_data=#{responseData},</if>
+			<if test="confirmResponseData!=null">confirm_response_data=#{confirmResponseData},</if>
+			<if test="confirmResponseTime!=null">confirm_response_time=#{confirmResponseTime},</if>
+			<if test="paymentId!=null">payment_id=#{paymentId},</if>
+			<if test="userId!=null">user_id=#{userId},</if>
+			<if test="isDefrayPay!=null">is_defray_pay=#{isDefrayPay},</if>
+			<if test="type!=null">type=#{type},</if>
+			<if test="cardNo!=null">card_no=#{cardNo},</if>
+			<if test="cardType!=null">card_type=#{cardType},</if>
+			<if test="cardCode!=null">card_code=#{cardCode},</if>
+			<if test="cardId!=null">card_id=#{cardId},</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	
+	<select id="getByCondition" parameterType="map"
+		resultMap="PaymentWithdrawRecordRM">
+		SELECT * FROM payment_Withdraw_record
+		<where>
+			<if test="markId != null and markId != ''">AND mark_id = #{markId}</if>
+			<if test="operator != null and operator != ''">AND operator = #{operator}</if>
+			<if test="paymentId != null and paymentId != ''">AND payment_id = #{paymentId}</if>
+			<if test="status!=null and status != '' ">AND status = #{status}</if>
+			<if test="isDefrayPay != null and isDefrayPay != ''">AND is_defray_pay = #{isDefrayPay}</if>
+		</where>
+	</select>
+	
+	<update id="updateBatch" parameterType="map">
+		UPDATE payment_Withdraw_record
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(operator)">operator=#{operator},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(status)">`status`=#{status},</if>
+		</set>
+		WHERE id in
+		<foreach collection="records" item="item" open="(" separator=","
+			close=")">
+			#{item.id}
+		</foreach>
+	</update>
+	
+	<select id="getUnCallbackOperations" parameterType="PaymentWithdrawRecord" resultMap="PaymentWithdrawRecordRM">
+		SELECT * FROM payment_Withdraw_record
+		<where>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(status)">AND `status` = #{status}</if>
+			<if test="requestTime != null">
+				<![CDATA[AND request_time < #{requestTime}]]>
+			</if>
+		</where>
+	</select>
+	
+	<select id="getYeeapyOperations" parameterType="date" resultMap="PaymentWithdrawRecordRM">
+		SELECT * FROM payment_Withdraw_record where payment_id = 'JDpay' and status in ('sended', 'frozen')
+			<if test="date != null">
+				<![CDATA[AND request_time < #{date}]]>
+			</if>
+	</select>
+	
+	<select id="getDefraypayOperations" parameterType="date" resultMap="PaymentWithdrawRecordRM">
+		SELECT * FROM payment_Withdraw_record where payment_id = 'JDpay' and is_defray_pay = 'sended'
+			<if test="date != null">
+				<![CDATA[AND request_time < #{date}]]>
+			</if>
+	</select>
+</mapper>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.payment.mapper.PaymentAdvancefundMapper">
+	<resultMap type="PaymentAdvancefund" id="PaymentAdvancefundRM">
+		<id property="id" column="id" />
+		<result property="money" column="money" />
+		<result property="warnMoney" column="warn_money" />
+	</resultMap>
+	
+	<!-- 获取垫付资金和阀值 -->
+	<select id="getPaymentAdvancefund" resultMap="PaymentAdvancefundRM">
+		SELECT * from payment_advancefund  
+	</select>
+	
+	<!-- 修改垫付资金 -->
+	<update id="update" parameterType="PaymentAdvancefund">
+		UPDATE payment_advancefund
+		<set>
+			<if test="money != null">money = #{money},</if>
+		</set>
+		WHERE id = #{id}
+	</update>
+
+</mapper>

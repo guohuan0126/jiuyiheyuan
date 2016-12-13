@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.repay.mapper.RepayInvestMapper">
+	<resultMap type="RepayInvest" id="repayInvestRM">
+		<id property="id" column="id" />
+		<result property="repayId" column="repay_id" />
+		<result property="corpus" column="corpus" />
+		<result property="interest" column="interest" />
+		<result property="investAllowanceInterest" column="invest_allowance_interest" />
+		<result property="investUserId" column="invest_user_id" />
+		<result property="investId" column="invest_id" />			
+		<result property="sendAllowanceResult" column="send_allowance_result" />	
+		<result property="sendRedpacketResult" column="send_redpacket_result" />
+		<result property="rewardMoney" column="reward_money"/>
+		<result property="sendAllowanceStatus" column="send_allowance_status" />
+		<result property="sendRedpacketStatus" column="send_redpacket_status" />
+		<result property="sendAllowanceTime" column="send_allowance_time" />
+		<result property="sendRedpacketTime" column=" send_redpacket_time" />
+	</resultMap>
+
+	<select id="getByCondition" parameterType="RepayInvest" resultMap="repayInvestRM">
+		SELECT * FROM repay_invest
+		WHERE repay_id =
+		#{repayId} AND invest_user_id = #{investUserId} AND invest_id = #{investId}
+	</select>
+	
+	<select id="getByRepayId" parameterType="string" resultMap="repayInvestRM">
+		SELECT * FROM repay_invest
+		WHERE repay_id =
+		#{repayId} and (send_allowance_status=0 or send_redpacket_status=0)
+	</select>
+
+	<insert id="insert" parameterType="RepayInvest">
+		INSERT INTO repay_invest
+		(repay_id, corpus, interest,invest_allowance_interest,
+		invest_user_id, invest_id)
+		VALUES(#{repayId},#{corpus},#{interest},#{investAllowanceInterest},#{investUserId},
+		#{investId})
+	</insert>
+
+	<update id="update" parameterType="RepayInvest">
+		UPDATE repay_invest
+		<set>
+			<if test="corpus != null and corpus != 0">corpus = #{corpus},</if>
+			<if test="interest != null and interest != 0">interest = #{interest},</if>
+			<if test="investAllowanceInterest != null and investAllowanceInterest != 0">invest_allowance_interest = #{investAllowanceInterest},</if>
+			<if test="sendAllowanceStatus != null">
+			send_allowance_status = #{sendAllowanceStatus},
+			</if>
+			<if test="sendRedpacketStatus != null">
+			send_redpacket_status = #{sendRedpacketStatus},</if>
+			<if test="sendAllowanceTime != null ">send_allowance_time=#{sendAllowanceTime},</if>
+			<if test="sendRedpacketTime != null">send_redpacket_time=#{sendRedpacketTime},</if>	
+			<if test="sendAllowanceResult != null">send_allowance_result=#{sendAllowanceResult},</if>		
+			<if test="sendRedpacketResult != null">send_redpacket_result=#{sendRedpacketResult},</if>
+		</set>
+		WHERE repay_id =
+		#{repayId} AND invest_user_id = #{investUserId} AND invest_id = #{investId}
+	</update>
+	
+	<select id="find" parameterType="RepayInvest" resultMap="repayInvestRM">
+		SELECT * FROM repay_invest
+		WHERE repay_id =
+		#{repayId}
+	</select>
+	<update id="updateBatch" parameterType="RepayInvest">
+		UPDATE repay_invest
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(sendAllowanceStatus)">send_allowance_status=#{sendAllowanceStatus},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(sendRedpacketStatus)">send_redpacket_status=#{sendRedpacketStatus},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(sendAllowanceTime)">send_allowance_time=#{sendAllowanceTime},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(sendRedpacketTime)">send_redpacket_time=#{sendRedpacketTime},</if>	
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(sendAllowanceResult)">send_allowance_result=#{sendAllowanceResult},</if>		
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(sendRedpacketResult)">send_redpacket_result=#{sendRedpacketResult},</if>
+		</set>
+		WHERE repay_id =
+		#{repayId}
+	</update>
+	
+	
+</mapper>

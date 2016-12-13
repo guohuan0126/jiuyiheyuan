@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+	PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<settings>
+		<setting name="logImpl" value="STDOUT_LOGGING" />
+	</settings>
+	<typeAliases>
+		<!-- alias的值都写类名，例如BankCard -->
+		<typeAlias type="com.duanrong.business.bankcard.model.BankCard" alias="BankCard" />
+		<typeAlias type="com.duanrong.business.user.model.User" alias="user" />
+		<typeAlias type="com.duanrong.business.user.model.RedPacket" alias="redPacket" />
+		<typeAlias type="com.duanrong.business.award.model.AwardItem" alias="awardItem" />
+		<typeAlias type="com.duanrong.business.award.model.AwardItemUser" alias="awardItemUser" />
+		<typeAlias type="com.duanrong.business.user.model.Rule" alias="rule" />
+		<typeAlias type="com.duanrong.business.user.model.UserOtherInfo" alias="userOtherInfo" />
+		<typeAlias type="com.duanrong.business.user.model.Role" alias="role" />
+		<typeAlias type="com.duanrong.business.loan.model.Loan" alias="loan" />
+		<typeAlias type="com.duanrong.business.invest.model.Invest" alias="invest" />
+		<typeAlias type="com.duanrong.business.invest.model.InvestConfirmation" alias="invest2" />
+		<typeAlias type="com.duanrong.business.recharge.model.Recharge" alias="Recharge" />
+		<typeAlias type="com.duanrong.business.withdraw.model.WithdrawCash" alias="withdrawCash" />
+		<typeAlias type="com.duanrong.business.user.model.UserMoney" alias="userMoney" />
+		<typeAlias type="com.duanrong.business.user.model.Information" alias="information" />
+		<typeAlias type="com.duanrong.business.trusteeship.model.TrusteeshipAccount" alias="trusteeshipAccount" />
+		<typeAlias type="com.duanrong.business.trusteeship.model.TrusteeshipOperation" alias="trusteeshipOperation" />
+		<typeAlias type="com.duanrong.business.user.model.AuthInfo" alias="authInfo" />
+		<typeAlias type="com.duanrong.business.repay.model.Repay" alias="repay" />
+		<typeAlias type="com.duanrong.business.node.model.Node" alias="Node" />
+		<typeAlias type="com.duanrong.business.node.model.CategoryTerm" alias="categoryTerm" />
+		<typeAlias type="com.duanrong.business.user.model.UserLoginLog" alias="UserLoginLog" />
+		<typeAlias type="com.duanrong.business.risk.model.SystemBill" alias="SystemBill" />
+		<typeAlias type="com.duanrong.business.sms.model.Sms" alias="Sms" />
+		<typeAlias type="com.duanrong.business.autoinvest.model.AutoInvest" alias="AutoInvest" />
+		<typeAlias type="com.duanrong.business.autoinvest.model.AutoInvestHistory" alias="autoInvestHistory" />
+		<typeAlias type="com.duanrong.business.link.model.Link" alias="Link" />
+		<typeAlias type="com.duanrong.business.link.model.LinkType" alias="LinkType" />		
+		<typeAlias type="com.duanrong.business.loan.model.ApplyEnterpriseLoan" alias="ApplyEnterpriseLoan" />
+		<typeAlias type="com.duanrong.business.loan.model.Vehicle" alias="Vehicle" />
+		<typeAlias type="com.duanrong.business.loan.model.Enterprise" alias="Enterprise" />
+		<typeAlias type="com.duanrong.business.loan.model.House" alias="House" />
+		<typeAlias type="com.duanrong.business.loan.model.Supplychain" alias="Supplychain" />
+		<typeAlias type="com.duanrong.business.loan.model.Ruralfinance" alias="Ruralfinance" />
+		<typeAlias type="com.duanrong.business.loan.model.RuralfinanceLoaners" alias="RuralfinanceLoaners" />
+		<typeAlias type="com.duanrong.business.platformtransfer.model.PlatformTransfer" alias="platformTransfer" /> 
+		<typeAlias type="com.duanrong.business.loan.model.BannerPicture" alias="bannerPicture" /> 
+		<typeAlias type="com.duanrong.business.token.model.AccessToken" alias="AccessToken" />
+		<typeAlias type="com.duanrong.business.invest.model.InvestRedpacket" alias="investRedpacket" /> 
+		<!--  新版后台权限部分   -->
+		<typeAlias type="com.duanrong.business.permission.model.NewMenu" alias="newMenu" />
+		<typeAlias type="com.duanrong.business.permission.model.Permission" alias="permission" />
+		<typeAlias type="com.duanrong.business.user.model.Template" alias="template" />
+		<typeAlias type="com.duanrong.business.user.model.Config" alias="config" />
+		<typeAlias type="com.duanrong.business.loan.model.FixedBorrowers" alias="fixedborrowers" />
+		
+		<!--  新版后台工作流   -->
+		<typeAlias type="com.duanrong.business.flow.model.Flow" alias="flow" />
+		<typeAlias type="com.duanrong.business.flow.model.FlowNode" alias="flowNode" />
+		<typeAlias type="com.duanrong.business.flow.model.ItemFlow" alias="itemFlow" />
+		
+		<!-- 微信活动 weixin-->
+		<typeAlias type="com.duanrong.business.award.model.WeiXinActivity" alias="weixin" />
+		
+	    <!-- 活动专题 -->
+		<typeAlias type="com.duanrong.business.activity.model.Activity" alias="Activity" />
+		
+		<!-- 加息活动 -->
+		<typeAlias type="com.duanrong.business.activity.model.RedPacketRule" alias="RedPacketRule"/>
+		<typeAlias type="com.duanrong.business.activity.model.RedPacketDetail" alias="RedPacketDetail"/>
+		
+		<!-- APP -->
+		<typeAlias type="com.duanrong.business.app.model.APP" alias="APP" />
+		<typeAlias type="com.duanrong.business.app.model.AppFeedback" alias="AppFeedback" />
+		<typeAlias type="com.duanrong.business.app.model.AppBanner" alias="AppBanner" />
+		
+		<!-- 还款追踪 -->
+		<typeAlias type="com.duanrong.business.repaytracking.model.RepayTracking" alias="RepayTracking" />
+		<typeAlias type="com.duanrong.business.repay.model.RepayInvest" alias="RepayInvest" />
+		 <typeAlias type="com.duanrong.business.user.model.AccountCount" alias="AccountCount" />
+		 <typeAlias type="com.duanrong.business.user.model.AccountChecking" alias="AccountChecking" />
+		<typeAlias type="com.duanrong.business.sms.model.UserMessageTemplate" alias="UserMessageTemplate" />
+		
+		<typeAlias type="base.model.PageData" alias="pageData" />
+		<!-- 消息 -->
+		<typeAlias type="com.duanrong.business.msg.model.Email" alias="email" />
+		<typeAlias type="com.duanrong.business.yeepay.model.Freeze" alias="Freeze" />
+		<!-- 系统 -->
+		<typeAlias type="com.duanrong.business.system.model.OperaRecord" alias="OperaRecord" />
+		<typeAlias type="com.duanrong.business.permission.model.Black" alias="black" />
+		<!-- 用户备注 -->
+		<typeAlias type="com.duanrong.business.user.model.UserVisitInfo" alias="userVisitInfo"/>
+		<!-- 转账授权 -->
+		<typeAlias type="com.duanrong.business.yeepay.model.TransactionAuthorization" alias="TransactionAuthorization"/>
+		<typeAlias type="com.duanrong.business.yeepay.model.TransactionAuthorizationDetail" alias="TransactionAuthorizationDetail"/>
+		<!-- 保障金 -->
+		<typeAlias type="com.duanrong.business.riskfund.model.Riskfund" alias="Riskfund"/>
+		<typeAlias type="com.duanrong.business.riskfund.model.Riskfunddetail" alias="Riskfunddetail"/>
+	    <typeAlias type="com.duanrong.business.riskfund.model.Riskloan" alias="Riskloan"/>
+	    <typeAlias type="com.duanrong.business.yeepay.model.Withhold" alias="Withhold"/>
+	    <typeAlias type="com.duanrong.business.yeepay.model.WithholdBank" alias="WithholdBank"/>
+	    <!-- 活期宝 -->
+	    <typeAlias type="com.duanrong.business.demand.model.Demandtreasure" alias="Demandtreasure"/>
+	    <typeAlias type="com.duanrong.business.demand.model.AvailableMoneyRecord" alias="AvailableMoneyRecord"/>
+	    <typeAlias type="com.duanrong.business.demand.model.DateRate" alias="DateRate"/>
+	    <typeAlias type="com.duanrong.business.demand.model.DemandTreasureBill" alias="DemandTreasureBill"/>
+	    <typeAlias type="com.duanrong.business.demand.model.DemandtreasureTransferIn" alias="DemandtreasureTransferIn"/>
+	    <typeAlias type="com.duanrong.business.demand.model.DemandtreasureTransferOut" alias="DemandtreasureTransferOut"/>
+	    <typeAlias type="com.duanrong.business.demand.model.DemandtreasureGuOut" alias="DemandtreasureGuOut"/>
+	    <typeAlias type="com.duanrong.business.demand.model.DemandtreasureGuOutDetail" alias="DemandtreasureGuOutDetail"/>
+	    <typeAlias type="com.duanrong.business.demand.model.DemandtreasureLoan" alias="DemandtreasureLoan"/>
+	    <typeAlias type="com.duanrong.business.demand.model.DemandTreasureInvest" alias="DemandtreasureInvest"/>
+	    <typeAlias type="com.duanrong.business.demand.model.DemandTreasureOpration" alias="DemandtreasureOpration"/>
+		<!-- vip -->
+		<typeAlias type="com.duanrong.business.loan.model.LoanVip" alias="loanVip" />
+		
+		<typeAlias type="com.duanrong.business.payment.model.PaymentAdvancefund" alias="PaymentAdvancefund"/>
+		<typeAlias type="com.duanrong.business.payment.model.PaymentUserRelation" alias="PaymentUserRelation"/>
+		<typeAlias type="com.duanrong.business.payment.model.PaymentRechargeRecord" alias="PaymentRechargeRecord"/>
+		<typeAlias type="com.duanrong.business.payment.model.PaymentWithdrawRecord" alias="PaymentWithdrawRecord"/>
+		<typeAlias type="com.duanrong.business.payment.model.PaymentYeepayTransferUser" alias="PaymentYeepayTransferUser"/>
+		<typeAlias type="com.duanrong.business.payment.model.PaymentDefrayPay" alias="PaymentDefrayPay"/>
+		
+		<typeAlias type="com.duanrong.business.maxinvestrecord.model.MaxInvestRecord" alias="MaxInvestRecord"/>
+	</typeAliases>	
+	    
+	<plugins>
+		<plugin interceptor="base.model.PaginationInterceptor">
+			<property name="databaseType" value="mysql" />
+		</plugin>
+		
+		<!-- com.github.pagehelper为PageHelper类所在包名 -->
+	    <plugin interceptor="base.pagehelper.PageHelper">
+	        <property name="dialect" value="mysql"/>
+	        <!-- 该参数默认为false -->
+	        <!-- 设置为true时，会将RowBounds第一个参数offset当成pageNum页码使用 -->
+	        <!-- 和startPage中的pageNum效果一样-->
+	        <property name="offsetAsPageNum" value="true"/>
+	        <!-- 该参数默认为false -->
+	        <!-- 设置为true时，使用RowBounds分页会进行count查询 -->
+	        <property name="rowBoundsWithCount" value="true"/>
+	        <!-- 设置为true时，如果pageSize=0或者RowBounds.limit = 0就会查询出全部的结果 -->
+	        <!-- （相当于没有执行分页查询，但是返回结果仍然是Page类型）-->
+	        <property name="pageSizeZero" value="true"/>
+	        <!-- 3.3.0版本可用 - 分页参数合理化，默认false禁用 -->
+	        <!-- 启用合理化时，如果pageNum<1会查询第一页，如果pageNum>pages会查询最后一页 -->
+	        <!-- 禁用合理化时，如果pageNum<1或pageNum>pages会返回空数据 -->
+	        <property name="reasonable" value="true"/>
+	        <!-- 3.5.0版本可用 - 为了支持startPage(Object params)方法 -->
+	        <!-- 增加了一个`params`参数来配置参数映射，用于从Map或ServletRequest中取值 -->
+	        <!-- 可以配置pageNum,pageSize,count,pageSizeZero,reasonable,不配置映射的用默认值 -->
+	        <property name="params" value="pageNum=start;pageSize=limit;pageSizeZero=zero;reasonable=heli;count=contsql"/>
+	    </plugin>
+	</plugins>
+	
+</configuration>

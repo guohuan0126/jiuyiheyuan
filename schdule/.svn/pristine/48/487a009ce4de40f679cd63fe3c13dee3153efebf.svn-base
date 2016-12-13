@@ -1,0 +1,566 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.loan.mapper.LoanDetailMapper">
+
+	<!-- 车押宝 -->
+	<resultMap type="Vehicle" id="VehicleRM">
+		<id property="loanId" column="loan_id" />
+		<result property="brand" column="brand" />
+		<result property="licensePlateNumber" column="license_plate_number" />
+		<result property="kilometreAmount" column="kilometre_amount" />
+		<result property="buyTime" column="buy_time" />
+		<result property="secondHandPrice" column="second_hand_price" />
+		<result property="assessPrice" column="assess_price" />
+		<result property="guaranteeType" column="guarantee_type" />
+		<result property="mortgagee" column="mortgagee" />
+		<result property="guaranteeRate" column="guarantee_rate" />
+		<result property="supervisionMode" column="supervision_mode" />
+		<result property="overdueHandling" column="overdue_handling" />
+		<result property="otherDescription" column="other_description" />
+	</resultMap>
+
+	<insert id="insertVehicle" parameterType="Vehicle">
+		INSERT INTO
+		`loan_vehicle` (`loan_id`, `assess_price`, `brand`,
+		`buy_time`,
+		`guarantee_rate`, `guarantee_type`, `kilometre_amount`,
+		`license_plate_number`, `mortgagee`, `overdue_handling`,
+		`second_hand_price`, `supervision_mode`,`other_description`)
+		VALUES (
+		#{loanId},
+		#{assessPrice},
+		#{brand},#{buyTime}, #{guaranteeRate},
+		#{guaranteeType},#{kilometreAmount},
+		#{licensePlateNumber},
+		#{mortgagee},
+		#{overdueHandling},
+		#{secondHandPrice},
+		#{supervisionMode},
+		#{otherDescription});
+	</insert>
+
+	<update id="updateVehicle" parameterType="Vehicle">
+		UPDATE loan_vehicle
+		<set>
+			<if test="brand != null">brand=#{brand},</if>
+			<if test="licensePlateNumber != null">license_plate_number=#{licensePlateNumber},</if>
+			<if test="kilometreAmount != null">kilometre_amount=#{kilometreAmount},</if>
+			<if test="buyTime != null">buy_time=#{buyTime},</if>
+			<if test="secondHandPrice != null">second_hand_price=#{secondHandPrice},</if>
+			<if test="assessPrice != null">assess_price=#{assessPrice},</if>
+			<if test="guaranteeType != null">guarantee_type=#{guaranteeType},</if>
+			<if test="mortgagee != null">mortgagee=#{mortgagee},</if>
+			<if test="guaranteeRate != null">guarantee_rate=#{guaranteeRate},</if>
+			<if test="supervisionMode != null">supervision_mode=#{supervisionMode},</if>
+			<if test="overdueHandling != null">overdue_handling=#{overdueHandling},</if>
+			<if test="otherDescription != null">other_description=#{otherDescription},</if>
+		</set>
+		WHERE loan_id=#{loanId};
+	</update>
+
+	<!-- 房押宝 -->
+	<resultMap type="House" id="HouseRM">
+		<id property="loanId" column="loan_id" />
+		<result property="position" column="position" />
+		<result property="nature" column="nature" />
+		<result property="area" column="area" />
+		<result property="assessPrice" column="assess_price" />
+		<result property="guaranteeType" column="guarantee_type" />
+		<result property="mortgagee" column="mortgagee" />
+		<result property="guaranteeRate" column="guarantee_rate" />
+		<result property="overdueHandling" column="overdue_handling" />
+		<result property="otherDescription" column="other_description" />
+	</resultMap>
+
+	<insert id="insertHouse" parameterType="House">
+		INSERT INTO
+		`loan_house`
+		(`loan_id`, `assess_price`, `position`,
+		`nature`,
+		`guarantee_rate`,
+		`guarantee_type`, `area`, `mortgagee`, `overdue_handling`,
+		`other_description`)
+		VALUES (
+		#{loanId},
+		#{assessPrice},
+		#{position},#{nature}, #{guaranteeRate},
+		#{guaranteeType},#{area},
+		#{mortgagee},
+		#{overdueHandling},
+		#{otherDescription});
+	</insert>
+
+	<update id="updateHouse" parameterType="House">
+		UPDATE loan_house
+		<set>
+			<if test="nature != null">nature=#{nature},</if>
+			<if test="area != null">area=#{area},</if>
+			<if test="position != null">position=#{position},</if>
+			<if test="assessPrice != null">assess_price=#{assessPrice},</if>
+			<if test="guaranteeType != null">guarantee_type=#{guaranteeType},</if>
+			<if test="mortgagee != null">mortgagee=#{mortgagee},</if>
+			<if test="guaranteeRate != null">guarantee_rate=#{guaranteeRate},</if>
+			<if test="otherDescription != null">other_description=#{otherDescription},</if>
+			<if test="overdueHandling != null">overdue_handling=#{overdueHandling},</if>
+		</set>
+		WHERE loan_id=#{loanId};
+	</update>
+
+	<!-- 企业宝 -->
+	<resultMap type="Enterprise" id="EnterpriseRM">
+		<id property="loanId" column="loan_id" />
+		<result property="establishTime" column="establish_time" />
+		<result property="businessScope" column="business_scope" />
+		<result property="registeredCapital" column="registered_capital" />
+		<result property="inshold" column="inshold" />
+		<result property="operatingPeriod" column="operating_period" />
+		<result property="paidInCapital" column="paid_in_capital" />
+		<result property="affiliatedEnterprise" column="affiliated_enterprise" />
+		<result property="companyIntroduction" column="company_introduction" />
+		<result property="customerName" column="customer_name" />
+		<result property="customerGender" column="customer_gender" />
+		<result property="customerAge" column="customer_age" />
+		<result property="registeredPermanentResidence" column="registered_permanent_residence" />
+		<result property="maritalStatus" column="marital_status" />
+		<result property="educationalStatus" column="educational_status" />
+		<result property="locaResidenceTime" column="loca_residence_time" />
+		<result property="housingConditions" column="housing_conditions" />
+		<result property="productionAddress" column="production_address" />
+		<result property="debtHistory" column="debt_history" />
+		<result property="financialStatus" column="financial_status" />
+		<result property="organizationStructure" column="organization_structure" />
+		<result property="numberEmployees" column="number_employees" />
+		<result property="specializedProductsAndServices" column="specialized_products_and_services" />
+		<result property="financialData" column="financial_data" />
+		<result property="solvencyAnalysis" column="solvency_analysis" />
+		<result property="profitabilityAnalysis" column="profitability_analysis" />
+		<result property="capabilitiesAnalysis" column="capabilities_analysis" />
+		<result property="developmentAbilityAnalysis" column="development_ability_analysis" />
+		<result property="personalCreditReport" column="personal_credit_report" />
+		<result property="ncriByPersonal" column="ncri_by_personal" />
+		<result property="lttoftpstelqByPersonal" column="lttoftpstelq_by_personal" />
+		<result property="ocniqByPersonal" column="ocniq_by_personal" />
+		<result property="enterpriseCreditReport" column="enterprise_credit_Report" />
+		<result property="ncriByEnterprise" column="ncri_by_enterprise" />
+		<result property="lttoftpstelqByEnterprise" column="lttoftpstelq_by_enterprise" />
+		<result property="ocniqByEnterprise" column="ocniq_by_enterprise" />
+		<result property="api" column="api" />
+		<result property="guaranteesMeasures" column="guarantees_measures" />
+		<result property="loanPurpose" column="loan_purpose" />
+		<result property="operatingCashIncome" column="operating_cash_income" />
+		<result property="netEarnings" column="net_earnings" />
+		<result property="sinkingFund" column="sinking_fund" />
+		<result property="debtRevenue" column="debt_revenue" />
+		<result property="assetsRealization" column="assets_realization" />
+		<result property="externalSupport" column="external_support" />
+		<result property="otherDescription" column="other_description" />
+	</resultMap>
+	<!-- 供应宝 -->
+	<resultMap type="Supplychain" id="SupplychainRM">
+		<id property="loanId" column="loan_id" />
+		<result property="buildDate" column="build_date" />
+		<result property="operationYear" column="operation_year" />
+		<result property="operationBusiness" column="operation_business" />
+		<result property="registeredCapital" column="registered_capital" />
+		<result property="realIncomeCapital" column="real_income_capital" />
+		<result property="companyDesc" column="company_desc" />
+		<result property="organization" column="organization" />
+		<result property="staffNumber" column="staff_number" />
+		<result property="financeData" column="finance_data" />
+		<result property="operationProduction" column="operation_production" />
+		<result property="creditReport" column="credit_report" />
+		<result property="nationalCourtsReport" column="national_courts_report" />
+		<result property="dishonstPersonReport" column="dishonst_person_report" />
+		<result property="publicChannelNegativeInfo" column="public_channel_negative_info" />
+		<result property="otherNegativeInfo" column="other_negative_info" />
+		<result property="coreEnterpriseInfo" column="core_enterprise_info" />
+		<result property="guaranteeMeasures" column="guarantee_measures" />
+		<result property="loanApplication" column="loan_application" />
+		<result property="repaymentSource" column="repayment_source" />
+		
+	</resultMap>
+	<!-- 金农宝详情-->
+	<resultMap type="Ruralfinance" id="RuralfinanceRM">
+		<id property="loanId" column="loan_id" />
+		<result property="loanApplication" column="loan_application" />
+		<result property="repaymentSource" column="repayment_source" />
+		<result property="riskControlInformation" column="risk_control_information" />
+		<result property="lastAlterTime" column="last_alter_time" />
+		
+	</resultMap>
+	<!-- 金农宝借款人详情-->
+	<resultMap type="RuralfinanceLoaners" id="RuralfinanceLoanersRM">
+		<id property="id" column="id" />
+		<result property="loanId" column="loan_id" />
+		<result property="loanerId" column="loaner_id" />
+		<result property="loanerName" column="loaner_name" />
+		<result property="gender" column="gender" />
+		<result property="age" column="age" />
+		<result property="maritalStatus" column="marital_status" />
+		<result property="area" column="area" />
+		<result property="industry" column="industry" />
+		<result property="annualIncome" column="annual_income" />
+		<result property="realEstateSituation" column="real_estate_situation" />
+		<result property="vehicleSituation" column="vehicle_situation" />
+		<result property="money" column="money" />
+		<result property="idCard" column="id_card" />
+		<result property="status" column="status" />
+		<result property="lastAlterTime" column="last_alter_time" />
+		
+	</resultMap>
+	
+
+	<insert id="insertEnterprise" parameterType="Enterprise">
+		<![CDATA[
+		INSERT INTO
+		`loan_enterprise` (`loan_id`, `affiliated_enterprise`,
+		`api`,
+		`assets_realization`, `business_scope`,
+		`capabilities_analysis`,
+		`company_introduction`, `customer_age`,
+		`customer_gender`,
+		`customer_name`, `debt_history`, `debt_revenue`,
+		`development_ability_analysis`, `educational_status`,
+		`enterprise_credit_Report`, `establish_time`, `external_support`,
+		`financial_data`, `financial_status`, `guarantees_measures`,
+		`housing_conditions`, `inshold`, `loan_purpose`,
+		`loca_residence_time`, `lttoftpstelq_by_enterprise`,
+		`lttoftpstelq_by_personal`, `marital_status`, `ncri_by_enterprise`,
+		`ncri_by_personal`, `net_earnings`, `number_employees`,
+		`ocniq_by_enterprise`, `ocniq_by_personal`, `operating_cash_income`,
+		`operating_period`, `organization_structure`, `paid_in_capital`,
+		`personal_credit_report`, `production_address`,
+		`profitability_analysis`, `registered_capital`,
+		`registered_permanent_residence`, `sinking_fund`, `solvency_analysis`,
+		`specialized_products_and_services`,`other_description`) VALUES (#{loanId},
+		#{affiliatedEnterprise}, #{api}, #{assetsRealization},
+		#{businessScope}, #{capabilitiesAnalysis}, #{companyIntroduction},
+		#{customerAge}, #{customerGender}, #{customerName}, #{debtHistory},
+		#{debtRevenue},
+		#{developmentAbilityAnalysis}, #{educationalStatus},
+		#{enterpriseCreditReport}, #{establishTime}, #{externalSupport},
+		#{financialData},
+		#{financialStatus}, #{guaranteesMeasures},
+		#{housingConditions},
+		#{inshold}, #{loanPurpose},
+		#{locaResidenceTime}, #{lttoftpstelqByEnterprise},
+		#{lttoftpstelqByPersonal}, #{maritalStatus}, #{ncriByEnterprise},
+		#{ncriByPersonal},
+		#{netEarnings}, #{numberEmployees},
+		#{ocniqByEnterprise},
+		#{ocniqByPersonal},
+		#{operatingCashIncome},
+		#{operatingPeriod}, #{organizationStructure}, #{paidInCapital},
+		#{personalCreditReport}, #{productionAddress},
+		#{profitabilityAnalysis}, #{registeredCapital},
+		#{registeredPermanentResidence},
+		#{sinkingFund}, #{solvencyAnalysis},
+		#{specializedProductsAndServices},#{otherDescription});
+		]]>
+	</insert>
+
+	<update id="updateEnterprise" parameterType="Enterprise">
+		UPDATE
+		loan_enterprise
+		SET
+		establish_time = #{establishTime},
+		business_scope = #{businessScope},
+		registered_capital = #{registeredCapital},
+		inshold = 	#{inshold},
+		operating_period = #{ operatingPeriod},
+		paid_in_capital = #{paidInCapital },
+		affiliated_enterprise = #{affiliatedEnterprise },
+		company_introduction = #{companyIntroduction },
+		customer_name = #{ customerName},
+		customer_gender = #{ customerGender},
+		customer_age = #{ customerAge},
+		registered_permanent_residence = #{ registeredPermanentResidence},
+		marital_status = #{ maritalStatus},
+		educational_status = #{ educationalStatus},
+		loca_residence_time = #{ locaResidenceTime},
+		housing_conditions = #{ housingConditions},
+		production_address = #{productionAddress },
+		debt_history = #{debtHistory },
+		financial_status = #{ financialStatus},
+		organization_structure = #{organizationStructure},
+		number_employees = #{ numberEmployees},
+		specialized_products_and_services = #{ specializedProductsAndServices},
+		financial_data = #{ financialData},
+		solvency_analysis = #{solvencyAnalysis },
+		profitability_analysis = #{ profitabilityAnalysis},
+		capabilities_analysis = #{capabilitiesAnalysis },
+		development_ability_analysis = #{ developmentAbilityAnalysis},
+		personal_credit_report = #{ personalCreditReport},
+		ncri_by_personal = #{ ncriByPersonal},
+		lttoftpstelq_by_personal = #{ lttoftpstelqByPersonal},
+		ocniq_by_personal = #{ ocniqByPersonal},
+		enterprise_credit_Report = #{ enterpriseCreditReport},
+		ncri_by_enterprise = #{ncriByEnterprise },
+		lttoftpstelq_by_enterprise = #{lttoftpstelqByEnterprise },
+		ocniq_by_enterprise = #{ocniqByEnterprise },
+		api = #{ api},
+		guarantees_measures = #{ guaranteesMeasures},
+		loan_purpose = #{ loanPurpose},
+		operating_cash_income = #{ operatingCashIncome},
+		net_earnings = #{ netEarnings},
+		sinking_fund= #{ sinkingFund},
+		debt_revenue = #{ debtRevenue},
+		assets_realization = #{assetsRealization },
+		external_support = #{externalSupport },
+		other_description = #{otherDescription }
+
+		WHERE
+		loan_id=#{loanId};
+	</update>
+	
+	<update id="updateSupplychain" parameterType="Supplychain">
+		UPDATE
+		loan_supplychain
+		SET
+		build_date = #{buildDate},
+		operation_year = #{operationYear},
+		operation_business = #{operationBusiness},
+		registered_capital = #{registeredCapital},
+		real_income_capital = #{realIncomeCapital},
+		company_desc = #{companyDesc },
+		organization = #{organization },
+		staff_number = #{staffNumber },
+		finance_data = #{financeData},
+		operation_production = #{operationProduction},
+		credit_report = #{creditReport},
+		national_courts_report = #{ nationalCourtsReport},
+		dishonst_person_report = #{ dishonstPersonReport},
+		public_channel_negative_info = #{ publicChannelNegativeInfo},
+		other_negative_info = #{ otherNegativeInfo},
+		core_enterprise_info = #{ coreEnterpriseInfo},
+		guarantee_measures = #{guaranteeMeasures },
+		loan_application = #{loanApplication },
+		repayment_source = #{ repaymentSource}
+		WHERE
+		loan_id=#{loanId};
+	</update>
+	<update id="updateRuralfinanceLoaners" parameterType="RuralfinanceLoaners">
+		UPDATE
+		loan_ruralfinance_loaners
+		SET
+		loaner_id = #{loanerId},
+		loaner_name = #{loanerName},
+		gender = #{gender},
+		age = #{age},
+		marital_status = #{maritalStatus},
+		area = #{area },
+		industry = #{industry },
+		annual_income = #{annualIncome },
+		real_estate_situation = #{realEstateSituation},
+		vehicle_situation = #{vehicleSituation},
+		money = #{money},
+		id_card = #{ idCard},
+		last_alter_time = #{lastAlterTime}
+		WHERE
+		id=#{id};
+	</update>
+	<update id="updateRuralfinanceLoanerID" parameterType="RuralfinanceLoaners">
+		UPDATE
+		loan_ruralfinance_loaners
+		SET
+		loaner_id = #{loanerId},
+		loaner_name = #{loanerName},
+		gender = #{gender},
+		age = #{age},
+		marital_status = #{maritalStatus},
+		area = #{area },
+		industry = #{industry },
+		annual_income = #{annualIncome },
+		real_estate_situation = #{realEstateSituation},
+		vehicle_situation = #{vehicleSituation},
+		money = #{money},
+		last_alter_time = #{lastAlterTime}
+		WHERE id_card = #{ idCard}
+		AND loan_id=#{loanId};
+	</update>
+	<update id="deleteRuralfinanceLoaner" parameterType="RuralfinanceLoaners">
+		UPDATE
+		loan_ruralfinance_loaners
+		SET
+		status = 'invalid'
+		WHERE
+		id=#{id};
+	</update>
+	<update id="updateRuralfinance" parameterType="Ruralfinance">
+		UPDATE
+		loan_ruralfinance
+		SET
+		loan_application = #{loanApplication},
+		repayment_source = #{repaymentSource},
+		risk_control_information = #{riskControlInformation},
+		last_alter_time = #{lastAlterTime}	
+		WHERE
+		loan_id=#{loanId};
+	</update>
+		<!--添加 供应宝详细信息 -->
+   <insert id="insertSupplychain" parameterType="supplychain">
+		<![CDATA[
+		INSERT INTO
+		`loan_supplychain` (`loan_id`, `build_date`,
+		`operation_year`,
+		`operation_business`, `registered_capital`,
+		`real_income_capital`,
+		`company_desc`, `organization`,
+		`staff_number`,
+		`finance_data`, `operation_production`, `guarantee_measures`,
+		`credit_report`, `national_courts_report`, `dishonst_person_report`,
+		`public_channel_negative_info`, `other_negative_info`,
+		`core_enterprise_info`, `loan_application`, `repayment_source`) VALUES (#{loanId},
+		#{buildDate}, #{operationYear}, #{operationBusiness},
+		#{registeredCapital}, #{realIncomeCapital}, #{companyDesc},
+		#{organization}, #{staffNumber}, #{financeData}, #{operationProduction},
+		#{guaranteeMeasures},
+		#{creditReport}, #{nationalCourtsReport},
+		#{dishonstPersonReport}, #{publicChannelNegativeInfo}, #{otherNegativeInfo},
+		#{coreEnterpriseInfo},
+		#{loanApplication}, #{repaymentSource});
+		]]>
+	</insert>
+		<!--添加 金农宝借款人详细信息 -->
+   <insert id="insertRuralfinanceLoaners" parameterType="RuralfinanceLoaners">
+		<![CDATA[
+		INSERT INTO
+		`loan_ruralfinance_loaners` (`id`,`loan_id`, `loaner_id`,
+		`loaner_name`,
+		`gender`, `age`,
+		`marital_status`,
+		`area`, `industry`,
+		`annual_income`,
+		`real_estate_situation`, `vehicle_situation`, `money`,
+		`id_card`, `status`, `last_alter_time`) VALUES (#{id},
+		#{loanId}, #{loanerId}, #{loanerName},
+		#{gender}, #{age}, #{maritalStatus},
+		#{area}, #{industry}, #{annualIncome}, #{realEstateSituation},
+		#{vehicleSituation},#{money},
+		#{idCard}, #{status},
+		#{lastAlterTime});
+		]]>
+	</insert>
+		<!--添加 金农宝详细信息 -->
+   <insert id="insertRuralfinance" parameterType="Ruralfinance">
+		<![CDATA[
+		INSERT INTO
+		`loan_ruralfinance` (`loan_id`, `loan_application`,
+		`repayment_source`,
+		`risk_control_information`,
+		`last_alter_time`) VALUES (#{loanId},
+		#{loanApplication}, #{repaymentSource}, #{riskControlInformation},
+		#{lastAlterTime});
+		]]>
+	</insert>
+
+	<!-- 车押宝详细信息 -->
+	<select id="getVehicleDetail" parameterType="string" resultMap="VehicleRM">
+		SELECT * FROM loan_vehicle
+		WHERE loan_id = #{loanId}
+	</select>
+
+	<!-- 房押宝详细信息 -->
+	<select id="getHouseDetail" parameterType="string" resultMap="HouseRM">
+		SELECT * FROM loan_house
+		WHERE loan_id = #{loanId}
+	</select>
+
+	<!-- 企业宝详细信息 -->
+	<select id="getEnterpriseDetail" parameterType="string"
+		resultMap="EnterpriseRM">
+		SELECT * FROM loan_enterprise
+		WHERE loan_id = #{loanId}
+	</select>
+	
+	<select id="getSupplychainDetail" parameterType="string" resultMap="SupplychainRM">
+	SELECT * FROM loan_supplychain
+		WHERE loan_id = #{loanId}
+	</select>
+	<select id="getRuralfinanceDetail" parameterType="string" resultMap="RuralfinanceRM">
+	SELECT * FROM loan_ruralfinance
+		WHERE loan_id = #{loanId}
+	</select>
+	<select id="getRuralfinanceLoanersDetail" parameterType="string" resultMap="RuralfinanceLoanersRM">
+	SELECT * FROM loan_ruralfinance_loaners
+		WHERE status = 'valid'
+		AND loan_id = #{loanId} ORDER BY loaner_id
+	</select>
+   <select id="getRuralfinanceLoaner" parameterType="string" resultMap="RuralfinanceLoanersRM">
+	SELECT * FROM loan_ruralfinance_loaners
+		WHERE status = 'valid'
+		AND id = #{id}
+	</select>
+	<select id="getRuralfinanceLoanerID" parameterType="RuralfinanceLoaners" resultMap="RuralfinanceLoanersRM">
+	SELECT * FROM loan_ruralfinance_loaners
+		WHERE status = 'valid'
+		AND  id_card = #{idCard}
+		AND loan_id = #{loanId} 
+	</select>
+	<!-- 以下为InvestProgress相关属性的值 -->
+
+	<!-- allMoney -->
+	<select id="getAllMoney" parameterType="string" resultType="double">
+		SELECT
+		IFNULL(sum(loan.money), 0)
+		FROM loan
+		WHERE
+		company_name = '否'
+		AND
+		loan_type = #{loanType}
+		AND
+		status != '流标'
+		AND
+		date(commit_time) =
+		curdate()
+	</select>
+
+	<!-- sumMoney -->
+	<select id="getSumMoney" parameterType="string" resultType="double">
+		SELECT
+		IFNULL(sum(loan.money), 0)
+		FROM loan
+		WHERE
+		company_name = '否'
+		AND
+		`status` in ('筹款中', '贷前公告')
+		AND
+		loan_type =
+		#{loanType}
+	</select>
+
+	<!-- investMoney -->
+	<select id="getInvestMoney" parameterType="string" resultType="double">
+		SELECT
+		IFNULL(sum(invest.money), 0)
+		FROM
+		invest
+		LEFT JOIN loan ON
+		invest.loan_id
+		= loan.id
+		WHERE
+		loan.company_name = '否'
+		AND
+		loan.loan_type =
+		#{loanType}
+		AND
+		invest.`status` = '投标成功'
+		AND
+		loan.`status` in ('筹款中',
+		'贷前公告')
+	</select>
+
+	<select id="getRemainingInvestmentAmount" resultType="double">
+		SELECT
+		IFNULL(sum(loan.money), 0)
+		FROM loan
+		WHERE
+		company_name = '否'
+		AND
+		`status`
+		in ('筹款中', '贷前公告')
+	</select>
+
+</mapper>

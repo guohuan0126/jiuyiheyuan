@@ -1,0 +1,459 @@
+package com.duanrong.business.invest.service.impl;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+
+import util.Log;
+import util.MyStringUtils;
+import base.exception.ExceedMaxAcceptableRate;
+import base.exception.ExceedMoneyNeedRaised;
+import base.exception.InsufficientBalance;
+import base.exception.InvestMoneyException;
+import base.exception.InvestorsAndFinanciersIDException;
+import base.exception.RedPacketUseException;
+import base.model.PageData;
+
+import com.duanrong.business.account.BusinessEnum;
+import com.duanrong.business.account.service.UserAccountService;
+import com.duanrong.business.autoinvest.service.AutoInvestService;
+import com.duanrong.business.invest.InvestConstants;
+import com.duanrong.business.invest.dao.InvestDao;
+import com.duanrong.business.invest.model.Invest;
+import com.duanrong.business.invest.model.InvestRedpacket;
+import com.duanrong.business.invest.model.PassThrough;
+import com.duanrong.business.invest.service.InvestService;
+import com.duanrong.business.loan.LoanConstants;
+import com.duanrong.business.loan.dao.LoanDao;
+import com.duanrong.business.loan.model.Loan;
+import com.duanrong.business.loan.service.LoanService;
+import com.duanrong.business.msg.service.EmailService;
+import com.duanrong.business.repay.service.RepayService;
+import com.duanrong.business.user.service.RedPacketService;
+import com.duanrong.business.user.service.UserMoneyService;
+import com.duanrong.business.user.service.UserService;
+import com.duanrong.util.ArithUtil;
+import com.duanrong.util.IdUtil;
+import com.duanrong.util.ToType;
+
+/**
+ * Copyright : duanrong.com.cn All Rights Reserved Company : 久亿财富（北京）投资有限公司
+ * 
+ * @Author : 孙铮
+ * @CreateTime : 2014-9-1 上午11:31:26
+ * @Description : drsoa Maven Webapp com.duanrong.business.invest.service.impl
+ *              InvestServiceImpl.java
+ * 
+ */
+@Service
+public class InvestServiceImpl implements InvestService {
+
+	final Lock lock = new ReentrantLock();
+
+	@Resource
+	InvestDao investDao;
+
+	@Resource
+	LoanDao loanDao;
+
+	@Resource
+	LoanService loanService;
+
+	@Resource
+	UserMoneyService userMoneyService;
+
+	@Resource
+	RepayService repayService;
+
+	@Resource
+	Log log;
+
+	@Resource
+	EmailService emailService;
+
+	@Resource
+	UserService userService;
+
+	@Resource
+	RedPacketService redpacketService;
+
+	@Resource
+	AutoInvestService autoInvestService;
+
+	@Resource
+	UserAccountService userAccountService;
+	/**
+	 * 分页查询
+	 * 
+	 * @param pageNo
+	 *            页码
+	 * @param pageSize
+	 *            每页显示的记录数
+	 */
+	public PageData<Invest> findPaging(int pageNo, int pageSize, Invest invest) {
+		return investDao.findPaging(pageNo, pageSize, invest);
+	}
+
+	public Double getInvestTotalMoney(String userId) {
+		Double investTotalMoney = investDao.getInvestTotalMoney(userId);
+		if (investTotalMoney == null) {
+			return 0.00;
+		}
+
+		return ArithUtil.round(investTotalMoney.doubleValue(), 2);
+	}
+
+	public Double getInvestsTotalInterest(String userId) {
+		Double InvestsTotalInterest = investDao.getInvestsTotalInterest(userId);
+		if (InvestsTotalInterest == null) {
+			return 0.00;
+		}
+
+		return ArithUtil.round(InvestsTotalInterest.doubleValue(), 2);
+	}
+
+	public void create(Invest invest) throws InsufficientBalance,
+			ExceedMaxAcceptableRate, InvestMoneyException,
+			InvestorsAndFinanciersIDException {
+
+		String loanId = null;
+		Loan loan = null;
+		String userId = null;
+		/*********************** 参数校验 ***********************/
+		if (invest != null) {
+			userId = invest.getInvestUserID();
+			loanId = invest.getLoanId();
+			Double money = invest.getMoney();
+
+			// FIXME：需要判断的参数是哪些？
+			if (MyStringUtils.isAnyBlank(userId, loanId)) {
+				log.errLog(this.getClass().getName() + ".create(..)",
+						"传入的某个参数为空");
+				return;
+			} else if (money == null || money <= 0) {
+				log.errLog(this.getClass().getName() + ".create(..)",
+						"传入的投标金额不正确");
+				return;
+			}
+
+			loan = loanService.get(loanId);
+			if (StringUtils.equals(loan.getBorrowMoneyUserID(), userId)) {
+				log.errLog(this.getClass().getName() + ".create(..)",
+						"投资人与融资人ID一致：" + userId);
+				throw new InvestorsAndFinanciersIDException("投资人与融资人ID一致");
+			}
+			if (invest.getIsAutoInvest()) {
+				if (MyStringUtils.notEquals(loan.getStatus(),
+						LoanConstants.LoanStatus.RAISING)
+						&& MyStringUtils.notEquals(loan.getStatus(),
+								LoanConstants.LoanStatus.DQGS)) {
+					log.errLog(this.getClass().getName() + ".create(..)",
+							"自动投标项目状态不是筹款中或贷前公告，不能投资：" + userId);
+					throw new InvestorsAndFinanciersIDException(
+							"自动投标项目状态不是筹款中或贷前公告，不能投资");
+				}
+			} else {
+				if (MyStringUtils.notEquals(loan.getStatus(),
+						LoanConstants.LoanStatus.RAISING)) {
+					log.errLog(this.getClass().getName() + ".create(..)",
+							"项目状态不是筹款中，不能投资：" + userId);
+					throw new InvestorsAndFinanciersIDException(
+							"项目状态不是筹款中，不能投资");
+				}
+
+			}
+		} else {
+			log.errLog(this.getClass().getName() + ".create(..)", "传入的对象为空");
+			return;
+		}
+
+		// 判断用户投资金额是否大于投资上限金额
+		Double personalInvestCeiling = this.getPersonalInvestCeiling(
+				invest.getInvestUserID(), loanId);
+		if (loan.getMaxInvestMoney() != null
+				&& loan.getMaxInvestMoney() != 0
+				&& loan.getMaxInvestMoney() - personalInvestCeiling < invest
+						.getMoney()) {
+			throw new InvestMoneyException("投资金额大于个人投资上限金额，用户ID：" + userId);
+		}
+
+		invest.setLoan(loan);
+
+		loanService.verifyInvestMoney(loanId, invest.getMoney());
+
+		// 用户填写认购的钱数以后，判断余额，如果余额不够，不能提交，弹出新页面让用户充值
+		if (invest.getMoney() > userMoneyService.getBalance(invest
+				.getInvestUserID())) {
+			throw new InsufficientBalance();
+		}
+		invest.setRate(loan.getRate());
+		invest.setStatus(InvestConstants.InvestStatus.WAIT_AFFIRM);
+		// 设置投资类型
+		/*
+		 * if (StringUtils.isEmpty(invest.getType())) {
+		 * invest.setType(InvestConstants.InvestType.NONE); }
+		 */
+		// 设置时间
+		invest.setTime(new Date());
+		// FIXME:设置是否自动投标
+		if (invest.getIsAutoInvest() == null) {
+			invest.setIsAutoInvest(false);
+		}
+
+		// 计算预期利息
+		if (invest.getInterest() == null) {
+			if ((StringUtils.isNotEmpty(loan.getRepayType()))
+					&& (loan.getRepayType().equals(
+							LoanConstants.RepayType.DQHBFX) || loan
+							.getRepayType()
+							.equals(LoanConstants.RepayType.RFCL))) {
+				if ("天".equals(loan.getOperationType())) {
+					int day = loan.getDay();
+					if (loan.getRepayType()
+							.equals(LoanConstants.RepayType.RFCL)
+							&& "是".equals(loan.getBeforeRepay())) {
+						day += loan.getSymbol();
+					}
+					invest.setInterest(repayService.getRFCLInterestByPeriodDay(
+							invest.getMoney(), loan.getRate(), day));
+				} else {
+					invest.setInterest(repayService.calculateInvestInterset(
+							loan.getRepayType(), loan.getDeadline(),
+							loan.getRate(), invest.getMoney()));
+				}
+			}
+		}
+		// 生成投资ID
+		if (invest.getIsAutoInvest()) {
+			invest.setId(IdUtil.generateId(ToType.ZDTB));
+		} else {
+			invest.setId(IdUtil.generateId(ToType.INVE));
+		}
+
+	}
+	
+	@Override
+	public Double getPersonalInvestCeiling(String userId, String loanId) {
+		return investDao.getPersonalInvestCeiling(userId, loanId);
+	}
+	
+	@Override
+	public Long getInvestNums() {
+		Long d = 0l;
+		d = investDao.getInvestNums();
+		if (d != null)
+			return d;
+		else
+			return (long) 0;
+	}
+
+	/**
+	 * 
+	 * @description 查询所有投资记录
+	 * @author 孙铮
+	 * @time 2014-9-1 下午12:05:44
+	 * @return
+	 */
+	public List<Invest> findAll() {
+		List<Invest> invests = investDao.findAll();
+		return invests;
+	}
+
+	/**
+	 * 
+	 * @description 根据id查询单条投资记录
+	 * @author 孙铮
+	 * @time 2014-9-1 下午12:07:41
+	 * @param id
+	 * @return
+	 */
+	public Invest get(String id) {
+		Invest invest = investDao.get(id);
+		return invest;
+	}
+
+	public void update(Invest invest) {
+		investDao.update(invest);
+	}
+
+	public List<Invest> getInvestByLoan(Invest invest) {
+		return investDao.getInvestByLoanSortAsc(invest);
+	}
+
+	public Long getInvestCountByloanId(String loanId, String status) {
+		return investDao.GetInvestCountByLoanId(loanId, status);
+
+	}
+
+	public List<Invest> getInvestInterestDetail(String userId) {
+		return investDao.getInvestInterestDetail(userId);
+	}
+
+	public List<Invest> getInvestLoan(Invest invest) {
+		return investDao.getInvestLoan(invest);
+	}
+
+	public Double getInvestLoanTotalMoney(Invest invest) {
+		return investDao.getInvestLoanTotalMoney(invest);
+	}
+
+	public Double getInvestLoanTotalInterest(Invest invest) {
+		return investDao.getInvestLoanTotalInterest(invest);
+	}
+
+	public Double getInvestLoanTotalPaidInterest(Invest invest) {
+		return investDao.getInvestLoanTotalPaidInterest(invest);
+	}
+
+	public Double getInvestMoney(Invest invest) {
+
+		if (!StringUtils.equals(invest.getStatus(), "!流标")) {
+			String[] conditions = StringUtils.split(invest.getStatus(), ",");
+			invest.setConditions(conditions);
+		}
+
+		Double money = investDao.getInvestMoney(invest);
+		if (money == null) {
+			return 0.00;
+		}
+
+		return money;
+	}
+
+	@Override
+	public void syncInvest(Invest invest, String type)
+			throws ExceedMoneyNeedRaised, InsufficientBalance,
+			RedPacketUseException, InvestMoneyException {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSSS");
+		synchronized (lock) {
+			if (StringUtils.equals(type, "S2SSuccess")) {
+				// 必须保证invest表的投资状态改为投资成功
+				invest.setStatus(InvestConstants.InvestStatus.BID_SUCCESS);
+				update(invest);
+				return;
+			}
+			Loan loan = invest.getLoan();
+			String loanId = loan.getId();
+			String loanStatus = loan.getStatus();
+			String userId = invest.getInvestUserID();
+
+			Double investMoney = invest.getMoney();
+			if (StringUtils.equals(type, "S2SFail")) {
+				invest.setStatus(InvestConstants.InvestStatus.CANCEL);
+
+				try {
+					log.infoLog("加息券返还", "loanId：" + loan.getId()
+							+ ", investId：" + invest.getId() + "redpacketId："
+							+ invest.getRedpacketId() + "userId：" + userId);
+					redpacketService.userRedPacket(invest, "fail");
+					invest.setRedpacketId(0); // 红包使用失败，跟新invest表为未使用红包
+				} catch (RedPacketUseException e) {
+					throw e;
+				}
+				investDao.update(invest);
+				// 改项目状态，项目如果是等待复核的状态，改为筹款中
+				if (StringUtils.equals(loanStatus,
+						LoanConstants.LoanStatus.RECHECK)) {
+					loan.setStatus(LoanConstants.LoanStatus.RAISING);
+
+					loanService.update(loan);
+				}
+
+				// 解冻投资金额
+				try {
+					userAccountService.unfreeze(invest.getInvestUserID(),
+							invest.getMoney(), BusinessEnum.bidders, "解冻：投资"
+									+ invest.getLoan().getName(), "借款ID："
+									+ invest.getLoan().getId(), invest.getId());
+				} catch (Exception e) {
+					log.errLog("解冻投资金额失败", e);
+				}
+				return;
+			}
+
+		}
+	}
+
+	@Override
+	public List<Invest> getInvestByUserAndLoan(String userId, String loanId) {
+		Map<String, Object> map = new HashMap<>();
+		map.put("userId", userId);
+		map.put("loanId", loanId);
+		return investDao.getInvestByUserAndLoan(map);
+	}
+
+	@Override
+	public Invest getInvest(String id) {
+		return investDao.getInvest(id);
+	}
+
+	@Override
+	public List<Invest> getInvestByDate(Date date) {
+
+		return investDao.getInvestByDate(date);
+	}
+
+	@Override
+	public int getCountInvestByRedpacketForVisitor(String userId) {
+
+		return investDao.getCountInvestByRedpacketForVisitor(userId);
+	}
+
+	@Override
+	public Date getFirstAvilidInvestTimeByUserId(String userId) {
+
+		return investDao.getFirstAvilidInvestTimeByUserId(userId);
+	}
+
+	@Override
+	public List<InvestRedpacket> getInvestRedpacketList() {
+		return investDao.getInvestRedpacketList();
+	}
+
+	@Override
+	public void updatetInvestRedpacket(InvestRedpacket investRedpacket) {
+		investDao.updatetInvestRedpacket(investRedpacket);
+
+	}
+
+	@Override
+	public Double getCurrentInvestMoney(String userId) {
+		return this.investDao.getCurrentInvestMoney(userId);
+	}
+
+	@Override
+	public List<String> getNewInvestUser() {
+		return this.investDao.getNewInvestUser();
+	}
+
+	@Override
+	public Double getUserInvestMoney(String userId) {
+		return this.investDao.getUserInvestMoney(userId);
+	}
+
+	@Override
+	public int getCurrentInvestMoney4DoubleElevec(String userId,String createTime) {
+		return this.investDao.getCurrentInvestMoney4DoubleElevec(userId,createTime);
+	}
+
+	@Override
+	public void update4DoubleEleven(PassThrough passThrough) {
+		this.investDao.update4DoubleEleven(passThrough);
+		
+	}
+
+	@Override
+	public int getCurrentInvestMoney4DoubleElevec1(String userId) {
+		return this.investDao.getCurrentInvestMoney4DoubleElevec1(userId);
+	}
+
+}
