@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.dataAnalysis.business.CapitalData.mapper.CapitalDataMapper">
+<sql id="TABLE">loan</sql>
+	<!-- <select id="getCapitalData" resultMap="capitaldataRM" parameterType="String">
+	SELECT
+	
+	(
+		select SUM(actual_money) FROM withdraw_cash WHERE `status`='success' AND date(time)=curdate()
+	) AS T_draw_moeny,
+	(
+
+	SELECT SUM(actual_money) FROM withdraw_cash WHERE date_format(time,'%Y-%m-%d') = date_format(CURDATE(),'%Y-%m-%d') -interval 1 DAY AND  `status`='success'	
+	) AS L_draw_money ,
+	(
+		SELECT SUM(actual_money) FROM recharge WHERE `status`='success' AND date(time)=curdate()
+	) AS T_pay_moeny ,
+	(
+		SELECT SUM(actual_money) FROM recharge WHERE `status`='success' AND date_format(time,'%Y-%m-%d') = date_format(CURDATE(),'%Y-%m-%d') -interval 1 DAY
+	) AS L_pay_moeny,(		SELECT(SELECT ROUND(SUM(money) , 2)
+		FROM user_bill
+		WHERE user_bill.loan_type='ti_balance')+(SELECT ROUND(SUM(money) , 2)
+		FROM user_bill
+		WHERE user_bill.loan_type='pt_balance')-(SELECT ROUND(SUM(money) , 2)
+		FROM user_bill
+		WHERE user_bill.loan_type='to_balance') -(SELECT ROUND(SUM(money) , 2)
+		FROM user_bill
+		WHERE user_bill.loan_type='freeze') +(SELECT ROUND(SUM(money) , 2)
+		FROM user_bill
+		WHERE user_bill.loan_type='ti_balance') 
+FROM
+	DUAL) AS User_all_moeny
+FROM
+	DUAL
+	</select> -->
+	<!-- 
+		今日提现金额
+		select SUM(actual_money) FROM withdraw_cash WHERE `status`='success' AND date(time)=curdate()
+		昨日提现金额
+		SELECT SUM(actual_money) FROM withdraw_cash WHERE date_format(time,'%Y-%m-%d') = date_format(CURDATE(),'%Y-%m-%d') -interval 1 DAY AND  `status`='success'
+		今日充值金额
+		SELECT SUM(actual_money) FROM recharge WHERE `status`='success' AND date(time)=curdate()
+		昨日充值金额
+		SELECT SUM(actual_money) FROM recharge WHERE `status`='success' AND date_format(time,'%Y-%m-%d') = date_format(CURDATE(),'%Y-%m-%d') -interval 1 DAY
+	 -->
+	 <resultMap type="com.duanrong.dataAnalysis.business.CapitalData.model.CapitalDataVO" id="gcc">
+	 <result column="count" property="count" />
+	 <result column="argtype" property="argtype" />
+	 <result column="committime" property="byTimer" />
+	 </resultMap>
+	 <!--今日  -->
+	<select id="getCount" resultMap="gcc" parameterType="java.lang.Integer">
+		select count(1) as count,loan_type as argtype from loan where
+		date(commit_time)=curdate() and company_name ='否' AND status != '流标' group by loan_type;
+	</select>
+	<!--一周  -->
+	<select id="getCountByWeek" resultMap="gcc" parameterType="java.lang.Integer">
+	select count(1) as count,loan_type as argtype,commit_time as committime from
+		loan where DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= 
+		date(commit_time) AND NOW() &gt;=commit_time   and company_name ='否' AND status != '流标' GROUP BY DATE(commit_time) ,loan_type ORDER BY commit_time ASC
+	</select>
+	<!--一月  -->
+	<select id="getCountByMonth" resultMap="gcc" parameterType="java.lang.Integer">
+	select count(1) as count,loan_type as argtype,commit_time as committime from
+		loan where DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= 
+		date(commit_time) AND NOW() &gt;=commit_time   and company_name ='否' AND status != '流标' GROUP BY DATE(commit_time) ,loan_type ORDER BY commit_time ASC
+	</select>
+	<!--阶段  -->
+	<select id="getCountByPhase" resultMap="gcc" >
+		select count(1) as count,loan_type as argtype,commit_time as committime from
+		loan where commit_time &gt; #{beginTimer,jdbcType=VARCHAR} AND commit_time &lt;
+		#{endTimer,jdbcType=VARCHAR}  and company_name ='否' AND status != '流标' GROUP BY DATE(commit_time) ,loan_type ORDER BY commit_time ASC
+	</select>
+
+</mapper>

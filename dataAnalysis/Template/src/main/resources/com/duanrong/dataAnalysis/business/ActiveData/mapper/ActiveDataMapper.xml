@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.dataAnalysis.business.ActiveData.mapper.ActiveDataMapper">
+	<resultMap type="activedata" id="activeRM">
+		<result property="redPackageMoney" column="money" />
+		<result property="useRule" column="invest_money" />
+	</resultMap>
+	<resultMap type="activeR" id="activeRm">
+			<result property="sendedCount" column="sended_count" />
+			<result property="usedCount" column="used_count" />
+			<result property="unusedCount" column="unused_count" />
+			<result property="expiredCount" column="expired_count" />
+			<result property="redPInvestMoney" column="redPack_invest_count" />
+	</resultMap>
+	<resultMap type="com.duanrong.dataAnalysis.business.ActiveData.model.UserR" id="UserRm">
+		<result property="userId" column="user_id" />
+		<result property="redPacketId" column="redpacket_id" />
+		<result property="time" column="time" />
+	</resultMap>
+		
+		<select id="pageLite4Map" resultMap="activeRM" parameterType="map"  >
+		SELECT  r.money,r.invest_money
+FROM red_packet_detail r  LEFT JOIN `user` u ON u.mobile_number = r.mobile_number LEFT JOIN user_other_info u1  ON u.id= u1.id 
+
+WHERE r.rule_id=#{activeId}  AND  r.is_available='1' and r.type='money'
+
+GROUP BY r.money
+		</select>
+		
+	<!-- 红包发放 数量 -->
+	<select id="getSendCount" resultType="int" parameterType="map" >
+		SELECT COUNT(*) FROM red_packet_detail WHERE rule_id=#{activeId} AND money=#{money}  AND type= 'money' AND is_available='1' 
+	</select>	
+		<!-- 红包使用 数量 -->
+	<select id="getUsedNum" resultType="int" parameterType="map" >
+		SELECT COUNT(*) FROM red_packet_detail WHERE rule_id=#{activeId} AND money=#{money} AND type='money' AND is_available='1' 
+		AND send_status in('used','sended')
+	</select>	
+		<!-- 红包未使用 数量 -->
+	<select id="getUnusedCount" resultType="int" parameterType="map" >
+		SELECT COUNT(*) FROM red_packet_detail WHERE rule_id=#{activeId} AND money=#{money} AND type='money' AND send_status='unused' AND is_available='1'
+	</select>	
+		<!-- 红包过期 数量 -->
+	<select id="getExpiredCount" resultType="int" parameterType="map" >
+		SELECT COUNT(*) FROM red_packet_detail WHERE rule_id=#{activeId} AND money=#{money} AND type='money' AND send_status='expired' AND is_available='1'
+	</select>
+	<!-- 投资总额 -->
+	<select id="getUserInvestMoney" resultType="double" parameterType="map" >
+		SELECT ifNULL(ROUND(SUM(i.money),2),0) FROM invest i  JOIN red_packet_detail r1  ON i.redpacket_id=r1.id  where r1.rule_id=#{activeId} AND r1.money=#{money} AND i.`status`!='流标' and r1.is_available='1' 
+	</select>		
+		<!--  底层数据查询 -->
+		<select id="getData" resultMap="activeRm" parameterType="map">
+		SELECT 
+(SELECT COUNT(*) FROM red_packet_detail  WHERE rule_id=#{activeId} AND is_available='1' and type='money' )AS sended_count,
+(SELECT COUNT(*) FROM red_packet_detail  WHERE rule_id=#{activeId} AND send_status in('used','sended' ) and type='money' AND is_available='1')AS used_count,
+(SELECT COUNT(*) FROM red_packet_detail  WHERE rule_id=#{activeId} AND send_status='unused' AND is_available='1' and type='money')AS unused_count,
+(SELECT COUNT(*) FROM red_packet_detail  WHERE rule_id=#{activeId} AND send_status='expired' AND is_available='1' and type='money')AS expired_count,
+(SELECT ROUND(SUM(i.money),2) FROM invest i LEFT JOIN red_packet_detail r  ON i.redpacket_id=r.id WHERE r.rule_id=#{activeId} AND i.`status`!='流标' AND r.is_available='1' and r.type='money')AS redPack_invest_count
+FROM
+		DUAL
+		</select>
+	<!--  根据活动id 用户来源查询出来首次投资使用该活动的红包的userId -->	
+		<select id="getUserR" resultMap="UserRm" parameterType="map" >
+SELECT i.user_id,i.redpacket_id,MIN(i.time)AS time  FROM invest i LEFT JOIN  user_other_info u  ON i.user_id = u.id WHERE u.user_source LIKE  "%"#{userSource}"%"  GROUP BY i.user_id HAVING i.redpacket_id IN
+(SELECT DISTINCT (r.user_id) FROM red_packet_detail r WHERE r.rule_id=#{activeId})
+		</select>
+		
+		<!--  根据用户id 查询出投资金额 -->
+		<select id="getActiveDataService" parameterType="map" resultType="double">
+				SELECT	 ROUND(sum(invest.money),2)  FROM invest WHERE invest.user_id=#{userId}
+		</select>
+</mapper>		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+
+		
+

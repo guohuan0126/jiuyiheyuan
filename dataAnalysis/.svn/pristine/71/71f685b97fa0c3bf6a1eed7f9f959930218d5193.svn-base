@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.dataAnalysis.business.user.mapper.UserMapper">
+	
+	<!-- 根据name 查询 超级密码 -->
+	<select id="getSpwd" resultType="string" parameterType="string">		
+		select value from config where  name=#{key}
+		<!-- select name from user where mobile_number = #{name} -->
+	</select>
+	<!-- 查询 ip白名单 -->
+	<select id="getIps" resultType="String" parameterType="String">
+		select value from config where id= #{id}
+	</select>
+</mapper>

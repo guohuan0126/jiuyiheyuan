@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+			http://www.springframework.org/schema/beans/spring-beans-3.2.xsd 
+			http://www.springframework.org/schema/context 
+			http://www.springframework.org/schema/context/spring-context-3.2.xsd 
+			http://www.springframework.org/schema/aop 
+			http://www.springframework.org/schema/aop/spring-aop-3.2.xsd 
+			http://www.springframework.org/schema/task
+			http://www.springframework.org/schema/task/spring-task-3.2.xsd
+			http://www.springframework.org/schema/tx 
+			http://www.springframework.org/schema/tx/spring-tx-3.2.xsd ">
+
+	<!-- 扫描 service,dao -->
+	<context:component-scan
+		base-package="com.duanrong.dataAnalysis.business.*.service, com.duanrong.dataAnalysis.business.*.dao, com.duanrong.dataAnalysis.business.quartz" />
+		
+	<!-- spring整合mybatis -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dynamicDataSource" />
+		<property name="configLocation" value="classpath:sqlMapConfig.xml" />
+		<!-- 自动扫描映射文件 -->
+		<property name="mapperLocations"
+			value="classpath:com/duanrong/dataAnalysis/business/*/mapper/*Mapper.xml" />
+			
+		<!-- sql拦截器 -->	
+		<!-- <property name="plugins">
+            <array>                
+                <ref bean="sqlStatementInterceptor"/>
+            </array>
+        </property> -->
+        <property name="configurationProperties">
+            <props>
+                <prop key="dialect">mysql</prop>
+            </props>
+        </property>
+	</bean>
+
+	<!-- <bean id="sqlStatementInterceptor" class="base.interceptor.MybatisInterceptor"/>	 -->
+	
+	<!-- 整合jdbcTemplate -->
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dynamicDataSource" />
+	</bean>
+
+	
+</beans>

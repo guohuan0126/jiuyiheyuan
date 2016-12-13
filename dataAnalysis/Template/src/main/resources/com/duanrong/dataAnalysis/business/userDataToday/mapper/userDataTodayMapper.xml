@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.dataAnalysis.business.userDataToday.mapper.userDataTodayMapper"> 
+		<resultMap type="userdataT" id="userdateeRM">
+		<result property="newUserCount" column="new_User_Count" />
+		<result property="realNameCount" column="real_Name_Count" />
+		<result property="hasCardCount" column="has_Card_Count" />
+		<result property="invsetCount" column="invset_Count" />
+		<result property="allUserCount" column="All_User_Count" />
+		<result property="allRealNameCount" column="All_RealName_Count" />
+		<result property="allHasCardCount" column="All_HasCard_Count" />
+		<result property="allInvsetCount" column="All_Invset_Count" />
+		<result property="newUserCountS" column="new_UserCount_S" />
+		<result property="realNameCountS" column="realName_Count_S" />
+		<result property="hasCardCountS" column="hasCard_Count_S" />
+		<result property="invsetCountS" column="invset_Count_S" />
+		<result property="newUserCountM" column="new_User_Count_M" />
+		<result property="realNameCountM" column="realName_Count_M" />
+		<result property="hasCardCountM" column="hasCard_Count_M" />
+		<result property="invsetCountM" column="invset_Count_M" />
+	</resultMap>
+	
+	<!-- 当日用户转化（除人均） -->
+		<select id="getUserDataT" resultMap="userdateeRM">
+		SELECT
+(SELECT COUNT(*) from `user` WHERE date(register_time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) and user_authentic!=1) AS new_User_Count,
+(SELECT COUNT(*) FROM user_role WHERE date(time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND role_id='INVESTOR' ) AS real_Name_Count,
+(SELECT COUNT(*) FROM bank_card WHERE DATE(time)=DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND bank_city IS null AND `status` in ('VERIFIED', 'VERIFYING')) AS has_Card_Count,
+(select COUNT(distinct(user_id)) FROM invest WHERE date(time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND status !='流标' and user_id not in (select DISTINCT user_id FROM invest WHERE  date(time) &lt; DATE_SUB(CURDATE(), INTERVAL 1 DAY)  AND status !='流标')) AS invset_Count,
+(SELECT COUNT(*) from `user` where user_authentic!=1) AS All_User_Count,
+(SELECT COUNT(*) FROM user_role WHERE role_id='INVESTOR')AS All_RealName_Count,
+(SELECT COUNT(*) FROM bank_card WHERE  bank_city IS null AND `status` in ('VERIFIED', 'VERIFYING')) AS All_HasCard_Count,
+(select COUNT(distinct(user_id)) FROM invest WHERE status !='流标') AS All_Invset_Count,
+(SELECT COUNT(*) from `user` WHERE DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(register_time) and user_authentic!=1) AS new_UserCount_S,
+(SELECT COUNT(*) FROM user_role WHERE DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(time) AND role_id='INVESTOR'  AND DATE(time) &gt; '2015-12-04') AS realName_Count_S,
+(SELECT COUNT(*) FROM bank_card WHERE DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(time)AND bank_city IS null AND `status` in ('VERIFIED', 'VERIFYING')) AS hasCard_Count_S,
+(select COUNT(distinct(user_id)) FROM invest WHERE DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(time) AND status !='流标' AND user_id not in (select DISTINCT user_id FROM invest WHERE  date(time) &lt; DATE_SUB(CURDATE(), INTERVAL 7 DAY)  AND status !='流标')) AS invset_Count_S,
+(SELECT COUNT(*) from `user` WHERE DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(register_time) and user_authentic!=1) AS new_User_Count_M,
+(SELECT COUNT(*) FROM user_role WHERE DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(time) AND role_id='INVESTOR' AND DATE(time) &gt; '2015-12-04') AS realName_Count_M,
+(SELECT COUNT(*) FROM bank_card WHERE DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(time)AND bank_city IS null AND `status` in ('VERIFIED', 'VERIFYING')) AS hasCard_Count_M,
+(select COUNT(distinct(user_id)) FROM invest WHERE DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(time) AND status !='流标' AND user_id not in (select DISTINCT user_id FROM invest WHERE  date(time) &lt; DATE_SUB(CURDATE(), INTERVAL 1 MONTH)  AND status !='流标')) AS invset_Count_M
+		FROM
+		DUAL	                  
+		</select>
+		<!-- 当天投资总金额 -->
+		<select id="getTMoney" resultType ="Integer">
+			select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id where date(u.register_time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+		</select>
+		<!-- 历史投资金额 -->
+		<select id="getAllMoney" resultType="BigDecimal">
+			SELECT SUM(money) FROM invest
+		</select>
+		<!-- 7天投资金额 -->
+		<select id="getMoneyS" resultType="Integer">
+			select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id where  DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(u.register_time)
+		</select>
+		<!-- 30天投资金额 -->
+		<select id="getMoneyM" resultType="Integer">
+			select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id WHERE DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(u.register_time)
+		</select>
+</mapper>

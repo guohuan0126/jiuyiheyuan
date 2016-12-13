@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.dataAnalysis.business.cashData.mapper.cashDataMapper">
+	<resultMap type="cashdataT" id="userdateeRM">
+		<result property="tpayMoney" column="t_pay_Money" />
+		<result property="tdrawMoney" column="t_draw_Money" />
+	</resultMap>
+	
+	<resultMap type="com.duanrong.dataAnalysis.business.cashData.model.ResCashData" id="userdateeRM1">
+		<result property="money" column="money" />
+		<result property="timer" column="timer" />
+	</resultMap>
+	<resultMap type="com.duanrong.dataAnalysis.business.cashData.model.payAndCashData" id="cashData">
+		<result property="tPayMoney" column="t_pay_money"/>
+		<result property="tDrawMoney" column="t_draw_money"/>
+		<result property="wPayMoney" column="w_pay_money"/>
+		<result property="wDrawMoney" column="w_draw_money"/>
+		<result property="mPayMoney" column="m_pay_money"/>
+		<result property="mDrawMoney" column="m_draw_money"/>
+	</resultMap>
+	
+	<!-- 今日充值 提现金额 -->
+	<select id="getCashDataT" resultMap="userdateeRM">
+				SELECT
+		(SELECT IFNULL(round(SUM(actual_money), 2),0) FROM recharge  WHERE `status`='success'  AND user_id not in(SELECT user_id FROM fixed_borrowers) AND date(time)=curdate()) AS t_pay_Money,
+		(select IFNULL(round(SUM(actual_money), 2),0)FROM withdraw_cash WHERE `status`='success' AND user_id not in (SELECT user_id FROM fixed_borrowers) AND date(time)=curdate()) AS t_draw_Money
+	FROM
+	DUAL 
+	</select>
+	<!-- 充值金额 -->
+	<select id="getPayData" resultMap="userdateeRM1" parameterType="map">
+		SELECT IFNULL(round(SUM(r.actual_money), 2),0) AS money ,r.time as timer FROM recharge r WHERE r.`status`='success' AND  r.time &gt;#{beginTime} AND r.time &lt;=#{endTime} AND r.user_id not in(SELECT user_id FROM fixed_borrowers)
+		 GROUP BY DATE(r.time)
+	</select>
+	<!-- 提现金额 -->
+	<select id="getDrawData" resultMap="userdateeRM1" parameterType="map">
+		select IFNULL(round(SUM(actual_money), 2) ,0) AS money,time AS timer  FROM withdraw_cash WHERE `status`='success' AND time &gt;#{beginTime} AND time &lt;=#{endTime} AND user_id not in (SELECT user_id FROM fixed_borrowers)
+		 GROUP BY DATE(time)
+	</select>
+	<!-- 充值提现数据（邮件） -->	
+	<select id="getDataByMail" resultMap="cashData">
+	SELECT
+	(SELECT IFNULL(SUM(actual_money),0) FROM recharge  WHERE `status`='success'  AND user_id not in(SELECT user_id FROM fixed_borrowers) AND date(time)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)) AS t_pay_money,
+	(select IFNULL(SUM(actual_money),0)FROM withdraw_cash WHERE `status`='success' AND user_id not in (SELECT user_id FROM fixed_borrowers) AND date(time)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)) AS t_draw_money ,
+	(SELECT IFNULL(SUM(actual_money),0) FROM recharge  WHERE `status`='success'  AND user_id not in(SELECT user_id FROM fixed_borrowers) AND DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(time)) AS w_pay_money ,
+	(SELECT IFNULL(SUM(actual_money),0) FROM withdraw_cash  WHERE `status`='success'  AND user_id not in(SELECT user_id FROM fixed_borrowers) AND DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(time)) AS w_draw_money ,
+	(SELECT IFNULL(SUM(actual_money),0) FROM recharge  WHERE `status`='success'  AND user_id not in(SELECT user_id FROM fixed_borrowers) AND DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(time)) AS m_pay_money ,
+	(SELECT IFNULL(SUM(actual_money),0) FROM withdraw_cash  WHERE `status`='success'  AND user_id not in(SELECT user_id FROM fixed_borrowers) AND DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(time)) AS  m_draw_money
+FROM
+		DUAL
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<!-- 一周用户充值 -->
+	<!-- <select id="getPayDataByW" resultMap="userdateeRM1">
+		SELECT IFNULL(SUM(actual_money),0) AS money ,time as timer FROM recharge WHERE `status`='success' AND DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(time) AND NOW()&gt;=time
+		 GROUP BY DATE(time)
+	</select>
+	一周用户提现
+	<select id="getDrawDataByW" resultMap="userdateeRM1">
+		select IFNULL(SUM(actual_money),0) AS money,time AS timer  FROM withdraw_cash WHERE `status`='success' AND  DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(time) AND NOW()&gt;=time
+		 GROUP BY DATE(time)
+	</select>
+	一个月用户充值
+	<select id="getPayDataByM" resultMap="userdateeRM1">
+		SELECT IFNULL(SUM(actual_money),0) AS money ,time as timer FROM recharge WHERE `status`='success' AND DATE_SUB(CURDATE(),INTERVAL 1 MONTH) &lt;= date(time) AND NOW()&gt;=time
+		 GROUP BY DATE(time)
+	</select>
+	一个月用户提现
+	<select id="getDrawDataByM" resultMap="userdateeRM1">
+		select IFNULL(SUM(actual_money),0) AS money,time AS timer  FROM withdraw_cash WHERE `status`='success' AND  DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(time) AND NOW()&gt;=time
+		 GROUP BY DATE(time)
+	</select> -->
+	
+</mapper>
