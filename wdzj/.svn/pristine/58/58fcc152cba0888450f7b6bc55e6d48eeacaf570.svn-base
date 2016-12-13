@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.duanrong.thirdPartyInterface.mapper.PushInfoRowMapper" >
+  <resultMap id="PushInfoRowMap" type="com.duanrong.business.push.model.PushInfoRow" >
+    <id column="mobile" property="mobile" />
+    <result column="loan_id" property="loan_id" />
+    <result column="userkey" property="userkey"/>
+    <result column="order_id" property="order_id" />
+    <result column="amount" property="amount" />
+    <result column="trade_time" property="trade_time" />
+    <result column="cost" property="cost" />
+    <result column="userId" property="userId" />
+    <result column="whetherNew" property="whetherNew" />
+  </resultMap>
+
+  
+  <!-- 1.投资人,推送投资人记录,状态为0的 -->
+  <select id="getPushInvestList" resultMap="PushInfoRowMap">
+	 select u.mobile_number as mobile,i.loan_id as loan_id,pur.user_key as userkey,i.id as order_id,
+     i.money as amount,i.time as trade_time,l.rate as cost,i.user_id as userId,pur.whether_new as whetherNew
+	 from invest i left join push_investors pi on i.user_id = pi.user_id 
+	 left join platform_user_relation pur on i.user_id = pur.userID
+	 left join user u on i.user_id = u.id
+	 left join loan l on i.loan_id = l.id
+	where pur.user_key is not null and i.status != '流标' and pi.user_id is null and pur.type = 'p2peye'
+	
+  </select>
+  
+
+
+</mapper>

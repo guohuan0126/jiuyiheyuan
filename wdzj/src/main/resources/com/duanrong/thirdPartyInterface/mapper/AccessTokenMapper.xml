@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.token.mapper.AccessTokenMapper">
+	<resultMap type="AccessToken" id="tokenRM">
+		<id property="id" column="id" />
+		<result property="accountName" column="account_name" />
+		<result property="userId" column="user_id" />
+		<result property="status" column="status" />
+		<result property="createTime" column="create_time" />
+		<result property="deadline" column="deadline" />
+		<result property="type" column="type" />
+	</resultMap>
+	
+	<insert id="insert" parameterType="AccessToken">
+		INSERT INTO thirdpartyinterface_access_token(id,userId, status, createTime, deadline, type)
+		VALUES(#{id}, #{userId}, #{status}, #{createTime}, #{deadline}, #{type})
+	</insert>
+	
+	<select id="getTokenByID" parameterType="string" resultMap="tokenRM">
+		SELECT * FROM thirdpartyinterface_access_token
+		WHERE id = #{id}
+	</select>
+</mapper>

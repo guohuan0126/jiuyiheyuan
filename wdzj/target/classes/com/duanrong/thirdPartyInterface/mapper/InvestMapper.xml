@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.thirdPartyInterface.mapper.InvestMapper">
+	<resultMap type="invest" id="investRM">
+		<id property="id" column="id" />
+		<result property="time" column="time" />
+		<result property="isAutoInvest" column="is_auto_invest" />
+		<result property="status" column="status" />
+		<result property="rate" column="rate" />
+		<result property="type" column="type" />
+		<result property="money" column="money" />
+		<result property="paidMoney" column="paid_money" />
+		<result property="paidInterest" column="paid_interest" />
+		<result property="interest" column="interest" />
+		<result property="returnPondMoney" column="maxInvestMoney" />
+		<result property="minInvestMoney" column="minInvestMoney" />
+		<result property="returnPond" column="return_pond" />
+		<result property="loanId" column="loan_id" />
+		<result property="userSource" column="user_source" />
+		<result property="investUserID" column="user_id" />
+	</resultMap>
+
+	<!-- 根据id查询invest记录 -->
+	<select id="getInvestsByLoanID" resultMap="investRM"
+		parameterType="string">
+		SELECT *
+		FROM invest
+		WHERE status != '流标' and loan_id =
+		#{id}
+	</select>
+
+	<!-- 查询网贷天眼所需要的投资集合列表 -->
+	<select id="getWdtyInvestsByLoanId" resultMap="investRM"
+		parameterType="string">
+		SELECT * FROM invest
+		WHERE loan_id = #{loanId} and status != '流标'
+		<if test="time_from != null">
+			<![CDATA[
+				and time <= #{time_from} 
+			]]>
+		</if>
+		<if test="time_to != null">
+			<![CDATA[
+				and time >= #{time_to} 
+			]]>
+		</if>
+		order by time desc
+		limit #{begin},#{end}
+	</select>
+
+	<!-- 根据项目id获取已投资的金额 -->
+	<select id="getInvestedMoney" resultType="double" parameterType="string">
+		select sum(money) from invest where loan_id = #{id} and status in
+		('等待确认','投标成功');
+	</select>
+
+	<!-- 根据项目id获取已投资的次数 -->
+	<select id="getWdtyInvestedNum" resultType="long" parameterType="string">
+		select count(*) from invest where loan_id = #{loanId} and status in
+		('等待确认','投标成功');
+	</select>
+
+
+	<!-- 根据userId获得用户总投资额 -->
+	<select id="getInvestTotalMoneyByUserId" resultType="double"
+		parameterType="string">
+		<![CDATA[
+			SELECT sum(money) FROM invest WHERE user_id = #{userId} AND STATUS != '流标' AND time <= '2014-12-31 23:59:59'
+		]]>
+	</select>
+
+	<!-- 根据userId获得用户总投资次数 -->
+	<select id="getInvestTotalCountByUserId" resultType="long"
+		parameterType="string">
+		<![CDATA[
+			SELECT count(*) FROM invest WHERE user_id = #{userId} AND STATUS != '流标' AND time <= '2014-12-31 23:59:59'
+		]]>
+	</select>
+
+	<!-- 根据userId获得查询用户当前总投资额(还款中的本金) -->
+	<select id="getCurrentInvestTotalMoneyByUserId" resultType="double"
+		parameterType="string">
+		<![CDATA[
+			SELECT sum(money) FROM invest WHERE user_id = #{userId} AND STATUS = '还款中' AND time <= '2014-12-31 23:59:59'
+		]]>
+	</select>
+
+	<!-- 根据userId获得查询用户总收益 -->
+	<select id="getIncomeTotalMoneyByUserId" resultType="double"
+		parameterType="string">
+		<![CDATA[
+			SELECT sum(paid_interest) FROM invest WHERE user_id = #{userId} AND STATUS != '流标' AND time <= '2014-12-31 23:59:59'
+		]]>
+	</select>
+
+	<!-- 根据userId查询用户待获总收益 -->
+	<select id="getWaitIncomeTotalMoneyByUserId" resultType="double"
+		parameterType="string">
+		<![CDATA[
+			SELECT sum(interest - paid_interest) FROM invest WHERE user_id = #{userId} AND STATUS != '流标' AND time <= '2014-12-31 23:59:59'
+		]]>
+	</select>
+
+	<!-- 根据userId查询用户待获总奖励 -->
+	<select id="getAwardTotalMoneyByUserId" resultType="double"
+		parameterType="string">
+		<![CDATA[
+			select SUM(actual_money) from platform_transfer where username = #{userId} and status = '平台划款成功' AND success_time <= '2014-12-31 23:59:59'
+		]]>
+	</select>
+</mapper>

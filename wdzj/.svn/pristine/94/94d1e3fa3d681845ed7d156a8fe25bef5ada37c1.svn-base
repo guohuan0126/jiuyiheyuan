@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.duanrong.thirdPartyInterface.mapper.PushLoanMapper" >
+  <resultMap id="PushLoanMap" type="com.duanrong.business.push.model.PushLoan" >
+    <id column="id" property="id" />
+    <result column="loan_id" property="loanId" />
+    <result column="push_time" property="pushTime" jdbcType="DATE" />
+    <result column="push_userId" property="pushUserid"  />
+    <result column="status" property="status"  />
+    <result column="loanStatus" property="loanStatus"  />
+    <result column="pushStatus" property="pushStatus" />
+  </resultMap>
+
+  <!-- 1.获取推送项目信息列表 -->
+  <select id="getPushLoanStatusList" resultMap="PushLoanMap" >
+    select p.id as id,p.loan_id as loan_id,p.push_time as push_time,
+    p.push_userId as push_userId,p.`status` as status,l.`status` as loanStatus,
+    p.push_status as pushStatus from push_loan p left join loan l on p.loan_id = l.id where p.push_status = 0
+  </select>
+  
+  <!-- 2.更新项目状态 -->
+  <update id="updateStatus" parameterType="java.util.List" >
+    update push_loan set push_status = 1,`status` = '完成' where id in
+    <foreach collection="list" item="item" index="index" open="(" separator="," close=")" >
+       #{item}
+    </foreach>
+  </update>
+
+</mapper>

@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.thirdPartyInterface.mapper.LoanMapper">
+	<resultMap type="loan" id="loanRM">
+		<id property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="pawn" column="pawn" />
+		<result property="type" column="type" />
+		<result property="description" column="description" />
+		<result property="lightspot" column="fund_description" />
+		<result property="riskControlMeasures" column="risk_description" />
+		<result property="contract" column="risk_instruction" />
+		<result property="totalmoney" column="money" />
+		<result property="investOriginMoney" column="min_invest_money" />
+		<result property="increaseMoney" column="asc_invest_money" />
+		<result property="borrowMoneyUserID" column="user_id" />
+		<result property="rate" column="rate" />
+		<result property="awardMoneyRate" column="awardMoney_rate" />
+		<result property="awardLink" column="award_link" />
+		<result property="loanType" column="loan_type" />
+		<result property="loanGuranteeFee" column="loan_gurantee_fee" />
+		<result property="operationType" column="operation_type" />
+		<result property="repayType" column="repay_type" />
+		<result property="beforeRepay" column="before_repay" />
+		<result property="deadline" column="deadline" />
+		<result property="day" column="day" />
+		<result property="expectTime" column="expect_time" />
+		<result property="textItem" column="company_name" />
+		<result property="status" column="status" />
+		<result property="commitTime" column="commit_time" />
+		<result property="giveMoneyTime" column="give_money_time" />
+		<result property="giveMoneyOperationTime" column="give_money_operation_time" />
+		<result property="contractName" column="loan_instruction" />
+		<result property="calculateMoneyNeedRaised" column="sum_money" />
+		<result property="maxInvestMoney" column="max_invest_money" />
+		<result property="symbol" column="symbol" />
+		<result property="newbieEnjoy" column="newbieEnjoy" />
+	</resultMap>
+
+	<!-- 查询所有loan记录 -->
+	<select id="findAll" resultMap="loanRM">
+		SELECT * FROM loan WHERE
+		company_name = '否'
+	</select>
+	
+	
+	<select id="findAllByYHBY" resultMap="loanRM">
+		<![CDATA[
+			SELECT loan.id, ( SELECT
+			sum(money) FROM invest WHERE invest.loan_id = loan.id and
+			invest.status in ('等待确认','投标成功','还款中','完成')) AS sum_money, loan.money,
+			loan.* FROM loan WHERE loan.company_name = '否' order by commit_time desc LIMIT 20;
+		]]>
+	</select>
+
+	
+
+
+	<!-- 根据常用loan表中字段进行组合条件查询 -->
+	<select id="find" resultMap="loanRM" parameterType="loan">
+		SELECT * FROM
+		loan
+		<where>
+			<if test="status != null and status == 'WDZJstatus'">
+				AND status = '筹款中'
+			</if>
+			<if test="status != null and status == 'WDZJstatus1'">
+				<![CDATA[
+				AND give_money_operation_time >= #{giveMoneyOperationTime} AND give_money_operation_time <= #{commitTime} AND status in('还款中','完成','等待复核')
+				]]>
+			</if>
+		</where>
+		AND company_name = '否'
+	</select>
+
+	<!-- 根据条件查询网贷天眼所需要的loan集合 -->
+	<select id="findAllLoans" resultMap="loanRM" parameterType="map">
+		SELECT * FROM loan loan
+		where loan.company_name = '否'
+		<if test="loanStatus != null and loanStatus == 0">
+			<![CDATA[
+			and loan.status in ('筹款中','贷前公告')
+			]]>
+		</if>
+		<if test="loanStatus != null and loanStatus == 1">
+			<![CDATA[
+			and loan.status in ('还款中','完成','等待复核')
+			]]>
+		</if>
+		<if test="loanStatus != null and loanStatus == 2">
+			<![CDATA[
+			and loan.status in ('逾期','坏账')
+			]]>
+		</if>
+		<if test="time_from != null">
+				<![CDATA[
+					and commit_time >= #{time_from} 
+				]]>
+		</if>
+		<if test="time_to != null">
+				<![CDATA[
+					and commit_time <= #{time_to} 
+				]]>
+		</if>
+		order by commit_time desc
+		limit #{begin},#{end}
+	</select>
+	
+	<select id="findAllLoansSize" resultType="long">
+		SELECT count(*) FROM loan loan where loan.company_name = '否'
+	</select>
+	
+	<select id="findLoansByTime" resultType="long" parameterType="map">
+		<![CDATA[
+		SELECT count(*) FROM loan loan where loan.company_name = '否' AND loan.commit_time >= #{time_from} AND loan.commit_time <= #{time_to} 
+		]]>
+	</select>
+</mapper>
