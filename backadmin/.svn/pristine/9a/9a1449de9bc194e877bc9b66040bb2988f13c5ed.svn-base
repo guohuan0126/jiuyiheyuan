@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.withdraw.mapper.PaymentWithdrawRecordMapper">
+	<resultMap type="PaymentWithdrawRecord" id="PaymentWithdrawRecordRM">
+		<id property="id" column="id" />
+		<result property="markId" column="mark_id" />
+		<result property="operator" column="operator" />
+		<result property="money" column="money" />
+		<result property="userId" column="user_id" />
+		<result property="requestData" column="request_data" />
+		<result property="requestTime" column="request_time" />
+		<result property="requestUrl" column="request_url" />
+		<result property="responseData" column="response_data" />
+		<result property="responseTime" column="response_time" />
+		<result property="confirmResponseData" column="confirm_response_data" />
+		<result property="confirmResponseTime" column="confirm_response_time" />
+		<result property="status" column="status" />
+		<result property="paymentId" column="payment_id" />
+		<result property="transferWay" column="transfer_way" />	
+		<result property="isDefrayPay" column="is_defray_pay" />
+		<result property="type" column="type" />
+		<result property="cardNo" column="card_no" />
+		<result property="cardType" column="card_type" />
+		<result property="cardCode" column="card_code" />
+		<result property="cardId" column="card_id" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="realname" column="realname" />
+	</resultMap>
+	
+	<update id="update" parameterType="PaymentWithdrawRecord">
+		UPDATE payment_withdraw_record
+		<set>
+			<if test="markId!=null">mark_id=#{markId},</if>
+			<if test="operator!=null">operator=#{operator},</if>
+			<if test="status!=null">status=#{status},</if>
+			<if test="requestUrl!=null">request_url=#{requestUrl},</if>
+			<if test="requestTime!=null">request_time=#{requestTime},</if>
+			<if test="requestData!=null">request_data=#{requestData},</if>
+			<if test="responseTime!=null">response_time=#{responseTime},</if>
+			<if test="responseData!=null">response_data=#{responseData},</if>
+			<if test="confirmResponseData!=null">confirm_response_data=#{confirmResponseData},</if>
+			<if test="confirmResponseTime!=null">confirm_response_time=#{confirmResponseTime},</if>
+			<if test="paymentId!=null">payment_id=#{paymentId},</if>
+			<if test="userId!=null">user_id=#{userId},</if>
+			<if test="isDefrayPay!=null">is_defray_pay=#{isDefrayPay},</if>
+			<if test="type!=null">type=#{type},</if>
+			<if test="cardNo!=null">card_no=#{cardNo},</if>
+			<if test="cardType!=null">card_type=#{cardType},</if>
+			<if test="cardCode!=null">card_code=#{cardCode},</if>
+			<if test="cardId!=null">card_id=#{cardId},</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	
+	<select id="getByCondition" parameterType="map"
+		resultMap="PaymentWithdrawRecordRM">
+		SELECT * FROM payment_Withdraw_record
+		<where>
+			<if test="markId != null and markId != ''">AND mark_id = #{markId}</if>
+			<if test="operator != null and operator != ''">AND operator = #{operator}</if>
+			<if test="paymentId != null and paymentId != ''">AND payment_id = #{paymentId}</if>
+			<if test="status!=null and status != '' ">AND status = #{status}</if>
+			<if test="isDefrayPay != null and isDefrayPay != ''">AND is_defray_pay = #{isDefrayPay}</if>
+		</where>
+	</select>
+	
+	<select id="pageLite" parameterType="PaymentWithdrawRecord" resultMap="PaymentWithdrawRecordRM">
+		SELECT payment_Withdraw_record.*, user.mobile_number, user.realname  FROM payment_Withdraw_record 
+		left join user on payment_Withdraw_record.user_id = user.id
+		<where>
+			<if test="id != null and id != ''">
+				AND payment_Withdraw_record.id = #{id}
+			</if>
+			<if test="markId != null and markId != ''">
+				AND payment_Withdraw_record.mark_id = #{markId}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND payment_Withdraw_record.user_id = #{userId}
+			</if>
+			<if test="status != null and status != ''">
+			<choose >
+				<when test="status == 'sended,frozen,fail' ">
+				AND payment_Withdraw_record.status in('sended', 'frozen', 'fail')
+				</when>
+				<otherwise>
+					AND payment_Withdraw_record.status = #{status}
+				</otherwise>
+			</choose>
+			</if>
+			<if test="isDefrayPay != null and isDefrayPay != ''">
+			<choose>
+				<when test="isDefrayPay=='sended,undeal' ">
+					AND payment_Withdraw_record.is_defray_pay in ('sended','undeal')
+				</when>
+				<when test="isDefrayPay=='success,fail' ">
+					AND payment_Withdraw_record.is_defray_pay in ('success','fail')
+				</when>
+				<otherwise>
+					AND payment_Withdraw_record.is_defray_pay = #{isDefrayPay}
+				</otherwise>
+			</choose>
+			
+			</if>
+			<if test="isDefrayPay=='success' and status=='confirm' ">
+				<choose>
+						<when test="begin == null and end == null and date == null">
+							AND date_format(confirm_response_time, '%Y-%m-%d') = CURDATE()
+						</when>
+						<otherwise>
+							<if test="begin != null">
+								AND date_format(confirm_response_time, '%Y-%m-%d') >= date_format(#{begin}, '%Y-%m-%d')
+							</if>
+							<if test="end != null">
+								AND date_format(confirm_response_time, '%Y-%m-%d') &lt;= date_format(#{end}, '%Y-%m-%d')
+							</if>
+						</otherwise>
+				</choose>
+			</if>
+			<if test="requestTime != null">
+				<![CDATA[and request_time < date_format(now(), '%Y-%m-%d')]]>
+			</if>
+		</where>
+		ORDER BY payment_Withdraw_record.request_time DESC
+	</select>
+	
+	<select id="get" parameterType="string" resultMap="PaymentWithdrawRecordRM">
+		SELECT * FROM payment_Withdraw_record where id = #{id}
+	</select>
+	
+	<!-- 获取每天的提现金额 -->
+	<select id="getWithdrawMoneyPerDay" parameterType="map"
+		resultType="double">
+		SELECT IFNULL(SUM(money), 0) FROM payment_Withdraw_record
+		WHERE `status`= 'frozen' and is_defray_pay = 'undeal'
+		and request_time &lt; date_format(now(), '%Y-%m-%d')
+		<if test="id != null and id != ''">
+			AND id = #{id} 
+		</if>
+	</select>
+	
+	<!-- 获取每天的提现数量 -->
+	<select id="getWithdrawCuntPerDay" parameterType="map"
+		resultType="int">
+		SELECT count(*) FROM payment_Withdraw_record
+		WHERE `status`= 'frozen' and is_defray_pay = 'undeal'
+		and request_time &lt; date_format(now(), '%Y-%m-%d')
+		<if test="id != null and id != ''">
+			AND id = #{id} 
+		</if>
+	</select>
+	
+	<!-- 获取每天的提现金额 -->
+	<select id="getWithdrawRecords" parameterType="map"
+		resultMap="PaymentWithdrawRecordRM">
+		SELECT * FROM payment_Withdraw_record
+		WHERE `status`= 'frozen' and is_defray_pay = 'undeal'
+		<if test="requestTime != null and requestTime != ''">
+			and request_time &lt; date_format(now(), '%Y-%m-%d')
+		</if>
+		
+		<if test="id != null and id != ''">
+			AND id = #{id} 
+		</if>
+	</select>
+	
+	
+	<!-- 获取重复数据 -->
+	<select id="getRepeatRecords" parameterType="map" resultMap="PaymentWithdrawRecordRM">
+		SELECT * FROM payment_withdraw_record
+		WHERE `status` = 'frozen' AND is_defray_pay = 'undeal'
+		<![CDATA[and request_time < date_format(now(), '%Y-%m-%d')]]>
+		GROUP BY mark_id
+		HAVING count(1) > 1;
+	</select>
+</mapper>

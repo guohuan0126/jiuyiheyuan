@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.link.mapper.LinkMapper">
+	<resultMap type="Link" id="linkRM">
+		<id property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="secondTitle" column="secondTitle" />
+		<result property="type" column="type" />
+		<result property="url" column="url" />
+		<result property="jiuyiTime" column="jiuyiTime" />
+		<result property="logo" column="logo" />
+		<result property="description" column="description" />
+		<result property="masterEmail" column="master_email" />
+		<result property="position" column="position" />
+		<result property="status" column="status" />
+		<result property="seqNum" column="seq_num" />
+		<association property="linkType" javaType="LinkType">
+			<result property="name" column="type_name" />
+		</association>
+	</resultMap>
+	
+	<!-- 友情链接类型 -->
+	<resultMap type="LinkType" id="linkTypeRM">
+		<id property="id" column="id" />
+		<result property="name" column="name" />		
+		<result property="description" column="description" />
+	</resultMap>
+
+	<!-- 根据类型获得所有链接 -->
+	<select id="getLinksByType" parameterType="string" resultMap="linkRM">
+		SELECT * FROM link
+		WHERE type = #{type} AND status = '1'
+		ORDER BY
+		seq_num, name
+	</select>
+	
+	<!-- 链接分页  -->
+	<select id="pageLite" parameterType="string" resultMap="linkRM">
+		SELECT * FROM link
+		<where>
+		<if test="status != null and status != ''">
+			AND	status=#{status}
+		</if>
+		<if test="id != null and id != ''">
+			AND id LIKE '%${id}%'
+		</if>
+		<if test="name != null and name != '' ">
+			AND name LIKE '%${name}%'
+		</if>
+		<if test="type != null and type != '' ">
+			AND type = #{type}
+		</if> 
+		</where>
+		ORDER BY
+		seq_num, name
+	</select>
+	
+	
+	<insert id="insertLink" parameterType="Link">
+		insert into link values(
+		#{id}, #{name}, #{type}, #{url}, 
+		#{logo}, #{description}, #{masterEmail}, #{position}, #{status}, #{seqNum},#{jiuyiTime},#{secondTitle})	
+	</insert>
+	
+	<update id="updateLink" parameterType="Link">
+		update link 
+		<set>
+			<if test="name != null ">
+				name=#{name},
+			</if>
+			<if test="type != null ">
+				type=#{type},
+			</if>
+			<if test="url != null ">
+				url=#{url},
+			</if>
+			<if test="logo != null ">
+				logo=#{logo},
+			</if>
+			<if test="masterEmail != null  ">
+				master_email=#{masterEmail},
+			</if>
+			<if test="position != null  ">
+				position=#{position},
+			</if>
+			<if test="seqNum != null ">
+				seq_num=#{seqNum},
+			</if>
+			<if test="description != null  ">
+				description=#{description},
+			</if>
+			<if test="status != null  ">
+				status=#{status},
+			</if>
+			<if test="jiuyiTime != null  ">
+				jiuyitime=#{jiuyiTime},
+			</if>
+			<if test="secondTitle != null  ">
+				secondTitle=#{secondTitle},
+			</if>
+		</set>
+		where id=#{id}	
+	</update>
+	
+	<select id="getLink" parameterType="string" resultMap="linkRM">
+		select l.*, t.name as type_name from link l left join link_type t on l.type=t.id where  l.id=#{id}
+	</select>
+	
+	
+	<select id="getTypeList" parameterType="string" resultMap="linkTypeRM">
+		SELECT * FROM link_type ORDER BY id		
+	</select>
+	
+	<!-- 链接分类分页 -->
+	<select id="pageLiteForType" parameterType="string" resultMap="linkTypeRM">
+		SELECT * FROM link_type 
+		<where>
+			<if test="id != null and id != ''">
+				AND id LIKE '%${id}%'
+			</if>
+			<if test="name != null and name != '' ">
+				AND name LIKE '%${name}%'
+			</if>
+		</where>
+		ORDER BY id
+	</select>
+	
+	<insert id="insert" parameterType="LinkType">
+		insert into link_type values(#{id}, #{name}, #{description})	
+	</insert>
+	
+	<update id="update" parameterType="LinkType">
+		update link_type 
+		<set>
+			<if test="name != null and name != '' ">
+				name=#{name},
+			</if>
+			<if test="description != null and description != '' ">
+				description=#{description},
+			</if>
+		</set>
+		where id=#{id}	
+	</update>
+	
+	<select id="get" parameterType="string" resultMap="linkTypeRM">
+		select * from link_type where id=#{id}
+	</select>
+</mapper>

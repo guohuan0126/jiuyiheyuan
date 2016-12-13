@@ -1,0 +1,84 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+	content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="description" content="">
+<meta name="author" content="">
+<link rel="shortcut icon" href="images/favicon.png" type="image/png">
+<title>短信详情</title>
+</head>
+<body>	
+	<div id="preloader">
+		<div id="status">
+			<i class="fa fa-spinner fa-spin"></i>
+		</div>
+	</div>
+	<section>
+		<%@include file="../../base/leftMenu.jsp"%>
+		<div class="mainpanel">
+			<%@include file="../../base/header.jsp"%>
+			<div class="pageheader">
+				<h2>
+					<i class="fa fa-pencil"></i> 短信详情
+				</h2>				
+			</div>
+			<div class="contentpanel">
+				<form id="form" method="post" class="form-horizontal">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="panel-btns"></div>
+							<h4 class="panel-title">短信详情</h4>
+						</div>
+						<div class="panel-body">
+							<div class="form-group">
+								<label class="col-sm-3 control-label">短信编号 </label>
+								<div class="col-sm-3">
+									<input type="text" name="id" id="id"  width="10px"
+										class="form-control"  value="${text.id}" readonly/>
+									 
+								</div>
+							</div>
+							<div class="form-group">
+								<label class="col-sm-3 control-label">名称</label>
+								<div class="col-sm-3">
+									<input type="text" name="name" id="name"  width="10px"
+										class="form-control" value="${text.name}" readonly/>	
+									 								
+								</div>
+							</div>									
+							<div class="form-group">
+								<label class="col-sm-3 control-label">描述</label>
+								<div class="col-sm-3" style="width:40%">								
+									<textarea rows="3" name="description"  id="description" class="form-control" readonly>${text.description}</textarea>	
+								</div>																									
+							</div>
+							 <div class="form-group">
+								<label class="col-sm-3 control-label">模板</label>
+								<div class="col-sm-3" style="width:40%">								
+									<textarea rows="10" name="template"  id="template" class="form-control" readonly>${text.template}</textarea>	
+								</div>																									
+							</div>
+												
+						<!-- panel-body -->
+
+						<div class="panel-footer">
+							<div class="row">
+								<div class="col-sm-9 col-sm-offset-3">
+									<a href="JavaScript:history.go(-1)"><input type="button" value="返回"></a>
+								</div>
+							</div>
+						</div>
+					</div>
+					</div>
+					<!-- panel -->
+				</form>
+			</div>
+			<!-- contentpanel -->
+
+		</div>
+</body>
+</html>

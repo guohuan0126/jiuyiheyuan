@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.demand.mapper.DemandtreasureLoanMapper">
+	<resultMap type="DemandtreasureLoan" id="DemandTreasureLoanRM">
+		<id property="id" column="id" />
+		<result property="loanName" column="loan_name" />
+		<result property="loanType" column="loan_type" />
+		<result property="loanStatus" column="loan_status" />
+		<result property="totalMoney" column="total_money" />
+		<result property="startTime" column="start_time" />
+		<result property="finishTime" column="finish_time" />
+<!-- 	<result property="showstartTime"  column="startTime" />
+		<result property="showfinishTime"  column="finishTime" /> -->
+		<result property="display" column="display" />
+		<result property="creator" column="creator" />
+		<result property="createTime" column="create_time" />
+		<result property="modifyPerson" column="modify_person" />
+		<result property="modifyTime" column="modify_time" />
+		<result property="operationType" column="operation_type" />
+		<result property="month" column="month" />
+		<result property="day" column="day" />
+		<result property="borrower" column="borrower" />
+		<result property="idCard" column="id_card" />
+		<result property="brand" column="brand" />
+		<result property="licensePlateNumber" column="license_plate_number" />
+		<result property="kilometreAmount" column="kilometre_amount" />
+		<result property="buyTime" column="buy_time" />
+		<result property="assessPrice" column="assess_price" />
+		<result property="guaranteeType" column="guarantee_type" />
+		<result property="guaranteeRate" column="guarantee_rate" />
+		<result property="loanAddr" column="loan_addr" />
+		<result property="borrowingPurposes" column="borrowing_purposes"/>  
+		<result property="maritalStatus" column="marital_status"/>
+		<result property="location" column="location"/>
+		<result property="sourceOfRepayment" column="source_of_repayment"/>
+		<result property="forkId" column="fork_id"/>
+		<result property="openAmount" column="open_amount"/>
+		<result property="openStatus" column="open_status"/>
+		<result property="validMoney" column="valid_money"/>
+		<result property="availableId" column="available_id"/>
+		<result property="originalRedemptionMoney" column="original_redemption_money"/>
+		<result property="buildingProperty" column="building_property"/>
+		<result property="buildingArea" column="building_area"/>
+		<result property="accountingCompany" column="accounting_department"/>
+		<result property="borrowingCompany" column="borrowing_company" />
+		<result property="businessLicenseNumber" column="business_license_number" />
+		<result property="operationYear" column="operation_year" />
+		<result property="operationProduction" column="operation_production" />
+		<result property="registeredCapital" column="registered_capital" />
+		<result property="realIncomeCapital" column="real_income_capital" />
+		<result property="staffNumber" column="staff_number" />
+		<result property="nationalCourtsReport" column="national_courts_report" />
+		<result property="dishonstPersonReport" column="dishonst_person_report" />
+		<result property="publicChannelNegativeInfo" column="public_channel_negative_info" />
+		<result property="otherNegativeInfo" column="other_negative_info" />
+		<result property="otherInfo" column="other_info" />
+		<result property="loaninfoId" column="loaninfo_id" />
+		<result property="repayType" column="repay_type" />
+		<result property="parentId" column="parent_id" />
+		<result property="agrepayType" column="agrepay_type" />
+		<result property="agcontractId" column="agcontract_id" />
+		<result property="contractId" column="contract_id" />
+		<result property="sourceRemark" column="source_remark" />	
+	</resultMap>
+	<resultMap type="com.duanrong.business.demand.model.DemandforkLoan" id="DemandforkLoanRM">	
+		<result property="forkIdCount" column="forkcount" />
+		<result property="forkId" column="fork_id" />
+	</resultMap>
+	<select id="pageInfo" parameterType="DemandtreasureLoan" resultMap="DemandTreasureLoanRM" >
+		select t3.accounting_department,t.*,t3.repay_type as agrepay_type,t3.contract_id as agcontract_id 
+		from demand_treasure_loan t 
+		left join agriculture_fork_loans t2 
+		on t2.id=t.fork_id
+		left join agriculture_loaninfo t3 
+		on (t3.id=t.loaninfo_id or t3.id=t2.parent_id)
+		<where>
+				AND t.display = 1
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(loanName)">
+				AND t.loan_name = #{loanName}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(borrower)">
+				AND t.borrower = #{borrower}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(loanStatus)">
+				AND t.loan_status = #{loanStatus}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(loanType)">
+				AND t.loan_type = #{loanType}
+			</if>	
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(openStatus)">
+				AND t.open_status = #{openStatus}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(repayType)">
+				AND t.repay_type = #{repayType}
+			</if>		
+		</where>
+		<if test="type == 'itemNumber' ">
+			order by t.loan_name  ASC
+		</if>
+		<if test="type == 'creatTime' ">
+			order by t.create_time  DESC
+		</if>
+	</select>
+	<update id="update" parameterType="DemandtreasureLoan">
+		UPDATE demand_treasure_loan 
+		<set>
+			<if test="modifyPerson != null">
+				modify_person=#{modifyPerson},
+			</if>
+			<if test="modifyTime != null">
+				modify_time=#{modifyTime},
+			</if>
+			<if test="display != null">
+				display =#{display},
+			</if>
+			<if test="openStatus !=null " >
+				open_status=#{openStatus}	
+			</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	<update id="updateLoan" parameterType="DemandtreasureLoan">
+		UPDATE demand_treasure_loan set 
+				loan_name=#{loanName},
+				loan_type=#{loanType},
+				loan_status=#{loanStatus},
+				total_money=#{totalMoney},
+				start_time=#{startTime},
+				finish_time=#{finishTime},
+				creator=#{creator},
+				create_time=#{createTime},
+				loan_status=#{loanStatus},
+				operation_type=#{operationType},
+				month=#{month},
+				day=#{day},
+				borrower=#{borrower},
+				id_card=#{idCard},
+				brand=#{brand},
+				license_plate_number=#{licensePlateNumber},
+				kilometre_amount=#{kilometreAmount},
+				guarantee_rate=#{guaranteeRate},
+				assess_price=#{assessPrice},
+				guarantee_type=#{guaranteeType},
+				buy_time=#{buyTime},
+				modify_person=#{modifyPerson},
+				modify_time=#{modifyTime},
+				display =#{display}, 		
+				building_property=#{buildingProperty },
+				building_area=#{buildingArea },
+				borrowing_company=#{borrowingCompany },
+				business_license_number=#{businessLicenseNumber },
+				operation_year=#{operationYear},
+				operation_production=#{operationProduction },
+				registered_capital=#{registeredCapital },
+				real_income_capital=#{realIncomeCapital },
+				staff_number=#{staffNumber},
+				national_courts_report=#{nationalCourtsReport },
+				dishonst_person_report=#{dishonstPersonReport },
+				public_channel_negative_info=#{publicChannelNegativeInfo },
+				other_negative_info=#{otherNegativeInfo },
+				other_info=#{otherInfo },
+								
+				borrowing_purposes=#{borrowingPurposes },
+				marital_status=#{maritalStatus },
+				location=#{location },
+				source_of_repayment=#{sourceOfRepayment },
+				loan_addr=#{loanAddr}
+			WHERE id=#{id}
+	</update>
+	<insert id="insert" parameterType="DemandtreasureLoan">
+		INSERT INTO demand_treasure_loan(id, loan_name, loan_type, 
+		loan_status,total_money,start_time,finish_time,display,
+		creator,create_time,operation_type,month,
+		day,borrower,id_card,brand,license_plate_number,kilometre_amount,buy_time,
+		assess_price,guarantee_type,guarantee_rate,
+		borrowing_purposes,marital_status,location,source_of_repayment,fork_id,
+		open_amount,open_status,valid_money,loan_addr,building_property,building_area,
+		borrowing_company,business_license_number,operation_year,operation_production,registered_capital,
+		real_income_capital,staff_number,national_courts_report,dishonst_person_report,public_channel_negative_info,
+		other_negative_info,other_info,repay_type,parent_id,contract_id,source_remark,accounting_department) 
+		VALUES(#{id}, #{loanName}, #{loanType},
+		 #{loanStatus}, #{totalMoney},#{startTime},
+		 #{finishTime},1,#{creator},
+		 #{createTime},#{operationType},#{month},
+		 #{day},#{borrower},#{idCard},#{brand}, 
+		 #{licensePlateNumber},#{kilometreAmount},#{buyTime},#{assessPrice},#{guaranteeType},#{guaranteeRate},
+		 #{borrowingPurposes},#{maritalStatus},#{location},#{sourceOfRepayment},#{forkId},#{totalMoney},'notopen',0 ,
+		 #{loanAddr},#{buildingProperty},#{buildingArea},
+		 #{borrowingCompany},#{businessLicenseNumber},#{operationYear},#{operationProduction},#{registeredCapital},
+		 #{realIncomeCapital},#{staffNumber},#{nationalCourtsReport},#{dishonstPersonReport},#{publicChannelNegativeInfo},
+		 #{otherNegativeInfo},#{otherInfo},#{repayType},#{parentId},#{contractId},#{sourceRemark},#{accountingDepartment})	
+	</insert>
+	<select id="get" parameterType="string" resultMap="DemandTreasureLoanRM">
+		SELECT * FROM demand_treasure_loan where id=#{id}
+	</select>
+
+	
+	<!-- 批量添加 -->
+  <insert id="batchDemandTreasureLoan" parameterType="java.util.Map" >
+  INSERT INTO demand_treasure_loan(id, loan_name, loan_type, 
+		loan_status,total_money,start_time,finish_time,display,
+		creator,create_time,operation_type,month,
+		day,borrower,id_card,brand,license_plate_number,kilometre_amount,buy_time,
+		assess_price,guarantee_type,guarantee_rate,
+		borrowing_purposes,marital_status,location,source_of_repayment,fork_id,open_amount,open_status,valid_money,loan_addr,loaninfo_id,
+		other_info,repay_type,parent_id,contract_id,source_remark,accounting_department)				
+    values
+    <foreach collection="list" item="item" index="index" separator=",">
+    <choose>
+    <when test="item.repayType == '等额本息' and item.loanType == '车押宝'">
+     (#{item.id}, #{item.loanName}, #{item.loanType},
+		 #{item.loanStatus}, #{item.totalMoney},#{item.startTime},
+		 #{item.finishTime},0,#{item.creator},
+		 #{item.createTime},#{item.operationType},#{item.month},
+		 #{item.day},#{item.borrower},#{item.idCard},#{item.brand},
+		 #{item.licensePlateNumber},#{item.kilometreAmount},#{item.buyTime},#{item.assessPrice},
+		 #{item.guaranteeType},#{item.guaranteeRate},#{item.borrowingPurposes},#{item.maritalStatus},
+		 #{item.location},#{item.sourceOfRepayment},#{item.forkId},#{item.totalMoney},'notopen',0,#{item.loanAddr},#{item.loaninfoId},
+		 #{item.otherInfo},#{item.repayType},#{item.parentId},
+		 #{item.contractId},#{item.sourceRemark},#{item.accountingDepartment})
+    </when>
+    <otherwise>
+     (#{item.id}, #{item.loanName}, #{item.loanType},
+		 #{item.loanStatus}, #{item.totalMoney},#{item.startTime},
+		 #{item.finishTime},1,#{item.creator},
+		 #{item.createTime},#{item.operationType},#{item.month},
+		 #{item.day},#{item.borrower},#{item.idCard},#{item.brand},
+		 #{item.licensePlateNumber},#{item.kilometreAmount},#{item.buyTime},#{item.assessPrice},
+		 #{item.guaranteeType},#{item.guaranteeRate},#{item.borrowingPurposes},#{item.maritalStatus},
+		 #{item.location},#{item.sourceOfRepayment},#{item.forkId},#{item.totalMoney},'notopen',0,#{item.loanAddr},#{item.loaninfoId},
+		 #{item.otherInfo},#{item.repayType},#{item.parentId},
+		 #{item.contractId},#{item.sourceRemark},#{item.accountingDepartment})
+    </otherwise>
+	</choose>	 
+    </foreach>  
+     
+  </insert>
+	<select id="getByForkId" parameterType="string" resultMap="DemandTreasureLoanRM">
+		SELECT * FROM demand_treasure_loan where display!=0 
+		 AND loan_status!='finish' and fork_id=#{forkId} 
+	</select>  
+
+	<select id="readMoneyBydate" parameterType="String" resultType="double">
+		select IFNULL(SUM(total_money - open_amount- valid_money), 0) FROM demand_treasure_loan
+		WHERE date_format(finish_time, '%Y-%m-%d')=#{date} and display=1
+		AND loan_status='repay' and open_status='opened'
+	</select>
+	
+	<select id="readAssignmentMoney" resultType="double">
+		SELECT IFNULL(SUM(open_amount),0) FROM  demand_treasure_loan
+		where open_amount &gt;0 
+		and open_status='opened' 
+		and display!='0'
+		and loan_status!='finish'
+		and DATE_FORMAT(finish_time,'%Y,%m,%d') >DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+	</select>
+
+	 <update id="updateAssignmentMoneyById" parameterType="map">
+		update demand_treasure_loan
+		<set>
+			open_amount=0,
+			valid_money=#{validMoney}
+			<if test="openStatus != '' and openStatus !=null ">
+				open_status=#{openStatus}
+			</if>
+		</set>
+		where id in
+		<foreach collection="arr" index="index" item="list" open="(" separator="," close=")" >    
+            #{list}    
+        </foreach>  
+	</update>
+	
+
+	<select id="readDemandtreasureLoanIds" resultMap="DemandTreasureLoanRM">
+		select * from demand_treasure_loan 
+		where open_amount &gt;0 
+		and open_status='opened' 
+		and display!='0'
+		and loan_status!='finish'
+		and DATE_FORMAT(finish_time,'%Y,%m,%d') >DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+	</select>	
+	
+	<select id="readDemandtreasureLoan" resultMap="DemandTreasureLoanRM" parameterType="map">
+		select * from demand_treasure_loan where open_status='notopen' and loan_status!='finish'  and display!=0
+		<choose>
+			<when test="type == 'startTime' ">
+				ORDER By start_time desc
+			</when>
+			<otherwise>
+				ORDER By total_money desc
+			</otherwise>
+		</choose>		
+	</select>
+	
+	<update id="updateAssignmentStatusByIds" parameterType="map">
+		update demand_treasure_loan 
+		<set>
+			open_status=#{status}
+		</set>
+		where id in
+		<foreach collection="arr" index="index" item="list" open="(" separator="," close=")" >    
+            #{list}    
+        </foreach>  
+	</update>
+	<update id="updateAssignmentStatusById" parameterType="map">
+				update demand_treasure_loan
+		<set>
+		   <if test="openAmount !=null ">
+				open_amount=#{openAmount},
+			</if>			
+			<if test="openStatus != '' and openStatus !=null ">
+				open_status=#{openStatus},
+			</if>						
+			<if test="availableId !=null ">
+				available_id=#{availableId},
+			</if>
+			<if test="originalRedemptionMoney !=null ">
+				original_redemption_money=#{originalRedemptionMoney},
+			</if>
+			<if test="loanName != '' and loanName !=null ">
+				loan_name=#{loanName},
+			</if>
+			<if test="startTime !=null ">
+				start_time=#{startTime},
+			</if>
+			<if test="finishTime !=null ">
+				finish_time=#{finishTime},
+			</if>
+			valid_money=#{validMoney}
+		</set>	 
+		where id=#{id} 
+	</update>
+	<select id="readByAvailableId" resultMap="DemandTreasureLoanRM" parameterType="Map" >
+		select * from demand_treasure_loan where 
+		available_id=#{availableId}	
+		and	original_redemption_money&gt;0 		
+	</select>
+		<select id="readByAvailableIdNew" resultMap="DemandTreasureLoanRM" parameterType="Map" >
+		select * from demand_treasure_loan where 
+		available_id=#{availableId}	
+		and ISNULL(original_redemption_money) 		
+	</select>
+	<select id="readDemandTreasureLoan"  resultMap="DemandTreasureLoanRM">
+		select * from demand_treasure_loan where display!=0  AND loan_name LIKE '天天赚%'
+		order by loan_name DESC limit 0,1
+	</select>
+<select id="transferDemandtreasureLoan" resultMap="DemandTreasureLoanRM">
+SELECT * FROM  demand_treasure_loan where open_amount >0 and open_status='opened' and display!='0' and loan_status!='finish' and DATE_FORMAT(finish_time,'%Y,%m,%d') >DATE_ADD(CURDATE(), INTERVAL 1 DAY) ORDER By open_amount desc
+</select>
+	<select id="getLoaninfoId" parameterType="string" resultMap="DemandTreasureLoanRM">
+		SELECT * FROM demand_treasure_loan where display!=0 
+		 AND loan_status!='finish' and loaninfo_id=#{loaninfoId} 
+	</select>  
+	<update id="updateLoanerinfoTime" parameterType="map">
+		UPDATE demand_treasure_loan 
+		<set>
+		finish_time=#{finishTime}	
+		</set>
+		WHERE loaninfo_id=(SELECT id from agriculture_loaninfo where contract_id=#{contractId}) and display!=0 
+        AND loan_status!='finish'
+	</update>
+	<select id="readDemadfork" parameterType="string" resultMap="DemandTreasureLoanRM">
+		SELECT * FROM demand_treasure_loan where parent_id=#{id} order by `month`
+	</select>
+<update id="updateDemandDisplay" parameterType="map">
+				update demand_treasure_loan
+		<set>		 
+			<if test="display !=null ">
+				display=#{display},
+			</if>
+			<if test="startTime !=null ">
+				start_time=#{startTime},
+			</if>
+			<if test="finishTime !=null ">
+				finish_time=#{finishTime},
+			</if>
+		</set>
+		<where>
+			<choose>
+			<when test="parentId != '' and parentId !=null ">
+			 parent_id=#{parentId}
+			</when>
+			<otherwise>
+			 id=#{id}
+			</otherwise>
+			</choose>			
+		</where>	 
+	</update>
+	<select id="readforkCounts" parameterType="Map" resultMap="DemandforkLoanRM">
+	SELECT count(fork_id)as forkcount,fork_id from demand_treasure_loan where display!=0 AND loan_status!='finish'
+	and (fork_id!=null or fork_id!='') and id in 
+	<foreach collection="arr" index="index" item="item" open="(" separator="," close=")" >    
+            #{item}    
+    </foreach>  
+GROUP BY fork_id HAVING forkcount>=1
+ORDER BY forkcount DESC limit 0,1
+	</select>
+	<update id="updatedemandFinishTime" parameterType="map">
+		UPDATE demand_treasure_loan 
+		<set>
+		finish_time=#{finishTime}	
+		</set>
+		WHERE fork_id=#{forkId} and display!=0 
+        AND loan_status!='finish'
+	</update>			
+</mapper>

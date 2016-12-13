@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.user.mapper.RoleMapper">
+	<resultMap type="role" id="roleRM">
+		<id property="id" column="role_id" />
+		<result property="name" column="name" />
+		<result property="description" column="description" />
+		<!-- <result property="status" column="status" /> -->
+	</resultMap>
+
+	<!-- 查询所有role记录 -->
+	<select id="findAll" resultMap="roleRM">
+		SELECT *, id AS role_id
+		FROM role  WHERE  role.systype_id='68d19920e5c711e58e7402004c4f4f50'
+	</select>
+
+	<!-- 根据id查询role记录 -->
+	<select id="get" parameterType="string" resultMap="roleRM">
+		SELECT *, id
+		AS role_id
+		FROM role
+		WHERE id = #{id}
+	</select>
+
+	<!-- 根据用户id查询该用户的角色列表 -->
+	<select id="getRolesByUserId" parameterType="string" resultMap="roleRM">
+		SELECT *, id AS role_id
+		FROM role
+		WHERE id IN(select role_id from
+		user_role where user_id = #{userId}) and role.systype_id='68d19920e5c711e58e7402004c4f4f50'
+	</select>
+    <!-- 根据用户id查询该用户是否已开通易宝账户-->
+   <select id="getInvestorByUserId" resultType="java.util.Map"  parameterType="string">	
+             SELECT COUNT(1) investor FROM user_role WHERE role_id ='investor' AND user_id = #{userId}
+	</select>
+
+	<!-- 分页查询 -->
+	<select id="pageLite" parameterType="role" resultMap="roleRM">
+		SELECT *, id AS role_id FROM role WHERE status = 1 and role.systype_id='68d19920e5c711e58e7402004c4f4f50'
+		<if
+			test="@org.apache.commons.lang3.StringUtils@isNotBlank(id)">
+			AND id LIKE '%${id}%'
+		</if>
+
+		<if
+			test="@org.apache.commons.lang3.StringUtils@isNotBlank(name)">
+			AND name LIKE '%${name}%'
+		</if>
+	</select>
+	<!-- 添加角色 -->
+	<insert id="insert" parameterType="role">
+		INSERT INTO role(id, name,
+		description, status, systype_id) VALUES(#{id},#{name}, #{description}, 1 , '68d19920e5c711e58e7402004c4f4f50')
+	</insert>
+
+	<!-- 修改角色 -->
+	<update id="update" parameterType="role">
+		UPDATE role
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(name)">
+				name=#{name},
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(description)">
+				description=#{description},
+			</if>
+		</set>
+		WHERE id=#{id} and role.systype_id='68d19920e5c711e58e7402004c4f4f50'
+	</update>
+
+	<!-- 删除角色(逻辑删除) -->
+	<update id="disableRole" parameterType="string">
+		UPDATE role
+		SET status=0
+		WHERE id=#{id}
+	</update>
+</mapper>

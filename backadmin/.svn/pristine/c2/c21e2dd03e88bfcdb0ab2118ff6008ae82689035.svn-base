@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.payMentChannel.mapper.payMentChannelMapper">
+	
+	<resultMap type="com.duanrong.business.payMentChannel.model.PayMentChannel" id="payMentChannelRM">
+		<id property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="code" column="code" />
+		<result property="logo" column="logo" />
+		<result property="rateGateway" column="gateway_rate" />
+		<result property="rateQuick" column="quick_rate" />
+		<result property="withdrawFee" column="withdraw_fee" />
+		<result property="usable" column="pc_usable" />		
+		<result property="mobileUsable" column="mob_usable" />
+		<result property="sort" column="sort" />
+	</resultMap>
+	
+	<resultMap type="com.duanrong.business.payMentChannel.model.PaymentBankInfo" id="paymentBankInfoRM">
+		<id property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="code" column="code" />
+		<result property="logo" column="logo" />
+		<result property="fuIouCode" column="fuyouCode" />
+	</resultMap>
+	
+	
+	<resultMap type="com.duanrong.business.payMentChannel.model.PaymentBankChannel" id="paymentBankChannelRM">
+		<id property="id" column="id"/>
+        <result property="bankId" column="bank_id"/>
+        <result property="bankName" column="bankName"/>
+        <result property="channelName" column="channelName"/>
+        <result property="channelId" column="channel_id"/>
+        <result property="oneMoney" column="one_money"/>
+        <result property="dayMoney" column="day_money"/>
+        <result property="monthMoney" column="month_money"/>
+        <result property="onlineBanking" column="online_banking"/>
+        <result property="quickRecharge" column="quick_recharge"/>
+        <result property="tiecard" column="tiecard"/>
+        <result property="urgentWithdrawals" column="urgent_withdrawals"/>
+        <result property="sort" column="sort"/>
+        <result property="isDel" column="is_del"/>
+
+	</resultMap>
+	
+
+	<select id="readPayMentChannel" parameterType="map" resultMap="payMentChannelRM">
+		 SELECT * FROM payment_channel  order by sort
+	</select>
+	
+	<select id="readPaymentBankInfo" parameterType="map" resultMap="paymentBankInfoRM">
+		select * from payment_bankinfo 
+		<where>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(bankName)">
+				AND name LIKE "%"#{bankName}"%" 
+			</if>
+		</where>
+	</select>
+	
+	<select id="readChannelList" resultMap="payMentChannelRM">
+		SELECT * FROM payment_channel 
+	</select>
+	
+	<select id="readBankList" resultMap="paymentBankInfoRM">
+		SELECT * FROM payment_bankinfo 
+	</select>
+
+	<select id="readPaymentBankChannel" parameterType="map" resultMap="paymentBankChannelRM">
+		select p.*,p2.name AS channelName,p3.name AS bankName FROM payment_bank_channel p 
+		LEFT JOIN payment_channel p2 ON p.channel_id=p2.id
+		LEFT JOIN payment_bankinfo p3 ON p.bank_id=p3.id 
+		where is_del!=2
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(channelName)">
+			and p.channel_id=#{channelName}
+		                         </if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(bankName)">
+			and p.bank_id=#{bankName}
+		</if>
+	</select>
+
+	<insert id="insertPaymentChannel" parameterType="com.duanrong.business.payMentChannel.model.PayMentChannel">
+		INSERT INTO payment_channel(name,
+		code, logo, gateway_rate, quick_rate, withdraw_fee,pc_usable,mob_usable,sort)
+		VALUES(#{name}, #{code},
+		#{logo},
+		#{rateGateway}, #{rateQuick}, #{withdrawFee},#{usable},#{mobileUsable},#{sort})
+	</insert>
+	
+	
+	
+	<insert id="insertPayMentBankInfo" parameterType="com.duanrong.business.payMentChannel.model.PaymentBankInfo">
+		INSERT INTO payment_bankinfo(name,
+		code, logo,fuiou_code)
+		VALUES(#{name}, #{code},#{logo},#{fuIouCode})
+	</insert>
+	<update id="updatePaymentChannel" parameterType="map">
+		UPDATE payment_channel
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(name)">name=#{name},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(code)">code=#{code},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(logo)">logo=#{logo},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(rateGateway)">gateway_rate=#{rateGateway},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(rateQuick)">quick_rate=#{rateQuick},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(withdrawFee)">withdraw_fee=#{withdrawFee},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(PCusable)">pc_usable=#{PCusable},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(Mobusable)">mob_usable=#{Mobusable},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(sort)">sort=#{sort},</if>
+		</set>
+		WHERE id = #{id} 
+	</update>
+	
+	<insert id="insertPaymentBankChannel" parameterType="com.duanrong.business.payMentChannel.model.PaymentBankChannel">
+		INSERT INTO payment_bank_channel(bank_id,channel_id, one_money, day_money, month_money, online_banking,quick_recharge,tiecard,urgent_withdrawals,sort,is_del)
+		VALUES(#{bankId}, #{channelId},#{oneMoney},#{dayMoney}, #{monthMoney}, #{onlineBanking},#{quickRecharge},#{tiecard},#{urgentWithdrawals},#{sort},1)
+	</insert>
+	
+	
+	<update id="updatePayMentBankChannel" parameterType="map">
+		UPDATE payment_bank_channel
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(bankName)">bank_id=#{bankName},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(channelName)">channel_id=#{channelName},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(oneMoney)">one_money=#{oneMoney},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(dayMoney)">day_money=#{dayMoney},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(monthMoney)">month_money=#{monthMoney},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(onlineBanking)">online_banking=#{onlineBanking},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(quickRecharge)">quick_recharge=#{quickRecharge},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(tiecard)">tiecard=#{tiecard},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(urgentWithdrawals)">urgent_withdrawals=#{urgentWithdrawals},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(sort)">sort=#{sort},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(isDel)">is_del=#{isDel},</if>
+		</set>
+		WHERE id = #{id} 
+	</update> 
+	<update id="updatePaymentBankInfo" parameterType="map">
+		UPDATE payment_bankinfo
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(name)">name=#{name},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(code)">code=#{code},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(logo)">logo=#{logo},</if>
+		</set>
+		WHERE id = #{id} 
+	</update>
+	<select id="readPayMentChannelById" parameterType="String" resultMap="payMentChannelRM">
+		select * from payment_channel where id=#{id}
+	</select>
+	<select id="readPaymentBankInfoById" parameterType="String" resultMap="paymentBankInfoRM">
+		select * from payment_bankinfo where id=#{id}
+	</select>
+	
+	<select id="readPaymentBankChannelById" parameterType="String" resultMap="paymentBankChannelRM">
+		select * from payment_bank_channel where id=#{id}
+	</select>
+	
+	<select id="readPaymentBankChannelByBankIdAndChannelId" parameterType="map" resultMap="paymentBankChannelRM">
+		select * from payment_bank_channel where bank_id=#{bankName} and channel_id=#{channelName}
+	</select>
+	
+	
+	
+</mapper>

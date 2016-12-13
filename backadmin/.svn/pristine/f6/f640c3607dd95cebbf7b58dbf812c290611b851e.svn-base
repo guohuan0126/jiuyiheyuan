@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE taglib PUBLIC "-//Sun Microsystems, Inc.//DTD JSP Tag Library 1.2//EN"
+"http://java.sun.com/dtd/web-jsptaglibrary_1_2.dtd">
+<taglib>
+	<tlib-version>1.0</tlib-version><!-- 标签库的版本 -->
+	<jsp-version>1.2</jsp-version><!-- 这个标签库要求的JSP规范版本 -->
+	<short-name>base</short-name><!-- JSP页面编写工具可以用来创建助记名的可选名字 -->
+	<tag>
+		<name>active</name><!-- 唯一标签名 -->
+		<tag-class>com.duanrong.newadmin.tags.ActiveTag</tag-class><!-- 标签HelloWorldTag类的完全限定名 -->	
+		<body-content>JSP</body-content>
+		<attribute>
+			<name>activeId</name> <!-- 标签属性  -->
+			<required>true</required> <!-- 此属性必须的 -->
+			<rtexprvalue>true</rtexprvalue> <!-- 支持比表达式语言 -->
+		</attribute>	
+	</tag>
+	
+	<tag>
+		<name>urlDecoder</name><!-- 唯一标签名 -->
+		<tag-class>com.duanrong.newadmin.tags.UrlDecodeTag</tag-class><!-- 标签HelloWorldTag类的完全限定名 -->	
+		<body-content>JSP</body-content>
+		<attribute>
+			<name>value</name> <!-- 标签属性  -->
+			<required>true</required> <!-- 此属性必须的 -->
+			<rtexprvalue>true</rtexprvalue> <!-- 支持比表达式语言 -->
+		</attribute>	
+	</tag>
+	
+	<tag>
+		<name>no_active</name><!-- 唯一标签名 -->
+		<tag-class>com.duanrong.newadmin.tags.NoActiveTag</tag-class><!-- 标签HelloWorldTag类的完全限定名 -->	
+		<body-content>JSP</body-content>		
+	</tag>
+	
+	<function>  
+        <name>decrypt</name>  
+        <function-class>com.duanrong.newadmin.utility.AES</function-class>  
+		<function-signature>java.lang.String decode(java.lang.String)</function-signature>
+        <example>${base.decrypt('')}</example>
+   </function>
+	
+</taglib>  

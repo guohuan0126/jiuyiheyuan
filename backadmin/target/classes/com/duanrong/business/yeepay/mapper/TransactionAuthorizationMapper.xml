@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.yeepay.mapper.TransactionAuthorizationMapper">
+	<resultMap type="TransactionAuthorization" id="TransactionAuthorizationRM">
+		<id property="id" column="t_id" />
+		<result property="userId" column="t_user_id" />
+		<result property="expired" column="expired" />
+		<result property="commitTime" column="commit_time" />
+		<result property="status" column="status" />
+		<result property="amount" column="t_amount" />
+		<result property="duserId" column="d_user_id" />
+	</resultMap>
+
+	 <select id="pageInfo"  parameterType="map" resultMap="TransactionAuthorizationRM">
+		SELECT *
+		FROM transaction_authorization
+		<where>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(userId)">
+				AND t_user_id = #{userId}
+			</if>
+		</where>
+		ORDER BY commit_time DESC
+	</select>
+    <select id="get" parameterType="string" resultMap="TransactionAuthorizationRM">
+		SELECT t.*,d.d_user_id FROM transaction_authorization t left join transaction_authorization_detail d on t_id=d.transaction_authorization_id
+		WHERE t.t_id = #{id}
+	</select>
+	<update id="update" parameterType="TransactionAuthorization">
+		UPDATE transaction_authorization
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(status)">status = #{status}</if>
+		</set>
+		WHERE t_id = #{id}
+	</update>
+		<insert id="insert" parameterType="TransactionAuthorization">
+		INSERT INTO
+		transaction_authorization(t_id,t_user_id,expired,commit_time,status,t_amount)
+		VALUES(#{id}, #{userId}, #{expired},
+		#{commitTime}, #{status}, #{amount})
+	</insert>
+	
+</mapper>

@@ -1,0 +1,537 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.recharge.mapper.RechargeMapper">
+	<resultMap type="Recharge" id="RechargeRM">
+		<id property="id" column="recharge_id" />
+		<result property="userId" column="user_id" />
+		<result property="time" column="time" />
+		<result property="actualMoney" column="actual_money" />
+		<result property="successTime" column="success_time" />
+		<result property="status" column="status" />
+		<result property="isRechargedByAdmin" column="is_recharged_by_admin" />
+		<result property="fee" column="fee" />
+		<result property="rechargeWay" column="recharge_way" />
+		<result property="payMentId" column="payment_id" />
+		<result property="type" column="type" />
+	</resultMap>
+	
+	<resultMap type="Recharge" id="RechargeR">
+		<id property="id" column="recharge_id" />
+		<result property="userId" column="user_id" />
+		<result property="time" column="time" />
+		<result property="actualMoney" column="actual_money" />
+		<result property="successTime" column="success_time" />
+		<result property="status" column="status" />
+		<result property="isRechargedByAdmin" column="is_recharged_by_admin" />
+		<result property="fee" column="fee" />
+		<result property="rechargeWay" column="recharge_way" />
+		<result property="type" column="type" />
+		<result property="realname" column="real_name" />
+		<result property="payMentId" column="payMent_id" />
+		<result property="cardNo" column="card_no" />
+		<result property="userSource" column="user_source" />
+		<result property="registerTime" column="register_time" />
+		<result property="bankName" column="bankName" />
+	</resultMap>
+  <resultMap type="Recharge" id="RechargeRM1">
+		<result property="time" column="time" />
+		<result property="num" column="num" />
+		<result property="actualMoney" column="actual_money" />
+	</resultMap>
+	<sql id="allColumns">
+		user_id, time, ROUND(actual_money,2) AS actual_money,
+		success_time, status, is_recharged_by_admin, fee, id AS recharge_id,
+		recharge_way,payment_id,type
+	</sql>
+	<sql id="nallColumns">
+	r.id AS
+	recharge_id,
+	r.user_id, r.time,r.type,b.name as bankName,u.register_time,u1.user_source,ROUND(r.actual_money,2) AS actual_money,
+	r.success_time, r.status, r.is_recharged_by_admin, r.fee, r.recharge_way,u.realname as real_name,r.payment_id,r.card_no
+	</sql>
+
+	<insert id="insert" parameterType="Recharge">
+		INSERT INTO recharge
+		(id, time,
+		user_id, actual_money, status, is_recharged_by_admin, fee,
+		recharge_way)
+		VALUES
+		(#{id}, NOW(), #{userId},
+		#{actualMoney}, #{status},
+		'0', #{fee}, #{rechargeWay})
+	</insert>
+	<insert id="save" parameterType="Recharge">
+		INSERT INTO recharge
+		(id, time,
+		user_id, actual_money, status, is_recharged_by_admin, fee,
+		recharge_way,type)
+		VALUES
+		(#{id}, NOW(), #{userId},
+		#{actualMoney}, #{status},
+		'0', #{fee}, #{rechargeWay},#{type})
+	</insert>
+
+	<select id="get" parameterType="string" resultMap="RechargeRM">
+		SELECT
+		<include refid="allColumns" />
+		FROM recharge
+		WHERE id = #{id}
+	</select>
+
+	<update id="update" parameterType="Recharge">
+		UPDATE recharge
+		<set>
+			<if test="successTime != null">
+				success_time = #{successTime},
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(status)">
+				status = #{status},
+			</if>
+		</set>
+		WHERE id = #{id}
+	</update>
+
+	<select id="getCount" parameterType="Recharge" resultType="long">
+		SELECT COUNT(*) FROM recharge
+		<where>
+			<if test="id != null and id != ''">
+				AND id = #{id}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND user_id = #{userId}
+			</if>
+			<if test="time != null and time != ''">
+				AND time = #{time}
+			</if>
+			<if test="actualMoney != null and actualMoney != ''">
+				AND actual_money = #{actualMoney}
+			</if>
+			<if test="successTime != null and successTime != ''">
+				AND success_time = #{successTime}
+			</if>
+			<if test="status != null and status != ''">
+				AND status = #{status}
+			</if>
+			<if test="isRechargedByAdmin != null and isRechargedByAdmin != ''">
+				AND is_recharged_by_admin = #{isRechargedByAdmin}
+			</if>
+			<!-- 其他条件根据需求添加 -->
+		</where>
+	</select>
+
+	<!-- 根据条件进行组合查询 -->
+	<select id="getByCondition" parameterType="Recharge" resultMap="RechargeRM">
+		SELECT
+		<include refid="allColumns" />
+		FROM recharge
+		<where>
+			<if test="id != null and id != ''">
+				AND id = #{id}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND user_id = #{userId}
+			</if>
+			<if test="time != null and time != ''">
+				AND time = #{time}
+			</if>
+			<if test="actualMoney != null and actualMoney != ''">
+				AND actual_money = #{actualMoney}
+			</if>
+			<if test="successTime != null and successTime != ''">
+				AND success_time = #{successTime}
+			</if>
+			<if test="status != null and status != ''">
+				AND status = #{status}
+			</if>
+			<if test="isRechargedByAdmin != null and isRechargedByAdmin != ''">
+				AND is_recharged_by_admin = #{isRechargedByAdmin}
+			</if>
+			<!-- 其他条件根据需求添加 -->
+		</where>
+	</select>
+
+	<!-- 用户充值总额 -->
+	<select id="getTotalFee" parameterType="Recharge" resultType="double">
+		SELECT ROUND(SUM(fee), 2) FROM recharge r JOIN user u ON r.user_id = u.id
+		<where>
+			<if test="userId != null and userId != ''">
+				AND r.user_id = #{userId}
+			</if>
+			<if test="id != null and id != ''">
+				AND r.id = #{id}
+			</if>
+
+			<if test="status != null and status != ''">
+				AND r.status = #{status}
+			</if>
+
+			<if test=" mnumber != null and mnumber != ''">
+				AND u.mobile_number = #{mnumber}
+			</if>
+			<if test=" realname != null and realname != ''">
+				AND u.realname like '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+			<!-- 其他条件根据需求添加 -->
+		</where>
+	</select>
+
+	<!-- 用户充值总额 -->
+	<select id="getTotalRecharge" parameterType="Recharge"
+		resultType="double">
+		SELECT IFNULL(round(SUM(r.actual_money), 2),0)  
+			FROM recharge r
+ 			JOIN user u ON
+			r.user_id = u.id
+			JOIN user_other_info u1 on u.id=u1.id
+ 			WHERE r.`status`='success' 
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="userId != null and userId != ''">
+				AND r.user_id = #{userId}
+			</if>
+			<if test="id != null and id != ''">
+				AND r.id = #{id}
+			</if>
+			<if test="time != null and time != ''">
+				AND r.time = #{time}
+			</if>
+			<if test="actualMoney != null and actualMoney != ''">
+				AND r.actual_money = #{actualMoney}
+			</if>
+			<if test="successTime != null and successTime != ''">
+				AND r.success_time = #{successTime}
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status = #{status}
+			</if>
+			<if test="isRechargedByAdmin != null and isRechargedByAdmin != ''">
+				AND r.is_recharged_by_admin = #{isRechargedByAdmin}
+			</if>
+			<if test="mnumber != null and mnumber != ''">
+				AND u.mobile_number = #{mnumber}
+			</if>
+			<if test=" realname != null and realname != ''">
+				AND u.realname like '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+			<if test="userType != null and userType != ''" >
+				<choose>
+				<when test="userType == '!duanrongw' ">
+					and u.user_interior != 'duanrongw'
+				</when>
+				<otherwise>
+					and u.user_interior = #{userType}
+				</otherwise>
+			</choose>
+			</if>
+	</select>
+
+	<!-- 分页查询的时候主表的FROM用大写，其他表用from -->
+	<select id="findPaging" parameterType="pageData" resultMap="RechargeRM">
+		SELECT
+		<include refid="allColumns" />
+		FROM recharge
+		<where>
+			<if test=" params.entity.userId != null and params.entity.userId != ''">
+				AND user_id = #{params.entity.userId}
+			</if>
+			<if test=" params.entity.status != null and params.entity.status != ''">
+				AND status = #{params.entity.status}
+			</if>
+		</where>
+		ORDER BY time DESC
+	</select>
+
+	<select id="pageLite" parameterType="recharge" resultMap="RechargeR">
+		SELECT
+		<include refid="nallColumns" />
+		FROM recharge r JOIN user u ON r.user_id = u.id
+		LEFT JOIN user_other_info u1 ON u1.id=u.id
+		LEFT JOIN bank_card b  ON b.card_no=r.card_no
+		<where>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userId != null and userId != ''">
+				AND r.user_id like '%${userId}%'
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status = #{status}
+			</if>
+			<if test=" realname != null and realname != ''">
+				AND u.realname like '%${realname}%'
+			</if>
+			<if test=" mnumber != null and mnumber != ''">
+				AND u.mobile_number = #{mnumber}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+			<if test="userType != null and userType != ''" >
+				<choose>
+					<when test="userType == '!duanrongw' ">
+						and (u.user_interior != 'duanrongw' or u.user_interior IS NULL)
+					</when>
+					<otherwise>
+						and u.user_interior = #{userType}
+					</otherwise>
+				</choose>
+			</if>
+			
+		</where>
+		GROUP BY r.id ORDER BY time DESC 
+	</select>
+
+	<!-- 获取每天的充值金额 -->
+	<select id="getRechargeMoneyPerDay" parameterType="map"
+		resultType="double">
+		SELECT IFNULL(SUM(actual_money), 0) FROM recharge
+		WHERE <![CDATA[time < #{now}]]>
+		AND time > #{yesterday} AND `status`= #{status}
+	</select>
+  <select id="getRechargeNum" parameterType="map" resultMap="RechargeRM1">
+		SELECT time,count(*) as num,sum(actual_money) as actualMoney
+		FROM recharge
+		<where>
+	    <if test="type != null and type != '' and type=='today'">
+			AND DATE(time)=CURDATE()
+		</if>
+		<if test="type != null and type != '' and type=='yesterday'">
+			AND DATE_SUB(CURDATE(), INTERVAL 1 DAY) &lt;= date(time)
+		</if>
+		<if test="type != null and type != '' and type=='week'">
+			AND DATE_SUB(CURDATE(), INTERVAL 1 WEEK) &lt;= date(time)
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+			AND time &gt;= #{start}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+			AND time &lt;= #{end}
+		</if>
+	 </where>
+	 GROUP BY date(time)
+	</select>
+	
+	<!-- 【去除固定借款人】总充值金额 -->
+	<select id="getExcludeFixedBorrowerFee" parameterType="Recharge" resultType="java.math.BigDecimal">
+			SELECT IFNULL(round(SUM(r.actual_money), 2),0)  excludeFixedBorrosFee
+			 FROM recharge r
+			 JOIN user u ON
+					r.user_id = u.id
+			 JOIN user_other_info u1 on u.id=u1.id
+			 WHERE r.`status`='success' 
+			 AND r.user_id not in(SELECT user_id FROM fixed_borrowers)
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="userId != null and userId != ''">
+				AND r.user_id = #{userId}
+			</if>
+			<if test="id != null and id != ''">
+				AND r.id = #{id}
+			</if>
+			<if test="time != null and time != ''">
+				AND r.time = #{time}
+			</if>
+			<if test="actualMoney != null and actualMoney != ''">
+				AND r.actual_money = #{actualMoney}
+			</if>
+			<if test="successTime != null and successTime != ''">
+				AND r.success_time = #{successTime}
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status = #{status}
+			</if>
+			<if test="isRechargedByAdmin != null and isRechargedByAdmin != ''">
+				AND r.is_recharged_by_admin = #{isRechargedByAdmin}
+			</if>
+			<if test="mnumber != null and mnumber != ''">
+				AND u.mobile_number = #{mnumber}
+			</if>
+			<if test=" realname != null and realname != ''">
+				AND u.realname like '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+			<!-- 其他条件根据需求添加 -->
+	</select>
+	<select id="getRechargeSuccessPeople" parameterType="Recharge" resultType="int" >
+	SELECT DISTINCT count(r.user_id)
+			 FROM recharge r
+			 JOIN user u ON
+					r.user_id = u.id
+			 JOIN user_other_info u1 on u.id=u1.id
+			 WHERE r.`status`='success' 
+			 AND r.user_id not in(SELECT user_id FROM fixed_borrowers)
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+		<if test="userId != null and userId != ''">
+				AND r.user_id = #{userId}
+			</if>
+			<if test="id != null and id != ''">
+				AND r.id = #{id}
+			</if>
+			<if test="time != null and time != ''">
+				AND r.time = #{time}
+			</if>
+			<if test="actualMoney != null and actualMoney != ''">
+				AND r.actual_money = #{actualMoney}
+			</if>
+			<if test="successTime != null and successTime != ''">
+				AND r.success_time = #{successTime}
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status = #{status}
+			</if>
+			<if test="isRechargedByAdmin != null and isRechargedByAdmin != ''">
+				AND r.is_recharged_by_admin = #{isRechargedByAdmin}
+			</if>
+			<if test="mnumber != null and mnumber != ''">
+				AND u.mobile_number = #{mnumber}
+			</if>
+			<if test=" realname != null and realname != ''">
+				AND u.realname like '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+	</select>
+	<!-- 失败 -->
+	
+	<!-- 【去除固定借款人】总充值金额 -->
+	<select id="getExcludeFixedBorrowerFeeFail" parameterType="Recharge" resultType="java.math.BigDecimal">
+			SELECT IFNULL(round(SUM(r.actual_money), 2),0)  excludeFixedBorrosFee
+			 FROM recharge r
+			 JOIN user u ON
+					r.user_id = u.id
+			 JOIN user_other_info u1 on u.id=u1.id
+			 WHERE r.`status`!='success' 
+			 AND r.user_id not in(SELECT user_id FROM fixed_borrowers)
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="userId != null and userId != ''">
+				AND r.user_id = #{userId}
+			</if>
+			<if test="id != null and id != ''">
+				AND r.id = #{id}
+			</if>
+			<if test="time != null and time != ''">
+				AND r.time = #{time}
+			</if>
+			<if test="actualMoney != null and actualMoney != ''">
+				AND r.actual_money = #{actualMoney}
+			</if>
+			<if test="successTime != null and successTime != ''">
+				AND r.success_time = #{successTime}
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status = #{status}
+			</if>
+			<if test="isRechargedByAdmin != null and isRechargedByAdmin != ''">
+				AND r.is_recharged_by_admin = #{isRechargedByAdmin}
+			</if>
+			<if test="mnumber != null and mnumber != ''">
+				AND u.mobile_number = #{mnumber}
+			</if>
+			<if test=" realname != null and realname != ''">
+				AND u.realname like '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+			<!-- 其他条件根据需求添加 -->
+	</select>
+	<select id="getRechargeFailPeople" parameterType="Recharge" resultType="int" >
+	SELECT DISTINCT count(r.user_id)
+			 FROM recharge r
+			 JOIN user u ON
+					r.user_id = u.id
+			  JOIN user_other_info u1 on u.id=u1.id
+			 WHERE r.`status`!='success' 
+			 AND r.user_id not in(SELECT user_id FROM fixed_borrowers)
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="userId != null and userId != ''">
+				AND r.user_id = #{userId}
+			</if>
+			<if test="id != null and id != ''">
+				AND r.id = #{id}
+			</if>
+			<if test="time != null and time != ''">
+				AND r.time = #{time}
+			</if>
+			<if test="actualMoney != null and actualMoney != ''">
+				AND r.actual_money = #{actualMoney}
+			</if>
+			<if test="successTime != null and successTime != ''">
+				AND r.success_time = #{successTime}
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status = #{status}
+			</if>
+			<if test="isRechargedByAdmin != null and isRechargedByAdmin != ''">
+				AND r.is_recharged_by_admin = #{isRechargedByAdmin}
+			</if>
+			<if test="mnumber != null and mnumber != ''">
+				AND u.mobile_number = #{mnumber}
+			</if>
+			<if test=" realname != null and realname != ''">
+				AND u.realname like '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+	</select>
+	
+</mapper>

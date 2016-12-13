@@ -1,0 +1,235 @@
+package util;
+
+import java.io.IOException;
+import java.util.List;
+
+
+
+import net.spy.memcached.AddrUtil;
+import net.spy.memcached.ConnectionFactoryBuilder;
+import net.spy.memcached.ConnectionFactoryBuilder.Protocol;
+import net.spy.memcached.MemcachedClient;
+import net.spy.memcached.auth.AuthDescriptor;
+import net.spy.memcached.auth.PlainCallbackHandler;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.duanrong.util.LoadConstantProterties2;
+
+public class OcsUtils {
+	/**
+	 * 控制台上的“内网地址”
+	 */
+	static final String host = "29963be1bf08422a.m.cnqdalicm9pub001.ocs.aliyuncs.com";
+	/**
+	 * 默认端口 11211
+	 */
+	static final String port = "11211";
+	/**
+	 * 控制台上的“访问账号”
+	 */
+	static final String username = "29963be1bf08422a";
+	/**
+	 * 密码
+	 */
+	static final String password = "ocsDR147";
+	/**
+	 * 缓存内容有效时间，单位（秒)
+	 */
+	static final int exp = 60 * 60;
+	/**
+	 * 主机名称
+	 * */
+	public static String hostName = "";
+
+	private static MemcachedClient cache = null;
+
+	private static boolean ocsOpen = true;
+
+	/**
+	 * 序列化参数
+	 */
+	private static final SerializerFeature[] features = {
+			SerializerFeature.WriteClassName,
+			SerializerFeature.WriteNullNumberAsZero,
+			SerializerFeature.WriteNullStringAsEmpty,
+			SerializerFeature.DisableCircularReferenceDetect,
+			SerializerFeature.WriteNullBooleanAsFalse,
+			SerializerFeature.WriteNullListAsEmpty };
+
+	static {
+
+		hostName = LoadConstantProterties2.getValueByDefaultPro("ocsBaseKey");
+		ocsOpen = Boolean.parseBoolean(LoadConstantProterties2
+				.getValueByDefaultPro("ocsOpen"));
+		if (ocsOpen) {
+			AuthDescriptor ad = new AuthDescriptor(new String[] { "PLAIN" },
+					new PlainCallbackHandler(username, password));
+					
+			try {
+				cache = new MemcachedClient(new ConnectionFactoryBuilder()
+						.setProtocol(Protocol.BINARY).setAuthDescriptor(ad)
+						.build(), AddrUtil.getAddresses(host + ":" + port));
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+
+	/**
+	 * 保存：如果没有则插入，如果有则修改。
+	 * 
+	 * @param key
+	 * @param object
+	 */
+	public static void set(String key, Object object) {
+		if (ocsOpen) {
+			String jsonString = JSON.toJSONString(object, features);
+			cache.set(hostName + key, exp, jsonString);
+		}
+	}
+
+	/**
+	 * 保存：如果没有则插入，如果有则修改。
+	 * 
+	 * @param key
+	 * @param object
+	 * @param exp
+	 *            缓存内容有效时间，单位（秒)
+	 */
+	public static void set(String key, Object object, int exp) {
+		if (ocsOpen) {
+			String jsonString = JSON.toJSONString(object, features);
+			cache.set(hostName + key, exp, jsonString);
+		}
+	}
+
+	/**
+	 * 获取
+	 * 
+	 * @param key
+	 * @param clazz
+	 *            类型
+	 */
+	public static String getString(String key) {
+		if (ocsOpen) {
+			if (StringUtils.isBlank(key)) {
+				return null;
+			}
+			return (String) cache.get(key);							
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * 获取
+	 * 
+	 * @param key
+	 * @param clazz
+	 *            类型
+	 */
+	public static <T> T get(String key, Class<T> clazz) {
+		if (ocsOpen) {
+			try {
+				if (StringUtils.isBlank(key)) {
+					return null;
+				}
+				String jsonString = (String) cache.get(hostName + key);
+				if (StringUtils.isBlank(jsonString)) {
+					return null;
+				}
+				return JSON.parseObject(jsonString, clazz);
+			} catch (Exception e) {
+				System.out.print(e.getMessage());
+				return null;
+			}
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * 获取List
+	 * 
+	 * @param key
+	 * @param clazz
+	 *            类型
+	 */
+	public static <T> List<T> getList(String key, Class<T> clazz) {
+
+		if (ocsOpen) {
+			try {
+				if (StringUtils.isBlank(key)) {
+					return null;
+				}
+				String jsonString = (String) cache.get(hostName + key);
+				if (StringUtils.isBlank(jsonString)) {
+					return null;
+				}
+				return JSON.parseArray(jsonString, clazz);
+			} catch (Exception e) {
+				System.out.print(e.getMessage());
+				return null;
+			}
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * 删除
+	 * 
+	 * @param key
+	 */
+	public static void delete(String key) {
+		if (ocsOpen) {
+			cache.delete(hostName + key);
+		}
+
+	}
+	
+
+	/**
+	 * 删除
+	 * 
+	 * @param key
+	 */
+	public static void deleteExclusiveHostName(String key) {
+		if (ocsOpen) {
+			cache.delete(key);
+		}
+	}
+	
+	
+	/**
+	 * 清空
+	 * 
+	 * @param key
+	 */
+	public static void flush() {
+		if (ocsOpen) {
+			cache.flush();
+		}
+	}
+	
+	
+	/**
+	 * 判断Key是否存在
+	 * @param key
+	 * @return
+	 */
+	public static Boolean isExist(String key){
+		if(ocsOpen){
+			Object obj = cache.get(key);
+			if(obj != null){
+				return true;
+			}
+		}
+		return false;
+	}
+
+}

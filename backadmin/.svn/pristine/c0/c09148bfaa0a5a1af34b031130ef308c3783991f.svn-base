@@ -1,0 +1,190 @@
+package com.duanrong.business.ruralfinance.service.imp;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+
+import base.pagehelper.PageInfo;
+
+import com.duanrong.business.ruralfinance.dao.AgricultureLoanerInfoDao;
+import com.duanrong.business.ruralfinance.model.AgricultureForkLoans;
+import com.duanrong.business.ruralfinance.model.AgricultureLoaninfo;
+import com.duanrong.business.ruralfinance.model.AgricultureRepaymentPlan;
+import com.duanrong.business.ruralfinance.model.LoanerinfoExport;
+import com.duanrong.business.ruralfinance.model.Template;
+import com.duanrong.business.ruralfinance.service.AgricultureLoanerInfoService;
+import com.duanrong.newadmin.utility.ArithUtil;
+import com.duanrong.newadmin.utility.DateUtil;
+
+@Service
+public class AgricultureLoanerInfoServiceImpl implements
+		AgricultureLoanerInfoService {
+
+	@Resource
+	private AgricultureLoanerInfoDao loanerInfoDao;
+
+	@Override
+	public PageInfo<AgricultureLoaninfo> readAgricultureLoaninfo(int pageNo,
+			int pageSize, Map<String, Object> params) {
+		return loanerInfoDao.readAgricultureLoaninfo(pageNo, pageSize, params);
+	}
+
+	@Override
+	public PageInfo<AgricultureForkLoans> readAgricultureForkLoans(int pageNo,
+			int pageSize, Map<String, Object> params) {
+		// TODO Auto-generated method stub
+		return loanerInfoDao.readAgricultureForkLoans(pageNo, pageSize, params);
+	}
+
+	@Override
+	public PageInfo<AgricultureRepaymentPlan> readRuralfinanceRepaymentPlan(
+			int pageNo, int pageSize, Map<String, Object> params) {
+		PageInfo<AgricultureRepaymentPlan> page = loanerInfoDao
+				.readRuralfinanceRepaymentPlan(pageNo, pageSize, params);
+		// TODO Auto-generated method stub
+		return page;
+	}
+
+	@Override
+	public AgricultureLoaninfo readAgricultureLoaninfoById(String id) {
+		// TODO Auto-generated method stub
+		return loanerInfoDao.readAgricultureLoaninfoById(id);
+	}
+
+	@Override
+	public void updateStatusById(Map<String, Object> params) {
+		loanerInfoDao.updateStatusById(params);
+
+	}
+
+	@Override
+	public PageInfo<AgricultureForkLoans> readAgricultureForkLoansById(
+			int pageNo, int pageSize, String id) {
+		// TODO Auto-generated method stub
+		return loanerInfoDao.readAgricultureForkLoansById(pageNo, pageSize, id);
+	}
+
+	@Override
+	public void updateForkStatusById(Map<String, Object> params) {
+		loanerInfoDao.updateForkStatusById(params);
+
+	}
+
+	@Override
+	public void renewalLatePenalty(Map<String, Object> map) {
+		loanerInfoDao.renewalLatePenalty(map);
+		
+	}
+
+	@Override
+	public void updateRepaymentplanStatus(Map<String, Object> params) {
+		loanerInfoDao.updateRepaymentplanStatus(params);
+		
+	}
+
+	@Override
+	public AgricultureLoaninfo readAgricultureLoaninfoByIdAndFlag(String id) {
+		// TODO Auto-generated method stub
+		return loanerInfoDao.readAgricultureLoaninfoByIdAndFlag(id);
+	}
+
+	@Override
+	public double readneedRepayMoney(String loanDataId) {
+		// TODO Auto-generated method stub
+		return loanerInfoDao.readneedRepayMoney(loanDataId);
+	}
+
+	@Override
+	public List<AgricultureRepaymentPlan> readRuralfinanceFailRepaymentPlan() {
+		// TODO Auto-generated method stub
+		return loanerInfoDao.readRuralfinanceFailRepaymentPlan();
+	}
+
+	@Override
+	public void updateFlag(Map<String, Object> map) {
+		loanerInfoDao.updateFlag(map);
+		
+	}
+
+	@Override
+	public List<Template> readTemplate(Map<String, Object> params) {
+		// TODO Auto-generated method stub
+		return loanerInfoDao.readTemplate(params);
+	}
+
+
+	@Override
+	public List<LoanerinfoExport> readLoanerinfoExport() {
+		return loanerInfoDao.readLoanerinfoExport();
+	}
+
+	@Override
+	public List<AgricultureLoaninfo> readAgricultureLoaninfo(
+			Map<String, Object> params) {
+		// TODO Auto-generated method stub
+		return loanerInfoDao.readAgricultureLoaninfo(params);
+	}
+
+	@Override
+	public List<AgricultureRepaymentPlan> readRuralfinanceRepaymentPlan(
+			Map<String, Object> params) {
+		
+		return loanerInfoDao.readRuralfinanceRepaymentPlan(params);
+	}
+
+	@Override
+	public List<AgricultureLoaninfo> readAgriculturePacking(
+			Map<String, Object> params) {
+		return loanerInfoDao.readAgriculturePacking(params);
+	}
+
+	@Override
+	public AgricultureLoaninfo readAgricultureByLoanerinfoId(String id) {
+		
+		return loanerInfoDao.readAgricultureByLoanerinfoId(id);
+	}
+
+	@Override
+	public void updatePackStatus(Map<String, Object> params) {
+	loanerInfoDao.updatePackStatus(params);
+	}
+
+	@Override
+	public void updateTimelyLoaninfo(Map<String, Object> params) {
+		loanerInfoDao.updateTimelyLoaninfo(params);
+		
+	}
+
+	@Override
+	public List<AgricultureRepaymentPlan> readTimelyloansRepaymentPlan(String id) {
+	
+		return loanerInfoDao.readTimelyloansRepaymentPlan(id);
+	}
+
+	@Override
+	public AgricultureLoaninfo readAgricultureBycontractId(
+			Map<String, Object> params) {
+		// TODO Auto-generated method stub
+		return loanerInfoDao.readAgricultureBycontractId(params);
+	}
+
+	@Override
+	public void updateLoaninfobank(Map<String, Object> params) {
+		loanerInfoDao.updateLoaninfobank(params);
+		
+	}
+
+	@Override
+	public AgricultureRepaymentPlan readRepaymentPlanById(String id) {
+		
+		return loanerInfoDao.readRepaymentPlanById(id);
+	}
+
+}

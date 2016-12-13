@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.bankinfo.mapper.BankInfoMapper">
+	<resultMap type="com.duanrong.business.bankinfo.model.BankInfo" id="BankInfoRM">
+		<id property="id" column="id" />
+		<result property="bank" column="bank" />
+		<result property="rechargeDesc" column="recharge_desc" />
+		<result property="sortNo" column="sort_no" />
+	    <result property="name" column="name" />		
+		<result property="url" column="url" />
+		<result property="whetherDelete" column="whether_delete" />
+		<result property="paymentId" column="payment_id" />	
+		<result property="onlineBank" column="online_banking" />		
+		<result property="tiecard" column="tiecard" />		
+		<result property="quickRecharge" column="quick_recharge" />		
+	</resultMap>
+
+		<!-- 根据常用BankCard表中字段进行组合条件查询 -->
+	<select id="getBankInfo" resultMap="BankInfoRM"
+		parameterType="com.duanrong.business.bankinfo.model.BankInfo">
+		SELECT * FROM bank_info
+		<where>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(name)">
+				AND name = #{name}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(bank)">
+				AND bank like '%${bank}%'
+			</if>
+			<if test="whetherDelete != null">
+				AND whether_delete = #{whetherDelete}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(paymentId)">
+				AND payment_id = #{paymentId}
+			</if>			
+		</where>
+		ORDER BY sort_no
+	</select>
+	<!-- 修改项目状态 -->
+	<update id="updateBankstatus" parameterType="Map">
+		UPDATE bank_info
+		<set>
+		 whether_delete = #{whetherDelete}
+		</set>
+		WHERE id = #{id}
+	</update>
+	<select id="get" parameterType="string" resultMap="BankInfoRM">
+		SELECT * FROM bank_info
+		WHERE
+		id=#{id}
+	</select>
+	<insert id="insert" parameterType="com.duanrong.business.bankinfo.model.BankInfo">
+		INSERT INTO bank_info(id,
+		bank, recharge_desc,sort_no,name,url,whether_delete,payment_id,online_banking,tiecard,quick_recharge)
+		VALUES(#{id},#{bank},#{rechargeDesc},#{sortNo},#{name},#{url},#{whetherDelete},#{paymentId},#{onlineBank},
+		#{tiecard},#{quickRecharge})
+	</insert>
+	
+	<!-- 进行update的时候一定要设置id -->
+	<update id="update" parameterType="BankCard">
+		UPDATE bank_info
+		<set>
+			<if test="bank != null">bank=#{bank},</if>
+			<if test="rechargeDesc != null">recharge_desc=#{rechargeDesc},</if>
+			<if test="sortNo != null">sort_no=#{sortNo},</if>
+			<if test="name != null">name=#{name},</if>
+			<if test="url != null">url=#{url},</if>
+			<if test="whetherDelete != null">whether_delete=#{whetherDelete},</if>
+			<if test="paymentId != null">payment_id=#{paymentId},</if> 
+			<if test="onlineBank != null">online_banking=#{onlineBank},</if>
+			<if test="tiecard != null">tiecard=#{tiecard},</if>
+			<if test="quickRecharge != null">quick_recharge=#{quickRecharge},</if>
+		</set>
+		WHERE id = #{id};
+	</update>
+</mapper>

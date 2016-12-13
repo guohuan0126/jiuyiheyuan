@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.withdraw.mapper.WithdrawCashMapper">
+	<resultMap type="withdrawCash" id="withdrawCashRM">
+		<id property="id" column="withdrawCash_id" />
+		<result property="userId" column="user_id" />
+		<result property="userSource" column="user_source" />
+		<result property="registerTime" column="register_time" />
+		<result property="time" column="time" />
+		<result property="actualMoney" column="actual_money" />
+		<result property="status" column="status" />
+		<result property="withdrawType" column="withdraw_type" />
+		<result property="paymentId" column="payment_id" />
+		<!-- 需要修改 -->
+		<result property="bankCardId" column="bank_card_id" />
+		<result property="fee" column="fee" />
+		<result property="cashFine" column="cash_fine" />
+		<result property="account" column="account" />
+		<result property="realname" column="real_name" />
+		<association property="bankCard" column="bank_card_id"
+			resultMap="com.duanrong.business.bankcard.mapper.BankCardMapper.bcRM" />
+	</resultMap>
+	<resultMap type="withdrawCash" id="withdrawCashRM1">
+		<result property="time" column="time" />
+		<result property="num" column="num" />
+		<result property="actualMoney" column="actual_money" />
+	</resultMap>
+	
+	
+	<sql id="nallColumns">
+		r.id as withdrawCash_id,r.user_id as user_id ,u.register_time,u1.user_source ,r.time as
+		time, ROUND(r.actual_money,2) AS actual_money,r.payment_id,
+		r.status as status, r.bank_card_id as bank_card_id, case when
+		r.status='success' then 2 else 0 end as fee,r.cash_fine as
+		cash_fine,r.account as account,u.realname as real_name,b.name as
+		name,b.bank as bank,b.card_no as card_no ,r.withdraw_type
+	</sql>
+	<insert id="insert" parameterType="withdrawCash">
+		INSERT INTO withdraw_cash
+		(id,
+		user_id, time, actual_money, status, bank_card_id, fee, cash_fine,
+		account)
+		VALUES
+		(#{id},#{userId},#{time},#{actualMoney},#{status},#{bankCard.id},#{fee},#{cashFine},#{account})
+	</insert>
+
+	<select id="get" parameterType="string" resultMap="withdrawCashRM">
+		SELECT *, id
+		AS withdrawCash_id FROM withdraw_cash
+		WHERE id = #{id}
+	</select>
+
+	<!-- 根据条件进行组合查询 -->
+	<select id="getByCondition" parameterType="withdrawCash"
+		resultMap="withdrawCashRM">
+		SELECT *, id AS withdrawCash_id FROM withdraw_cash
+		<where>
+			<if test="id != null and id != ''">
+				AND id = #{id}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND user_id = #{userId}
+			</if>
+			<if test="time != null and time != ''">
+				AND time = #{time}
+			</if>
+			<if test="actualMoney != null and actualMoney != ''">
+				AND actual_money = #{actualMoney}
+			</if>
+			<if test="status != null and status != ''">
+				AND status = #{status}
+			</if>
+			<if test="bankCardId != null and bankCardId != ''">
+				AND bank_card_id = #{bankCardId}
+			</if>
+			<if test="paymentId != null and paymentId != ''">
+				AND payment_id = #{paymentId}
+			</if>
+			<!-- 其他条件根据需求添加 -->
+		</where>
+	</select>
+
+	<!-- 提现总额 -->
+	<select id="getTotalWithdrawCash" parameterType="withdrawCash"
+		resultType="double">
+	select IFNULL(round(SUM(actual_money), 2),0)
+	   FROM withdraw_cash r 
+	   JOIN USER u ON user_id = u.id  
+	   JOIN user_other_info u1 on u.id=u1.id
+	   WHERE r.`status`='success' 
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="registerTimeStart != null and registerTimeStart != ''">
+				AND u.register_time &gt;=#{registerTimeStart}
+			</if>
+			<if test="registerTimeEnd != null and registerTimeEnd != ''">
+				AND u.register_time &lt;=#{registerTimeEnd}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND r.user_id = #{userId}
+			</if>
+			<if test="id != null and id != ''">
+				AND r.id = #{id}
+			</if>
+			<if test="time != null and time != ''">
+				AND r.time = #{time}
+			</if>
+			<if test="actualMoney != null and actualMoney != ''">
+				AND r.actual_money = #{actualMoney}
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status = #{status}
+			</if>
+			<if test="bankCardId != null and bankCardId != ''">
+				AND r.bank_card_id = #{bankCardId}
+			</if>
+			<if test="mnumber != null and mnumber != ''">
+				AND u.mobile_number = #{mnumber}
+			</if>
+			<if test=" realname != null and realname != ''">
+				AND u.realname like '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+			<!-- 其他条件根据需求添加 -->
+	</select>
+
+	<!-- 查询用户提现次数 -->
+	<select id="getCountWithdrawCash" parameterType="withdrawCash"
+		resultType="long">
+		SELECT COUNT(*)
+		FROM withdraw_cash
+		<where>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(userId)">
+				AND user_id = #{userId}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(status)">
+				AND `status` = #{status}
+			</if>
+		</where>
+	</select>
+
+	<!-- 分页查询的时候主表的FROM用大写，其他表用from -->
+	<select id="findPaging" parameterType="pageData" resultMap="withdrawCashRM">
+		SELECT *, id AS withdrawCash_id
+		FROM withdraw_cash
+
+		<where>
+			<if test=" params.entity.userId != null and params.entity.userId != ''">
+				AND user_id = #{params.entity.userId}
+			</if>
+			<if test=" params.entity.status != null and params.entity.status != ''">
+				AND status = #{params.entity.status}
+			</if>
+		</where>
+
+		ORDER BY time DESC
+	</select>
+
+	<!-- 进行update的时候一定要设置id -->
+	<update id="update" parameterType="withdrawCash">
+		UPDATE withdraw_cash
+		<set>
+			<if test="userId != null">user_id=#{userId},</if>
+			<if test="time != null">time=#{time},</if>
+			<if test="actualMoney != null">actual_money=#{actualMoney},</if>
+			<if test="status != null">status=#{status},</if>
+			<if test="bankCard.id != null">bank_card_id=#{bankCard.id},</if>
+			<if test="fee != null">fee=#{fee},</if>
+			<if test="cashFine != null">cash_fine=#{cashFine},</if>
+			<if test="account != null">account=#{account},</if>
+		</set>
+		WHERE id = #{id};
+	</update>
+	<select id="pageLite" parameterType="withdrawCash" resultMap="withdrawCashRM">
+		SELECT
+		<include refid="nallColumns" />
+		FROM withdraw_cash r 
+		JOIN user u ON r.user_id = u.id 
+		join bank_card b on r.bank_card_id=b.id
+		join user_other_info u1 on u.id=u1.id
+		<where>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="registerTimeStart != null and registerTimeStart != ''">
+				AND u.register_time &gt;=#{registerTimeStart}
+			</if>
+			
+			<if test="registerTimeEnd != null and registerTimeEnd != ''">
+				AND u.register_time &lt;=#{registerTimeEnd}
+			</if>
+			
+			
+			<if test="userId != null and userId != ''">
+				AND r.user_id like #{userId}
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status = #{status}
+			</if>
+			<if test=" realname != null and realname != ''">
+				AND u.realname like '%${realname}%'
+			</if>
+			<if test=" mnumber != null and mnumber != ''">
+				AND u.mobile_number = #{mnumber}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+			<if test="userType != null and userType != ''" >
+				<choose>
+				<when test="userType == '!duanrongw' ">
+					and (u.user_interior != 'duanrongw' or u.user_interior IS NULL)
+				</when>
+				<otherwise>
+					and u.user_interior = #{userType}
+				</otherwise>
+			</choose>
+			</if>
+		</where>
+		ORDER BY r.time DESC
+	</select>
+	<!-- 用户充值总额 -->
+	<select id="getTotalFee" parameterType="withdrawCash"
+		resultType="double">
+		SELECT ROUND(sum(case when r.status='success' then 2 else 0 end),2)
+		FROM withdraw_cash r JOIN user u ON user_id = u.id
+		JOIN user_other_info u1 on u.id=u1.id
+		<where>
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="registerTimeStart != null and registerTimeStart != ''">
+				AND u.register_time &gt;=#{registerTimeStart}
+			</if>
+			<if test="registerTimeEnd != null and registerTimeEnd != ''">
+				AND u.register_time &lt;=#{registerTimeEnd}
+			</if>
+			
+			<if test="userId != null and userId != ''">
+				AND r.user_id = #{userId}
+			</if>
+
+			<if test="status != null and status != ''">
+				AND r.status = #{status}
+			</if>
+
+			<if test=" mnumber != null and mnumber != ''">
+				AND u.mobile_number = #{mnumber}
+			</if>
+			<if test=" realname != null and realname != ''">
+				AND u.realname like '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+			<if test="userType != null and userType != ''" >
+				<choose>
+				<when test="userType == '!duanrongw' ">
+					and u.user_interior != 'duanrongw'
+				</when>
+				<otherwise>
+					and u.user_interior = #{userType}
+				</otherwise>
+			</choose>
+			</if>
+		</where>
+	</select>
+
+	<!-- 获取每天的提现金额 -->
+	<select id="getWithdrawMoneyPerDay" parameterType="map"
+		resultType="double">
+		SELECT IFNULL(SUM(actual_money), 0) FROM withdraw_cash
+		WHERE <![CDATA[time < #{now}]]>
+		<if test="yesterday != null and yesterday != ''">
+			AND time > #{yesterday} 
+		</if>
+		<if test="id != null and id != ''">
+			AND id = #{id} 
+		</if>
+		AND `status`= #{status}
+	</select>
+	<select id="getCashNum" parameterType="map" resultMap="withdrawCashRM1">
+		SELECT time,count(*) as num,sum(actual_money) as actualMoney
+		FROM withdraw_cash 
+		<where>
+	    <if test="type != null and type != '' and type=='today'">
+			AND DATE(time)=CURDATE()
+		</if>
+		<if test="type != null and type != '' and type=='yesterday'">
+			AND DATE_SUB(CURDATE(), INTERVAL 1 DAY) &lt;= date(time)
+		</if>
+		<if test="type != null and type != '' and type=='week'">
+			AND DATE_SUB(CURDATE(), INTERVAL 1 WEEK) &lt;= date(time)
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+			AND time &gt;= #{start}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+			AND time &lt;= #{end}
+		</if>
+	 </where>
+	 GROUP BY date(time)
+	</select>
+	
+	<!-- 总提现金额[去除固定借款人] -->
+	<select id="getExcludeFixedFee" parameterType="withdrawCash" resultType="java.math.BigDecimal">
+	select IFNULL(round(SUM(actual_money), 2),0)
+	   FROM withdraw_cash r 
+	   JOIN USER u ON r.user_id = u.id 
+	   JOIN user_other_info u1 on u.id=u1.id
+	   WHERE r.`status`='success' 
+	   AND r.user_id not in (SELECT user_id FROM fixed_borrowers) 
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="registerTimeStart != null and registerTimeStart != ''">
+				AND u.register_time &gt;=#{registerTimeStart}
+			</if>
+			<if test="registerTimeEnd != null and registerTimeEnd != ''">
+				AND u.register_time &lt;=#{registerTimeEnd}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND r.user_id = #{userId}
+			</if>
+			<if test="id != null and id != ''">
+				AND r.id = #{id}
+			</if>
+			<if test="time != null and time != ''">
+				AND r.time = #{time}
+			</if>
+			<if test="actualMoney != null and actualMoney != ''">
+				AND r.actual_money = #{actualMoney}
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status = #{status}
+			</if>
+			<if test="bankCardId != null and bankCardId != ''">
+				AND r.bank_card_id = #{bankCardId}
+			</if>
+			<if test="mnumber != null and mnumber != ''">
+				AND u.mobile_number = #{mnumber}
+			</if>
+			<if test=" realname != null and realname != ''">
+				AND u.realname like '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+			<!-- 其他条件根据需求添加 -->
+	</select>
+	
+	<select id="getExcludeFixedFeePeopleCount" parameterType="withdrawCash" resultType="int">
+	select DISTINCT count(r.user_id)
+	   FROM withdraw_cash r 
+	   JOIN USER u ON r.user_id = u.id 
+	   JOIN user_other_info u1 on u.id=u1.id
+	    WHERE r.`status`='success' 
+	    AND r.user_id not in (SELECT user_id FROM fixed_borrowers) 
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source IS Null
+			</if>
+			
+			<if test="registerTimeStart != null and registerTimeStart != ''">
+				AND u.register_time &gt;=#{registerTimeStart}
+			</if>
+			<if test="registerTimeEnd != null and registerTimeEnd != ''">
+				AND u.register_time &lt;=#{registerTimeEnd}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND r.user_id = #{userId}
+			</if>
+			<if test="id != null and id != ''">
+				AND r.id = #{id}
+			</if>
+			<if test="time != null and time != ''">
+				AND r.time = #{time}
+			</if>
+			<if test="actualMoney != null and actualMoney != ''">
+				AND r.actual_money = #{actualMoney}
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status = #{status}
+			</if>
+			<if test="bankCardId != null and bankCardId != ''">
+				AND r.bank_card_id = #{bankCardId}
+			</if>
+			<if test="mnumber != null and mnumber != ''">
+				AND u.mobile_number = #{mnumber}
+			</if>
+			<if test=" realname != null and realname != ''">
+				AND u.realname like '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+			<!-- 其他条件根据需求添加 -->
+	</select>
+	
+	
+	
+	<!-- 查询用户提现次数 -->
+	<select id="getHolidayDate" parameterType="map" resultType="int">
+		SELECT COUNT(*) FROM holiday_date where date like date_format(#{date}, '%Y-%m-%d') and type = #{type}
+	</select>
+</mapper>

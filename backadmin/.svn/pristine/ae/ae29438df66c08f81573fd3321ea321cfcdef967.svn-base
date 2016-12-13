@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.demand.mapper.DemandTreasureBillMapper">
+	<resultMap type="DemandTreasureBill" id="DemandTreasureBillRM">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="money" column="money" />
+		<result property="createTime" column="create_time" />
+		<result property="type" column="type" />
+		<result property="tranferWay" column="tranfer_way" />
+		<result property="status" column="status" />
+		<result property="detail" column="detail" />
+		<result property="info" column="info" />
+		<result property="totalMoney" column="total_money" />
+		<result property="highMoney" column="high_money"/>
+		<result property="billId" column="bill_id"/>
+		<association property="user" column="user_id"
+			resultMap="com.duanrong.business.user.mapper.UserMapper.userRM" />
+	</resultMap>
+
+	<!-- 获取用户累计活期宝收益 -->
+	<select id="getDemandTreasureMoneyByType" parameterType="map" resultType="double">
+		SELECT SUM(money) FROM demand_treasure_bill WHERE type =
+		#{type} AND user_id = #{userId}
+	</select>
+
+	<!-- 获取用户累计活期宝收益 -->
+	<select id="getTotalDemandTreasureMoneyByType" parameterType="string"
+		resultType="double">
+		SELECT SUM(money) FROM demand_treasure_bill WHERE type =
+		#{type}
+	</select>
+
+	<!-- 数据统计 -->
+	<select id="getAccount" parameterType="map" resultMap="DemandTreasureBillRM">
+		SELECT *, SUM(money) AS total_money, (
+		select SUM(money) AS total_money
+		from demand_treasure_bill
+		<where>
+			<if test="type != null and type != '' ">
+				AND type IN(${type})
+			</if>
+		</where>
+		group by date_format(create_time, '%Y-%m-%d')
+		order by total_money desc limit 1) as high_money
+		FROM demand_treasure_bill
+		<where>
+			<if test="days != 0">
+				AND date_format(create_time, '%Y-%m-%d') >=
+				date_format(CURDATE(), '%Y-%m-%d') - interval #{days} day
+			</if>
+			<if test="type != null and type != '' ">
+				AND type IN(${type})
+			</if>
+		</where>
+		group by date_format(create_time, '%Y-%m-%d') order by date_format(create_time, '%Y-%m-%d')
+	</select>
+
+	<!-- 获取用户前一天15点以后转入活期宝金额（无效计息本金） -->
+	<select id="getDemandTreasureInvalidMoney" parameterType="map"
+		resultType="double">
+		SELECT SUM(money) from demand_treasure_bill where
+		<choose>
+			<when test="type == 'out' ">
+				create_time >= date_format(#{date},
+				'%Y-%m-%d')-interval 1 day
+			</when>
+			<otherwise>
+				create_time >= date_format(#{date}, '%Y-%m-%d')-interval 9 hour
+			</otherwise>
+		</choose>
+		AND user_Id = #{userId} AND
+		type = #{type}
+	</select>
+   <select id="getCount" parameterType="string"
+		resultType="int">
+		SELECT count(*) from demand_treasure_bill where
+		bill_id = #{billId}
+	</select>
+
+
+	<!-- 获取活期宝用户 -->
+	<select id="getDemandTreasureUser" resultType="string">
+        select distinct user_id from demand_treasure_bill
+	</select>
+     
+     <!-- 获得需要派息的用户（排除当天计过息的用户） -->
+     <select id="getInterestUser" resultType="string">
+        select distinct user_id from demand_treasure_bill  
+        where type = 'in' and user_id not in (SELECT distinct user_id FROM demand_treasure_bill 
+        where type = 'interest' and date_format(create_time,'%Y-%m-%d') = date_format(NOW(),'%Y-%m-%d'));
+	</select>
+	
+   <select id="getInterestToday" resultType="string" >
+	select CONCAT(u.user_id,',',round(
+	((select if(SUM(money)is null,0,SUM(money)) from demand_treasure_bill where user_id = u.user_id and type = 'in' AND DATE_FORMAT(create_time,'%Y-%m-%d') &lt; date_format(NOW(),'%Y-%m-%d'))-
+	(select if(SUM(money)is null,0,SUM(money)) from demand_treasure_bill where user_id = u.user_id and type = 'out' and DATE_FORMAT(create_time,'%Y-%m-%d') &lt; date_format(NOW(),'%Y-%m-%d'))-
+	(select if(SUM(principal)is null,0,SUM(principal)) from demand_treasure_transferout where user_id = u.user_id and status = 'sended' and DATE_FORMAT(sended_time,'%Y-%m-%d') &lt; date_format(NOW(),'%Y-%m-%d')) )
+	*(SELECT rate/365 FROM demand_treasure_dayRate WHERE status=1 and date_format(date,'%Y-%m-%d') = date_format(NOW(),'%Y-%m-%d')-interval 1 DAY limit 1),2))
+	from 
+	(select distinct user_id from demand_treasure_bill  where type = 'in' and user_id not in 
+	(SELECT distinct user_id FROM demand_treasure_bill where type = 'interest' and date_format(create_time,'%Y-%m-%d') = date_format(NOW(),'%Y-%m-%d'))) u
+
+   </select>
+   
+   <select id="getInterestToday1" resultType="string" parameterType="map">
+	select CONCAT(u.user_id,',',round(
+	((select if(SUM(money)is null,0,SUM(money)) from demand_treasure_bill where user_id = u.user_id and type = 'in' AND date_format(create_time,'%Y-%m-%d') &lt;= date_format(#{date},'%Y-%m-%d'))-
+	(select if(SUM(money)is null,0,SUM(money)) from demand_treasure_bill where user_id = u.user_id and type = 'out' AND date_format(create_time,'%Y-%m-%d') &lt;= date_format(#{date},'%Y-%m-%d'))-
+	(select if(SUM(principal)is null,0,SUM(principal)) from demand_treasure_transferout where user_id = u.user_id and status = 'sended' AND date_format(sended_time,'%Y-%m-%d') &lt;= date_format(#{date},'%Y-%m-%d')))
+	*(SELECT rate/365 FROM demand_treasure_dayRate WHERE status=1 and date_format(date,'%Y-%m-%d') = date_format(#{date},'%Y-%m-%d') limit 1),2))
+	from 
+	(select distinct user_id from demand_treasure_bill  where type = 'in' AND date_format(create_time,'%Y-%m-%d') &lt;= date_format(#{date},'%Y-%m-%d') and user_id not in 
+	(SELECT distinct user_id FROM demand_treasure_bill where type = 'interest' and date_format(create_time,'%Y-%m-%d')-interval 1 DAY = date_format(#{date},'%Y-%m-%d'))) u
+	<where>
+		<if test="userId != null and userId != '' ">
+			u.user_id = #{userId}
+		</if>
+	</where>
+   </select>
+
+	<!-- 批量派息 -->
+	<insert id="insertInterestBatch" parameterType="java.util.List">
+		INSERT INTO demand_treasure_bill
+		(id,user_id,money,
+		type, create_time,
+		tranfer_way, status, detail)
+		VALUES
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.id},#{item.userId},#{item.money}, #{item.type},
+			#{item.createTime},#{item.tranferWay}, #{item.status},#{item.detail})
+		</foreach>
+	</insert>
+	<insert id="insert" parameterType="DemandTreasureBill">
+		INSERT INTO
+		demand_treasure_bill
+		(id,user_id,money,
+		type, create_time,
+		tranfer_way,
+		detail)
+		VALUES(#{id},#{userId},#{money}, #{type},
+		#{createTime},#{tranferWay},#{detail})
+	</insert>
+	<insert id="insertBill" parameterType="DemandTreasureBill">
+		INSERT INTO
+		demand_treasure_bill
+		(id,user_id,money,
+		type, create_time,
+		tranfer_way,
+		detail,bill_id)
+		VALUES(#{id},#{userId},#{money}, #{type},
+		#{createTime},#{tranferWay},#{detail},#{billId})
+	</insert>
+
+	<!-- 资金流会记录 -->
+	<select id="pageLite" resultMap="DemandTreasureBillRM"
+		parameterType="DemandTreasureBill">
+		SELECT bill.*, 
+		(SELECT SUM(money) FROM demand_treasure_bill as bill2
+		<where>
+			<if test="userId != null and userId != '' ">
+				AND bill2.user_Id = #{userId}
+			</if>
+			<if test="type != null and type != '' ">
+				AND bill2.type = #{type}
+			</if>
+			<if test="startTime != null and startTime != '' ">
+				AND bill2.create_time >= #{startTime}
+			</if>
+			<if test="endTime != null and endTime != '' ">
+				AND bill2.create_time &lt;= #{endTime}
+			</if>
+		</where>
+		) AS total_money , u.realname, u.mobile_number 
+FROM demand_treasure_bill AS bill JOIN `user` u ON bill.user_id = u.id
+		<where>
+			<if test="userId != null and userId != '' ">
+				AND bill.user_Id = #{userId}
+			</if>
+			<if test="type != null and type != '' ">
+				AND bill.type = #{type}
+			</if>
+			<if test="startTime != null and startTime != '' ">
+				AND bill.create_time >= #{startTime}
+			</if>
+			<if test="endTime != null and endTime != '' ">
+				AND bill.create_time &lt;= #{endTime}
+			</if>
+		</where>
+		ORDER BY bill.create_time DESC
+	</select>
+
+	
+	<!-- 转入转出分页查询 -->
+	<select id="pageLite02" parameterType="DemandTreasureBill" resultMap="DemandTreasureBillRM" >
+	  	SELECT * FROM
+		demand_treasure_bill left join user on  demand_treasure_bill.user_id = user.id
+		<where>
+		<if test="startTime != null and startTime != '' ">
+			and demand_treasure_bill.create_time &gt;=#{startTime}
+		</if>
+		<if test="endTime != null and endTime != '' ">
+			and demand_treasure_bill.create_time &lt;=#{endTime}
+		</if>
+		<if test="type != null and type != '' ">
+			and demand_treasure_bill.type =#{type}
+		</if>
+	    <if test="tranferWay != null and tranferWay != '' ">
+			and demand_treasure_bill.tranfer_way =#{tranferWay}
+		</if>
+		<if test="status != null and status != '' ">
+			and demand_treasure_bill.status =#{status}
+		</if>
+		</where>
+		ORDER BY demand_treasure_bill.create_time DESC
+	</select>
+	<!-- 昨日收益 -->
+	<select id="getDemandLaterInterest" parameterType="string"
+		resultType="double">
+		SELECT money from demand_treasure_bill where
+		date_format(create_time, '%Y-%m-%d') = date_format(CURDATE(), '%Y-%m-%d')
+		AND user_Id = #{userId} AND
+		type = 'interest' limit 1
+	</select>
+	
+	<!-- 昨日收益 -->
+	<select id="getDemandBillSumMoney" parameterType="map"	resultType="double">
+		SELECT sum(money) from demand_treasure_bill where user_Id = #{userId} AND type in (${status})
+	</select>
+	
+	<!-- 昨日收益 -->
+	<select id="getDemandBillCountByUser" parameterType="string" resultType="int">
+		SELECT count(*) from demand_treasure_bill where type = 'in' and user_Id = #{userId}
+	</select>
+	
+	<resultMap type="com.duanrong.business.demand.model.DemandTreasureAccount" id="account">
+		<result property="money" column="money" />
+		<result property="realname" column="realname" />
+		<result property="mobile" column="mobile_number" />
+		<result property="userId" column="id"/>
+		<result property="isInterest" column="is_interest"/>
+	
+	</resultMap>
+	
+	<select id="getDemandAccount" resultMap="account" parameterType="map">
+	SELECT 
+round(((select IFNULL(SUM(money),0) from demand_treasure_bill where user_id = u.id and type = 'in' AND date_format(create_time,'%Y-%m-%d') &lt;= date_format(#{date},'%Y-%m-%d'))-
+	(select IFNULL(SUM(money),0) from demand_treasure_bill where user_id = u.id and type = 'out' AND date_format(create_time,'%Y-%m-%d') &lt;= date_format(#{date},'%Y-%m-%d'))-
+	(select IFNULL(SUM(principal),0) from demand_treasure_transferout where user_id = u.id and status = 'sended' AND date_format(sended_time,'%Y-%m-%d') &lt;= date_format(#{date},'%Y-%m-%d'))),2) AS money,
+(SELECT COUNT(*) from demand_treasure_bill WHERE user_id = u.id AND type='interest' AND date_format(create_time,'%Y-%m-%d') = date_format(#{date},'%Y-%m-%d') + interval 1 DAY) AS is_interest,
+realname,
+mobile_number,
+id
+ FROM user u where id = #{userId}
+   </select>
+</mapper>

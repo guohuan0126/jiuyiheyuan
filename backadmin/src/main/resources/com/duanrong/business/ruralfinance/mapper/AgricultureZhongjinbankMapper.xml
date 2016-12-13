@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.ruralfinance.mapper.AgricultureZhongjinbankMapper">
+	<resultMap type="com.duanrong.business.ruralfinance.model.AgricultureZhongjinbank" id="ZhongjinbankRM">
+		<id property="id" column="id"  />
+		<result property="bankCode" column="bank_code" />
+		<result property="bankName" column="bank_name" />		
+	</resultMap>
+	<select id="selectByCondition" parameterType="String" resultMap="ZhongjinbankRM">
+    select * from agriculture_zjbank where bank_name like '%${_parameter}%' 
+	</select>
+
+ 
+</mapper>

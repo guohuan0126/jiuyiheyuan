@@ -1,0 +1,35 @@
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.user.mapper.UserVisitInfoMapper">
+	<resultMap type="userVisitInfo" id="userVisitInfoRM">
+		<id property="id" column="id" />
+		<result property="userid" column="userid" />
+		<result property="remark" column="remark" />
+		<result property="time" column="time" />
+		<result property="admin" column="admin" />
+		<result property="realname" column="realname" />
+	</resultMap>
+
+	<select id="find" parameterType="string" resultMap="userVisitInfoRM">
+		SELECT t.*, t.id,u.realname as realname
+		FROM user_visit_info t left join user u on t.admin=u.id
+		WHERE t.userid = #{userid} and t.status=1
+		ORDER BY time desc
+	</select>
+	<insert id="insert" parameterType="userVisitInfo">
+		INSERT INTO user_visit_info
+		(userid, remark, time, admin,status)
+		VALUES
+		(#{userid}, #{remark}, #{time}, #{admin},1)
+	</insert>
+	<!-- <delete id="delete" parameterType="string">
+		DELETE FROM user_visit_info
+		WHERE id =
+		#{id}
+	</delete> -->
+	<update id="update" parameterType="userVisitInfo">
+		UPDATE user_visit_info set status=0
+		WHERE id = #{id}
+	</update>
+</mapper>

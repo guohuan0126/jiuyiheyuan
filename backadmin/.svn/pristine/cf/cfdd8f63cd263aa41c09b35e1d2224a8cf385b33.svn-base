@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.account.mapper.UserAccountMapper">
+
+	<!-- 用户账户 -->
+	<resultMap type="UserAccount" id="userAccountRM">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="balance" column="balance" />
+		<result property="availableBalance" column="available_balance" />
+		<result property="freezeAmount" column="freeze_amount" />
+		<result property="password" column="password" />
+		<result property="autoInvest" column="auto_invest" />
+		<result property="autoRepay" column="auto_repay" />
+		<result property="time" column="time" />
+	</resultMap>
+
+	<!-- 账户流水 -->
+	<resultMap type="UserBill" id="userBillRM">
+		<id property="id" column="id" />
+		<result property="seqNum" column="seq_num" />
+		<result property="time" column="time" />
+		<result property="type" column="type" />
+		<result property="typeInfo" column="type_info" />
+		<result property="money" column="money" />
+		<result property="detail" column="detail" />
+		<result property="userId" column="user_id" />
+		<result property="requestNo" column="request_no" />
+		<result property="balance" column="balance" />
+		<result property="freezeAmount" column="freeze_amount" />
+		<result property="businessType" column="business_type" />
+	</resultMap>
+
+	<!-- 查询用户账户 -->
+	<select id="get" parameterType="string" resultMap="userAccountRM">
+		select
+		a.*,u.realname as realname from user_account a left join user u on
+		u.id=a.user_id where user_id = #{userId}
+	</select>
+
+	<!-- 查询30条用户流水记录 -->
+	<select id="getUserBills" parameterType="string" resultMap="userBillRM">
+		select * from user_bill where user_id = #{userId} order by time desc
+		limit 30
+	</select>
+
+
+	<!-- 更新账户 -->
+	<update id="update" parameterType="UserAccount">
+		update user_account
+		<set>
+			<if test="balance != null">
+				balance = #{balance},
+			</if>
+			<if test="availableBalance != null">
+				available_balance = #{availableBalance},
+			</if>
+			<if test="freezeAmount != null">
+				freeze_amount = #{freezeAmount},
+			</if>
+			<if test="password != null and password != '' ">
+				password = #{password},
+			</if>
+			<if test="autoInvest != null">
+				auto_invest = #{autoInvest},
+			</if>
+			<if test="autoRepay != null">
+				auto_repay = #{autoRepay},
+			</if>
+			<if test="time != null">
+				time = #{time},
+			</if>
+		</set>
+		where user_id = #{userId}
+	</update>
+
+	<select id="getLastUserBillByUserId" parameterType="string"
+		resultMap="userBillRM">
+		select * from user_bill where user_id = #{user_id} order by
+		seq_num desc limit 1
+	</select>
+
+	<!-- 添加用户资金流水 -->
+	<insert id="insertUserBill" parameterType="UserBill">
+		insert into
+		user_bill(id, seq_num, user_id, time, type,type_info,
+		money, balance,
+		request_no, detail,business_type,freeze_amount)
+		values(#{id},
+		#{seqNum}, #{userId}, #{time}, #{type}, #{typeInfo},
+		#{money},
+		#{balance}, #{requestNo}, #{detail}, #{businessType}, #{freezeAmount})
+	</insert>
+	<select id="pageLite" resultMap="userBillRM" parameterType="UserBill">
+		select * from user_bill
+		<where>
+			<if test="id != null and id != '' ">
+				and id=#{id}
+			</if>
+			<if test="userId != null and userId != '' ">
+				and user_id=#{userId}
+			</if>
+			<if test="seqNum != null and seqNum != '' ">
+				and seq_num=#{seqNum}
+			</if>
+			<if test="requestNo != null and requestNo != '' ">
+				and request_no=#{requestNo}
+			</if>
+			<if test="type != null and type != '' ">
+				and type=#{type}
+			</if>
+			<if test="typeInfo != null and typeInfo != ''">
+				and type_info =#{typeInfo}
+			</if>
+			<if test="money != null and money != '' ">
+				and money =#{money}
+			</if>
+			<if test="freezeAmount != null and freezeAmount != '' ">
+				and freeze_amount =#{freezeAmount}
+			</if>
+			<if test="balance != null and balance != '' ">
+				and balance =#{balance}
+			</if>
+			<if test="businessType != null and businessType != '' ">
+				and business_type =#{businessType}
+			</if>
+			<if test="beginTime != null and endTime != '' ">
+				and time &gt;=#{beginTime}
+			</if>
+			<if test="endTime != null and endTime != '' ">
+				and time &lt;=#{endTime}
+			</if>
+		</where>
+		ORDER BY time DESC
+	</select>
+	<select id="getUserAccounts" parameterType="map" resultMap="userAccountRM">
+		select a.*,u.realname as realname from user_account a left join user u
+		on u.id=a.user_id where u.user_authentic != 1
+		<choose>
+			<when test="userId != null and userId != '' ">
+				and user_id=#{userId}
+			</when>
+			<when test=" realname != null and realname != ''">
+				AND u.realname like '%${realname}%'
+			</when>
+		</choose>
+		ORDER BY time DESC
+	</select>
+</mapper>

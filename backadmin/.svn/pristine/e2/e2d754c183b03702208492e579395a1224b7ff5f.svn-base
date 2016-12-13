@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.paymentInstitution.mapper.PayMentMapper">
+	<!--  第三方支付机构 
+	<resultMap type="com.duanrong.business.paymentInstitution.model.PaymentCompany" id="paymentCompany">
+		<result property="id" column="id" />
+		<result property="abbreviation" column="abbreviation" />
+		<result property="name" column="name" />
+		<result property="imgPc" column="img_pc" />
+		<result property="imgApp" column="img_app" />
+		<result property="availablePc" column="available_pc" />
+		<result property="availableApp" column="available_app" />
+		<result property="sort" column="sort" />
+		<result property="createTime" column="create_time" />
+	</resultMap> -->
+	
+	
+	<resultMap type="com.duanrong.business.payMentChannel.model.PayMentChannel" id="payMentChannelRM">
+		<id property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="code" column="code" />
+		<result property="logo" column="logo" />
+		<result property="rateGateway" column="gateway_rate" />
+		<result property="rateQuick" column="quick_rate" />
+		<result property="withdrawFee" column="withdraw_fee" />
+		<result property="usable" column="pc_usable" />		
+		<result property="mobileUsable" column="mob_usable" />
+		<result property="sort" column="sort" />
+	</resultMap>
+	
+	
+	
+	
+	
+	<!--第三方支付流水-->
+	<resultMap type="com.duanrong.business.paymentInstitution.model.PaymentRechargeRecord" id="paymentRechargeRecord">
+		<result property="id" column="id" />
+		<result property="markId" column="mark_id" />
+		<result property="operator" column="operator" />
+		<result property="money" column="money" />
+		<result property="requestData" column="request_data" />
+		<result property="requestTime" column="request_time" />
+		<result property="requestUrl" column="request_url" />
+		<result property="responseData" column="response_data" />
+		<result property="responseTime" column="response_time" />
+		<result property="status" column="status" />
+		<result property="payMentId" column="payment_id" />
+		<result property="transferWay" column="transfer_way" />
+		<result property="userId" column="user_id" />
+		<result property="cardNo" column="card_no" />
+		<result property="cradType" column="card_type" />
+		<result property="bankCode" column="bank_code" />
+		<result property="userName" column="realName" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="source" column="transfer_way" />
+		<result property="type" column="type" />
+		<result property="isYeepayTransfer" column="is_yeepay_transfer"/>
+	</resultMap>
+	<!--平台易宝账户给个人易宝账户转账记录表-->
+	<resultMap type="com.duanrong.business.paymentInstitution.model.CompanyYeepayTransferUserYeepay" id="companyYeepayTransferUserYeepay">
+		<result property="id" column="id" />
+		<result property="requetsNo" column="request_no" />
+		<result property="paymentNo" column="payment_no" />
+		<result property="money" column="money" />
+		<result property="userId" column="user_id" />
+		<result property="status" column="status" />
+		<result property="msg" column="msg" />
+		<result property="payMentId" column="payment_id" />
+		<result property="createTime" column="create_time" />
+		<result property="userName" column="realName" />
+		<result property="mobileNumber" column="mobile_number" />
+	</resultMap>
+	<!--新增用户通道令牌-->
+	<resultMap type="com.duanrong.business.paymentInstitution.model.PaymentUserRelation" id="paymentUserRelation">
+		<result property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="userName" column="realName" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="token" column="token" />
+		<result property="paymentId" column="payment_id" />
+		<result property="isAvailable" column="is_available" />
+		<result property="createTime" column="create_time" />
+	</resultMap>
+	<!--垫付资金记录-->
+	<resultMap type="com.duanrong.business.paymentInstitution.model.PaymentAdvancefundRecord" id="paymentAdvancefundRecord">
+		<result property="id" column="id" />
+		<result property="carateTime" column="create_date" />
+		<result property="money" column="money" />
+		<result property="type" column="type" />
+		<result property="creater" column="creater" />
+		<result property="paymentId" column="payment_id" />
+	</resultMap>
+	
+		<!--垫付资金-->
+	<resultMap type="com.duanrong.business.paymentInstitution.model.PaymentAdvancefund" id="paymentAdvancefund">
+		<result property="id" column="id" />
+		<result property="money" column="money" />
+		<result property="warnMoney" column="warn_money" />
+	</resultMap> 
+	
+	<!-- <select id="readPaymentInstitutionInfo" parameterType="map" resultMap="paymentCompany">
+		select * from payment_company
+		<where>
+			<if test="paymentCompanyName != null and paymentCompanyName != ''">
+				and name = #{paymentCompanyName}
+			</if>
+			<if test="startTime != null and startTime != ''">
+			and create_time &gt;=#{startTime} 
+		</if>
+		<if test="endTime != null and endTime != ''">
+			and create_time &lt;=#{endTime} 
+		</if> 
+		</where>
+		order By sort 
+	</select> -->
+	
+	<select id="readPaymentRechargeRecordInfo" parameterType="map" resultMap="paymentRechargeRecord">
+		 SELECT p.*,u.id ,u.`realname` ,u.`mobile_number`  FROM `payment_recharge_record` p 
+		LEFT JOIN user u on p.`user_id`  = u.`id` where u.id in(select user_id from payment_recharge_record)
+			<if test="markId != null and markId != ''">
+				and p.mark_id = #{markId}
+			</if>
+			<if test="userId != null and userId!= ''">
+				and p.user_id = #{userId}
+			</if>
+			<if test="startTime != null and startTime != ''">
+			and p.request_time &gt;=#{startTime} 
+		</if>
+		<if test="endTime != null and endTime != ''">
+			and p.request_time &lt;=#{endTime} 
+		</if>
+		<if test="status != null and status != '' ">
+			and p.status =#{status} 
+		</if>
+		<if test="payMentSelect != null and payMentSelect != ''">
+			and p.payment_id =#{payMentSelect} 
+		</if>
+		order By  p.request_time DESC
+	</select>
+	
+	<select id="readCompanyYeepayTransferUserYeepay" parameterType="map" resultMap="companyYeepayTransferUserYeepay">
+		select p.*,u.mobile_number,u.realName from payment_yeepay_transfer_user p
+		left join user u  on p.user_id=u.id where u.id in(select user_id from payment_yeepay_transfer_user)
+			<if test="markId != null and markId != ''">
+				and p.request_no = #{markId}
+			</if>
+			<if test="userId != null and userId != ''">
+				and p.user_id = #{userId}
+			</if>
+			<if test="startTime != null and startTime != ''">
+			and p.create_time &gt;=#{startTime} 
+		</if>
+		<if test="endTime != null and endTime != ''">
+			and p.create_time &lt;=#{endTime} 
+		</if>
+		<if test="payMentSelect != null and payMentSelect != ''">
+			and p.payment_id =#{payMentSelect} 
+		</if>
+		order By  p.create_time DESC
+	</select>
+	<select id="readUserPayment" parameterType="map" resultMap="paymentUserRelation">
+		select p.*,u.mobile_number,u.realName  from payment_user_relation p
+		left join user u  on p.user_id=u.id 
+		<where>
+			<if test="userId != null and userId != ''">
+				and p.user_id = #{userId}
+			</if>
+			<if test="startTime != null and startTime != ''">
+			and p.create_time &gt;=#{startTime} 
+		</if>
+		<if test="endTime != null and endTime != ''">
+			and p.create_time &lt;=#{endTime} 
+		</if>
+		</where>
+		order By  p.create_time DESC
+	</select>
+	<select id="readAdvancefundRecord" parameterType="map" resultMap="paymentAdvancefundRecord">
+		select * from payment_advancefund_Record
+			<where>
+			<if test="type != null and type != ''">
+				and type = #{type}
+			</if>
+			<if test="startTime != null and startTime != ''">
+			and create_date &gt;=#{startTime} 
+		</if>
+		<if test="endTime != null and endTime != ''">
+			and create_date &lt;=#{endTime} 
+		</if>
+		</where>
+		order By  create_date DESC
+	</select>
+	
+	<select id="readPaymentAdvancefund" resultMap="paymentAdvancefund">
+		SELECT * FROM payment_advancefund
+	</select>
+	<update id="updateAdvancefundByNewMoney" parameterType="map" >
+		UPDATE payment_advancefund
+		<set>
+				money = #{newMoney}
+		</set>
+		WHERE id=#{id}
+	</update>
+	<insert id="insertAdvancefundRecord" parameterType="map">
+		insert into payment_advancefund_Record (id, create_date,money,type,creater,payment_id) 
+		values(#{id}, #{createTime}, #{money}, #{type}, #{creater}, #{paymentId})
+	</insert>
+	<update id="updateAdvancefundUpdateWarnMoney" parameterType="double">
+		UPDATE payment_advancefund
+		<set>
+				warn_money = #{warnMoney}
+		</set>
+	</update>
+	
+	<!-- 修改垫付资金 -->
+	<update id="updateAdvancefundMoney" parameterType="double">
+		UPDATE payment_advancefund set money = #{money} 
+	</update>
+	<select id="getByCondition" parameterType="map" resultMap="paymentRechargeRecord">
+		SELECT * FROM payment_recharge_record 
+		where mark_id = #{markId} AND operator = #{operator}
+	</select>
+	
+	<update id="updatePaymentRechargeRecord" parameterType="com.duanrong.business.paymentInstitution.model.PaymentRechargeRecord">
+		UPDATE payment_recharge_record
+		<set>
+			<if test="markId!=null">mark_id=#{markId},</if>
+			<if test="operator!=null">operator=#{operator},</if>
+			<if test="status!=null">status=#{status},</if>
+			<if test="requestUrl!=null">request_url=#{requestUrl},</if>
+			<if test="requestTime!=null">request_time=#{requestTime},</if>
+			<if test="requestData!=null">request_data=#{requestData},</if>
+			<if test="responseTime!=null">response_time=#{responseTime},</if>
+			<if test="responseData!=null">response_data=#{responseData},</if>
+			<if test="payMentId!=null">payment_id=#{payMentId},</if>
+			<if test="userId!=null">user_id=#{userId},</if>
+			<if test="isYeepayTransfer!=null">is_yeepay_transfer=#{isYeepayTransfer},</if>
+			<if test="type!=null">type=#{type},</if>
+			<if test="cardNo!=null">card_no=#{cardNo},</if>
+			<if test="cradType!=null">card_type=#{cradType},</if>
+			<if test="bankCode!=null">bank_code=#{bankCode},</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	
+	<insert id="insertYeepayTransferUser" parameterType="com.duanrong.business.paymentInstitution.model.CompanyYeepayTransferUserYeepay">
+		INSERT INTO payment_yeepay_transfer_user
+		(id,request_no,payment_no,money,user_id,status,msg,payment_id,create_time)
+		VALUES
+		(#{id},#{requetsNo},#{paymentNo},#{money},#{userId},#{status},#{msg},#{payMentId},#{createTime})
+	</insert>
+	<update id="updateYeepayTransferUser" parameterType="com.duanrong.business.paymentInstitution.model.CompanyYeepayTransferUserYeepay" >
+		UPDATE payment_yeepay_transfer_user
+		<set>
+				status = #{status},
+				msg = #{msg}
+		</set>
+		WHERE request_no=#{requetsNo}
+	</update>
+	<select id="getPaymentCompany" parameterType="String" resultMap="payMentChannelRM">
+		SELECT * FROM payment_channel where code=#{payMentId}
+	</select>
+	                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+	<select id="readPayMent" resultMap="payMentChannelRM">
+		SELECT * FROM payment_channel
+	</select>
+	
+	<select id="readPaymentRechargeRecord" resultMap="paymentRechargeRecord" parameterType="map">
+		select * from payment_recharge_record  where
+		mark_id =#{orderId} AND  operator = #{orderId} AND  payment_id = #{payMentId}
+	</select>
+	<select id="readFuiouOrderId" parameterType="String" resultType="String">
+		SELECT payment_no from
+ 			payment_yeepay_transfer_user WHERE request_no=#{orderId}
+	</select>
+	
+	<select id="getByRequestNo" parameterType="String" resultMap="companyYeepayTransferUserYeepay">
+		SELECT * from payment_yeepay_transfer_user where request_no = #{requestNo} 
+	</select>
+
+</mapper>

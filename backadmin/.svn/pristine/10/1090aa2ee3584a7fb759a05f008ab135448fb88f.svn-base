@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+			http://www.springframework.org/schema/beans/spring-beans-3.2.xsd 
+			http://www.springframework.org/schema/context 
+			http://www.springframework.org/schema/context/spring-context-3.2.xsd 
+			http://www.springframework.org/schema/aop 
+			http://www.springframework.org/schema/aop/spring-aop-3.2.xsd 
+			http://www.springframework.org/schema/task
+			http://www.springframework.org/schema/task/spring-task-3.2.xsd
+			http://www.springframework.org/schema/tx 
+			http://www.springframework.org/schema/tx/spring-tx-3.2.xsd ">
+
+	<!-- 扫描 service,dao -->
+	<context:component-scan
+		base-package="com.duanrong.business.*.service, 
+		com.duanrong.yeepay.service,
+		com.duanrong.udesk.service,
+		com.duanrong.fuioupay.service,
+		com.duanrong.business.*.dao, 
+		util, com.duanrong.newadmin.tags,com.duanrong.payment.service,com.duanrong.payment.fuiou" />		
+	<!-- 引入属性文件，方便配置内容修改 -->
+	<context:property-placeholder location="classpath:jdbc.properties" />
+
+	<task:annotation-driven executor="myExecutor"
+		scheduler="myScheduler" />
+	<task:executor id="myExecutor" pool-size="50" />
+	<task:scheduler id="myScheduler" pool-size="1000" />
+
+	<tx:annotation-driven transaction-manager="txManager" order="2"/>
+
+	<!-- 数据库链接 -->
+	<bean id="dataSourceRW" class="com.alibaba.druid.pool.DruidDataSource"
+		destroy-method="close">
+		<!-- 基本属性 url、user、password -->
+		<property name="url" value="${jdbc_url}" />
+		<property name="username" value="${jdbc_username}" />
+		<property name="password" value="${jdbc_password}" />
+
+		<!-- 配置初始化大小、最小、最大 -->
+		<property name="initialSize" value="${druid_initialSize}" />
+		<property name="minIdle" value="${druid_minIdle}" />
+		<property name="maxActive" value="${druid_maxActive}" />
+
+		<!-- 配置获取连接等待超时的时间 -->
+		<property name="maxWait" value="${druid_maxWait}" />
+
+		<property name="validationQuery" value="SELECT 'x'" />
+		<property name="testWhileIdle" value="true" />
+
+		<!-- 打开PSCache，并且指定每个连接上PSCache的大小 -->
+		<property name="poolPreparedStatements" value="true" />
+		<property name="maxPoolPreparedStatementPerConnectionSize"
+			value="100" />
+
+		<!-- 密码加密 -->
+		<property name="filters" value="config" />
+		<property name="connectionProperties" value="config.decrypt=true" />
+	</bean>
+
+
+		<!-- 数据库链接 -->
+	<bean id="dataSourceR" class="com.alibaba.druid.pool.DruidDataSource"
+		destroy-method="close">
+		<!-- 基本属性 url、user、password -->
+		<property name="url" value="${jdbc_url_read}" />
+		<property name="username" value="${jdbc_username_read}" />
+		<property name="password" value="${jdbc_password_read}" />
+
+		<!-- 配置初始化大小、最小、最大 -->
+		<property name="initialSize" value="${druid_initialSize}" />
+		<property name="minIdle" value="${druid_minIdle}" />
+		<property name="maxActive" value="${druid_maxActive}" />
+
+		<!-- 配置获取连接等待超时的时间 -->
+		<property name="maxWait" value="${druid_maxWait}" />
+
+		<property name="validationQuery" value="SELECT 'x'" />
+		<property name="testWhileIdle" value="true" />
+
+		<!-- 打开PSCache，并且指定每个连接上PSCache的大小 -->
+		<property name="poolPreparedStatements" value="true" />
+		<property name="maxPoolPreparedStatementPerConnectionSize"
+			value="100" />
+
+		<!-- 密码加密 -->
+		<property name="filters" value="config" />
+		<property name="connectionProperties" value="config.decrypt=true" />
+	</bean>
+
+
+	 <!-- 动态数据源 -->  
+   <bean id="dynamicDataSource" class="base.dataSource.DynamicDataSource">  
+       <!-- 通过key-value关联数据源 -->  
+       <property name="targetDataSources">  
+           <map>  
+               <entry value-ref="dataSourceRW" key="dataSourceKeyRW"></entry>  
+               <entry value-ref="dataSourceR" key="dataSourceKeyR"></entry>  
+           </map>  
+       </property>  
+       <property name="defaultTargetDataSource" ref="dataSourceRW" />      
+   </bean>  
+
+
+	<!-- spring整合mybatis -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dynamicDataSource" />
+		<property name="configLocation" value="classpath:sqlMapConfig.xml" />
+		<!-- 自动扫描映射文件 -->
+		<property name="mapperLocations"
+			value="classpath:com/duanrong/business/*/mapper/*Mapper.xml" />
+			
+		<!-- sql拦截器 -->	
+		<!-- <property name="plugins">
+            <array>                
+                <ref bean="sqlStatementInterceptor"/>
+            </array>
+        </property> -->
+        <property name="configurationProperties">
+            <props>
+                <prop key="dialect">mysql</prop>
+            </props>
+        </property>
+	</bean>
+
+	<!-- 整合jdbcTemplate -->
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dynamicDataSource" />
+	</bean>
+
+
+	<!-- <bean id="log" class="util.Log"/>
+
+	<bean id="sqlStatementInterceptor" class="base.interceptor.MybatisInterceptor">
+		<property name="log" ref="log"/>
+	</bean> -->
+
+
+	<!-- 数据源读写分离  aop -->
+	<bean id="dynamicDataSourceAOP" class="base.dataSource.aop.DynamicDataSourceAOP">
+		<property name="methods"> 
+     		<map>     			 
+     			<entry key="read*" value="dataSourceR" />
+    		</map>
+   		</property> 
+   	
+	</bean>
+	
+	
+	<!-- AOP配置 -->	
+	<aop:config>	
+		<!-- 配置一个切入点,相当于@Pointcut -->
+		<aop:pointcut expression="execution(* com.duanrong.business.*.service.*.*(..))" id="transactionPointCut"/>	
+	
+		<!-- 增强，进行事务控制 Advisor -->
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="transactionPointCut" />
+		<!--   aop:advisor配置一定要在  aop:aspect之前，否则报错    -->
+		<aop:aspect ref="dynamicDataSourceAOP">			
+			<aop:before method="dynamicDataSource" pointcut-ref="transactionPointCut" />
+			<!-- <aop:around method="dynamicDataSource" pointcut-ref="transactionPointCut" /> -->
+		</aop:aspect>
+	</aop:config>
+
+
+	<!-- 事务 -->
+	<bean id="txManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dynamicDataSource" />
+		<property name="globalRollbackOnParticipationFailure" value="true" />
+	</bean>
+
+	<tx:advice id="txAdvice" transaction-manager="txManager">
+		<tx:attributes>
+			<tx:method name="insert*" propagation="REQUIRED" />
+			<tx:method name="save*" propagation="REQUIRED" />
+			<tx:method name="update*" propagation="REQUIRED" />
+			<tx:method name="alert*" propagation="REQUIRED" />
+			<tx:method name="edit*" propagation="REQUIRED" />
+			<tx:method name="delete*" propagation="REQUIRED" />
+			<tx:method name="add*" propagation="REQUIRED" />
+			<tx:method name="find*" read-only="true" />
+			<tx:method name="get*" read-only="false" />
+			<tx:method name="read*" read-only="false" />
+			<tx:method name="view*" read-only="true" />
+		</tx:attributes>
+	</tx:advice>
+	
+	<!-- Quartz持久化存储 -->
+	<bean id="scheduler"
+		class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<!-- <property name="dataSource">
+			<ref bean="dataSourceRW" />
+		</property>
+		<property name="jobFactory">
+			<bean class="base.quartz.AutowiringSpringBeanJobFactory" />
+		</property>
+		<property name="schedulerName" value="Mscheduler" />
+		<property name="configLocation" value="classpath:quartz.properties" />
+		<property name="applicationContextSchedulerContextKey" value="applicationContextKey" />
+		<property name="autoStartup" value="true" /> -->
+	</bean>
+
+	<!-- 扫描注册mapper接口 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.duanrong.business.*.mapper" />
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" />
+	</bean>
+
+	<bean id="validateCodeCheckCommand" class="base.validationCode.ValidateCodeCheckCommand">
+		<property name="checkName" value="validateCode"></property>
+		<property name="actionName" value="memberLogin"></property>
+	</bean>
+
+</beans>

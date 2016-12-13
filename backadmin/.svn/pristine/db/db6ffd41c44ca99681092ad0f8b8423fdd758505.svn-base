@@ -1,0 +1,76 @@
+package com.duanrong.newadmin.controllhelper;
+
+import javax.annotation.Resource;
+
+import org.springframework.ui.Model;
+
+import com.duanrong.business.invest.model.Invest;
+import com.duanrong.business.invest.service.InvestService;
+import com.duanrong.business.user.service.UserLoginLogService;
+import com.duanrong.business.user.service.UserMoneyService;
+import com.duanrong.newadmin.model.UserCookie;
+import com.duanrong.newadmin.utility.ArithUtil;
+
+/**
+ * Copyright : duanrong.com.cn All Rights Reserved
+ * Company : 久亿财富（北京）投资有限公司
+ * @Author : 孙铮
+ * @CreateTime : 2014-11-22 下午4:07:44 
+ * @Description : drpc com.duanrong.pcweb.controllhelper UserDataHelper.java
+ * 
+ */
+public class UserDataHelper {
+
+	@Resource
+	static UserLoginLogService userLoginLogService;
+	
+	@Resource
+	static UserMoneyService userMoneyService;
+	
+	@Resource
+	static InvestService investService;
+	
+	public static Model getUserCenterData(Model model,UserCookie getLoginUser){
+			// 2,用户上次登录时间(等林提供方法)
+			String lastLoginTime = userLoginLogService.getLastLoginTime(getLoginUser.getUserId());
+			if("today".equals(lastLoginTime)){
+				lastLoginTime = "今天";
+			}else if("yesterday".equals(lastLoginTime)){
+				lastLoginTime = "昨天";
+			}else if("firstTimeLogin".equals(lastLoginTime)){
+				lastLoginTime = "欢迎您，聪明的投资人";
+			}
+			model.addAttribute("lastLoginTime", lastLoginTime);
+			// 3,账户金额情况
+			double balance = userMoneyService.getBalance(getLoginUser
+					.getUserId());
+			model.addAttribute("balance", balance);
+			double frozen = userMoneyService.getFrozenMoney(getLoginUser
+					.getUserId());
+			model.addAttribute("frozen", frozen);
+			double totalMoney = ArithUtil.add(balance, frozen);
+			model.addAttribute("totalMoney", totalMoney);
+
+			// 4,当前投资金额
+			Invest invest = new Invest();
+			invest.setInvestUserID(getLoginUser.getUserId());
+			invest.setStatus("投标成功,还款中");
+			Double investMoney = investService.getInvestMoney(invest);
+			model.addAttribute("investMoney",
+					ArithUtil.round(investMoney, 2));
+
+			// 5,收益总额
+			double interest = investService.getInvestsTotalInterest(getLoginUser.getUserId());
+			model.addAttribute("interest", interest);
+
+			// 6,平均年华收益率(等林提供方法)
+			Double avgRate = investService.getAvgRate(getLoginUser.getUserId());
+			model.addAttribute("avgRate", avgRate);
+
+			// 7,奖励总额
+			double awardMoney = userMoneyService.getAwardTotalMoney(getLoginUser.getUserId());
+			model.addAttribute("awardMoney", awardMoney);
+			
+			return model;		
+	}
+}

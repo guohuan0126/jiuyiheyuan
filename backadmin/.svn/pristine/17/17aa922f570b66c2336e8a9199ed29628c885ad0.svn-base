@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.duanrong.business.transferstation.mapper.TransferStationMapper">
+	<resultMap type="TransferStation" id="TransferStationRM">
+		<id property="id" column="id" />
+		<result property="money" column="money" />
+		<result property="rate" column="rate" />
+		<result property="loanType" column="loan_type" />
+		<result property="operationType" column="operation_type" />
+		<result property="deadline" column="deadline" />
+		<result property="name" column="name" />
+		<result property="repayType" column="repay_type" />
+		<result property="createTime" column="create_time" />
+		<result property="beforeRepay" column="before_repay" />
+		<result property="itemRate" column="item_rate" />
+		<result property="organizationExclusive" column="organization_exclusive" />
+		<result property="contractId" column="contract_id" />
+		<result property="sourceRemark" column="source_remark" />
+		<result property="accountingDepartment" column="accounting_department" />
+		<result property="channelName" column="channel_name" />
+		<result property="institutionName" column="institution_name" />
+		<result property="allocationStatus" column="allocation_status" />	
+		<result property="description" column="description" />
+		<result property="companyno" column="companyno" />
+		<result property="display" column="display" />
+		<result property="organizationRemark" column="organization_remark" />
+		<result property="contractStartTime" column="contract_start_time" />
+		<result property="contractEndTime" column="contract_end_time" />
+		<result property="unpackLoanId" column="unpack_loan_id" />
+		<result property="forkMoney" column="fork_money" />
+		<result property="loanTerm" column="loan_term" />
+		<result property="loanMoney" column="loan_money" />	
+		
+		<!-- 图片信息 -->
+		<result property="title" column="title" />
+		<result property="url" column="url" />
+		<result property="seqNum" column="seq_num" />
+
+		<association property="vehicleInfo" column="loan_id"
+			resultMap="com.duanrong.business.loan.mapper.LoanDetailMapper.VehicleRM" />
+	</resultMap>
+	<resultMap
+		type="com.duanrong.business.transferstation.model.TransferStationForkLoans"
+		id="ForkLoansRM">
+		<id property="id" column="id" />
+		<result property="parentId" column="parent_id" />
+		<result property="childContractid" column="child_contractid" />
+		<result property="loanId" column="loan_id" />
+		<result property="forkMoney" column="fork_money" />
+		<result property="loanTerm" column="loan_term" />
+		<result property="loanType" column="loan_type" />
+		<result property="repayType" column="repay_type" />
+		<result property="packing" column="packing" />
+		<result property="createTime" column="create_time" />
+		<result property="remark" column="remark" />
+		<result property="status" column="status" />
+		<result property="accountingDepartment" column="accounting_department" />
+		<result property="contractMoney" column="money" />
+		<result property="contractId" column="contract_id" />	
+		<result property="parentLoanTerm" column="deadline" />	
+		<result property="borrowerIdCard" column="borrower_id_card" />	
+		<result property="borrowerName" column="borrower_name" />			
+		<association property="transferInfo" column="parent_id"
+			resultMap="com.duanrong.business.transferstation.mapper.TransferStationMapper.TransferStationRM" />
+
+	</resultMap>
+	<resultMap type="com.duanrong.business.transferstation.model.TransferStationForkLoans" id="UpdateForkStationRM">
+		<id property="id" column="id" />
+	</resultMap>
+	<resultMap type="com.duanrong.business.transferstation.model.TransferStation" id="UpdateTransferStationRM">
+		<result property="id" column="id" />
+	</resultMap>
+	<!-- 根据loadId查询 子项目id-->
+	<select id="readLoanForkIntermediariesIdByLoadId" parameterType="java.lang.String" resultMap="UpdateForkStationRM">
+		SELECT id From loan_fork_intermediaries WHERE loan_id = #{loadId}
+	</select>
+	<!-- 根据loadId查询项目id-->
+	<select id="readLoanTransferIntermediariesIdByLoadId" parameterType="java.lang.String" resultMap="UpdateTransferStationRM">
+		SELECT id From loan_intermediaries WHERE unpack_loan_id = #{unpackLoanId}
+	</select>
+	<!-- 查询所有 -->
+	<select id="readpageInfo" parameterType="map" resultMap="TransferStationRM">
+		SELECT
+		l.*,v.assess_price,v.brand,v.buy_time,v.guarantee_rate,v.guarantee_type,v.kilometre_amount,v.license_plate_number,v.mortgagee,v.overdue_handling,v.second_hand_price,v.supervision_mode,v.other_description,
+		v.reminder_info,v.measures_info,v.overdue_info,v.other_info,v.item_address,v.borrower_name,v.remark,v.yacar_and_gps,v.`status`,v.money
+		as vehicle_money,v.other_loan_info,v.borrower_id_card,v.vehicle_type,
+		v.using_properties,v.manufacture_date,v.registration_date,v.identification_number,v.engineno,v.transmission,v.displacement,v.condition_assessment,v.fuel,v.traffic_insurance_validity,v.inspection_validity,
+		v.lllegal_deduction,v.violation_fines,v.borrowing_purposes,p.title,p.url,p.seq_num from
+		loan_intermediaries l LEFT JOIN loan_vehicle_intermediaries v on
+		v.loan_id=l.id LEFT JOIN loan_info_pics_intermediaries p on
+		p.loan_id=l.id
+		where l.display=1
+		<!-- <choose> <when test="channelName == '机构线下'"> l.display=0 </when> <otherwise>l.display=1</otherwise> 
+			</choose> -->
+		<if test="contractId !=null and contractId != ''">
+			AND l.contract_Id=#{contractId}
+		</if>
+		<if test="id !=null and id != ''">
+			AND l.id=#{id}
+		</if>
+		<if test="borrowerName !=null and borrowerName != ''">
+			AND v.borrower_name=#{borrowerName}
+		</if>
+		<if test="start != null and start != ''">
+			and l.create_time &gt;=#{start}
+		</if>
+		<if test="end != null and end != ''">
+			and l.create_time &lt;=#{end}
+		</if>
+		<if test="repayType !=null and repayType != ''">
+			AND l.repay_type=#{repayType}
+		</if>
+		<if test="accountingDepartment !=null and accountingDepartment != ''">
+			AND l.accounting_department=#{accountingDepartment}
+		</if>
+		<if test="channelName !=null and channelName != ''">
+			AND l.channel_name=#{channelName}
+		</if>
+		<if test="allocationStatus == 1">
+			AND l.allocation_status=1
+		</if>
+		<if test="allocationStatus == 0">
+			AND l.allocation_status=0
+		</if>
+		<if test="deadline !=null and deadline != ''">
+			AND l.deadline=#{deadline}
+		</if>
+		<if test="institutionName !=null and institutionName != ''">
+			AND l.institution_name=#{institutionName}
+		</if>
+		<if test="remark !=null and remark != ''">
+			AND l.organization_remark=#{remark}
+		</if>
+		GROUP BY l.id ORDER BY l.create_time desc
+	</select>
+	<select id="findTransferStationById" parameterType="map"
+		resultMap="TransferStationRM">
+		SELECT
+		l.*,v.assess_price,v.brand,v.buy_time,v.guarantee_rate,v.guarantee_type,v.kilometre_amount,v.license_plate_number,v.mortgagee,v.overdue_handling,v.second_hand_price,v.supervision_mode,v.other_description,
+		v.reminder_info,v.measures_info,v.overdue_info,v.other_info,v.item_address,v.borrower_name,v.remark,v.yacar_and_gps,v.`status`,v.money
+		as vehicle_money,v.other_loan_info,v.borrower_id_card,v.vehicle_type,
+		v.using_properties,v.manufacture_date,v.registration_date,v.identification_number,v.engineno,v.transmission,v.displacement,v.condition_assessment,v.fuel,v.traffic_insurance_validity,v.inspection_validity,
+		v.lllegal_deduction,v.violation_fines,v.borrowing_purposes,p.title,p.url,p.seq_num from
+		loan_intermediaries l LEFT JOIN loan_vehicle_intermediaries v on
+		v.loan_id=l.id LEFT JOIN loan_info_pics_intermediaries p on
+		p.loan_id=l.id
+		where l.display=1	
+			AND l.id=#{id,jdbcType=VARCHAR}
+		<if test="allocationStatus !=null and allocationStatus != ''">
+			AND l.allocation_status=#{allocationStatus}
+		</if>
+		GROUP BY l.id ORDER BY l.create_time desc
+	</select>
+	<!-- 删除中转站项目 -->
+	<delete id="delete" parameterType="java.lang.String">
+		DELETE from loan_intermediaries where id = #{id,jdbcType=VARCHAR}
+	</delete>
+	<update id="updateIntermediaries">
+		update loan_intermediaries set display=0 where id = #{id,jdbcType=VARCHAR}
+	</update>
+	<!-- 删除中转站项目对应的车辆信息 -->
+	<delete id="delVeIntermediaries" parameterType="java.lang.String">
+		DELETE from loan_vehicle_intermediaries where loan_id =
+		#{loanId,jdbcType=VARCHAR}
+	</delete>
+	<!-- 删除中转站项目对应的图片信息 -->
+	<delete id="delPicsIntermediaries" parameterType="java.lang.String">
+		DELETE from loan_info_pics_intermediaries where loan_id=
+		#{loanId,jdbcType=VARCHAR}
+	</delete>
+	<!-- 修改中转站里面的信息 -->
+	<update id="updateTransferStation" parameterType="map">
+		UPDATE loan_intermediaries
+		<set>
+			<if test="allocationStatus != null">allocation_status=#{allocationStatus},</if>
+			<if test="channelName != null and channelName != ''">channel_name = #{channelName},</if>
+			<if test="organizationRemark != null">organization_remark = #{organizationRemark},</if>
+			<if test="display != null">display = #{display},</if>
+			<if test="institutionName != null and institutionName != ''">institution_name = #{institutionName},</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	<!-- 批量修改中转站数据状态 -->
+	<update id="updateBatchTransferStation" parameterType="Map">
+		UPDATE loan_intermediaries
+		<set>
+			<if test="allocationStatus != null">allocation_status=#{allocationStatus},</if>
+			<if test="channelName != null and channelName != ''">channel_name = #{channelName},</if>
+			<if test="organizationRemark != null">organization_remark = #{organizationRemark},</if>
+			<if test="display != null">display = #{display},</if>
+			<if test="institutionName != null and institutionName != ''">institution_name = #{institutionName},</if>
+			<if test="unpackLoanId != null and unpackLoanId != ''">unpack_loan_id = #{unpackLoanId},</if>
+		</set>
+		where id in
+		<foreach collection="arr" index="index" item="item" open="("
+			separator="," close=")">
+			#{item}
+		</foreach>
+	</update>
+	<!-- 批量插入中转站子标 -->
+	<insert id="batchTransferForkLoans" parameterType="java.util.List">
+		INSERT INTO loan_fork_intermediaries
+		(parent_id,child_contractid,fork_money,loan_term,packing,
+		create_time,loan_type,repay_type,remark,status,accounting_department)
+		values
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.parentId},#{item.childContractid},#{item.forkMoney},#{item.loanTerm},#{item.packing},
+			#{item.createTime},#{item.loanType},#{item.repayType},#{item.remark},#{item.status},#{item.accountingDepartment})
+		</foreach>
+	</insert>
+	<!-- 查询子标中转站里的信息 -->
+	<insert id="insertForkLoans"
+		parameterType="com.duanrong.business.transferstation.model.TransferStationForkLoans">
+		INSERT INTO loan_fork_intermediaries
+		(parent_id,child_contractid,fork_money,loan_term,packing,
+		create_time,loan_type,repay_type,remark,status,accounting_department)
+		values
+		(#{parentId},#{childContractid},#{forkMoney},#{loanTerm},#{packing},
+		#{createTime},#{loanType},#{repayType},#{remark},#{status},#{accountingDepartment})
+	</insert>
+
+	<!--查询等额本息子标信息 -->
+	<select id="readTransferStationForkLoans" parameterType="map"
+		resultMap="ForkLoansRM">
+		SELECT
+		f.*,l.money,l.rate,l.operation_type,l.name,l.contract_id,l.deadline,l.accounting_department,l.channel_name,v.borrower_name,v.borrower_id_card
+		from loan_fork_intermediaries f LEFT JOIN loan_intermediaries l on
+		l.id=f.parent_id
+		LEFT JOIN loan_vehicle_intermediaries v on v.loan_id=f.parent_id
+		<where>
+			<if test="forkStatus != null and forkStatus != ''">
+				and f.packing=#{forkStatus}
+			</if>
+			<if test="start != null and start != ''">
+				and f.create_time &gt;=#{start}
+			</if>
+			<if test="end != null and end != ''">
+				and f.create_time &lt;=#{end}
+			</if>
+			<if test="loanTerm != null and loanTerm != ''">
+				and f.loan_term=#{loanTerm}
+			</if>
+			<if test="contractId != null and contractId != ''">
+				and l.contract_id=#{contractId}
+			</if>
+			<if test="loanId != null and loanId != ''">
+				and f.loan_id=#{loanId}
+			</if>
+			<if test="accountingDepartment != null and accountingDepartment != ''">
+				and f.accounting_department=#{accountingDepartment}
+			</if>
+		</where>
+		<choose>
+		<when test="orderbyMoney==1">
+		order by f.fork_money desc,f.create_time
+		</when>
+		<when test="orderbyMoney==2">
+		order by f.fork_money asc,f.create_time
+		</when>
+		<otherwise>
+		order by f.create_time desc,f.loan_term
+		</otherwise>		
+		</choose>
+	</select>
+	<select id="findTransferStByforkId" parameterType="map"
+		resultMap="TransferStationRM">
+	SELECT f.fork_money,f.child_contractid,f.loan_term,f.loan_id,f.packing,
+		l.*,v.assess_price,v.brand,v.buy_time,v.guarantee_rate,v.guarantee_type,v.kilometre_amount,v.license_plate_number,v.mortgagee,v.overdue_handling,v.second_hand_price,v.supervision_mode,v.other_description,
+		v.reminder_info,v.measures_info,v.overdue_info,v.other_info,v.item_address,v.borrower_name,v.remark,v.yacar_and_gps,v.`status`,v.money
+		as vehicle_money,v.other_loan_info,v.borrower_id_card,v.vehicle_type,
+		v.using_properties,v.manufacture_date,v.registration_date,v.identification_number,v.engineno,v.transmission,v.displacement,v.condition_assessment,v.fuel,v.traffic_insurance_validity,v.inspection_validity,
+		v.lllegal_deduction,v.violation_fines,v.borrowing_purposes,p.title,p.url,p.seq_num from loan_fork_intermediaries f LEFT JOIN loan_intermediaries l on l.id=f.parent_id
+    LEFT JOIN loan_vehicle_intermediaries v on v.loan_id=f.parent_id 
+    LEFT JOIN loan_info_pics_intermediaries p on p.loan_id=f.parent_id
+		where l.display=1 and f.status=1
+		and f.parent_id=#{parentId}
+		<if test="id != null and id != ''">
+		  and f.id=#{id}	
+		</if>
+        	
+	</select>
+		<!-- 批量修改等额本息子标打包状态 -->
+<update id="updateForkIntermediaries" parameterType="Map">    
+        update loan_fork_intermediaries
+        <set>      
+            packing= #{packing},         
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(loanId)">loan_id=#{loanId},</if>
+			<if test="remark != null">remark=#{remark},</if>	
+		</set>  
+        where id in    
+        <foreach collection="arr" index="index" item="item" open="(" separator="," close=")" >   
+            #{item}    
+        </foreach>   
+</update> 
+<update id="updateBatchForkIntermediaries"  parameterType="java.util.List">  
+           	update loan_fork_intermediaries
+          	set     
+            	packing=0,loan_id=null,remark=null
+			 where id in
+         <foreach collection="list" item="item" open="(" separator="," close=")">
+			#{item.id}   
+         </foreach>  
+</update>  
+<update id="updateBatchIntermediaries"  parameterType="java.util.List">  
+           	update loan_intermediaries
+          	set     
+            	allocation_status=0,channel_name = null,institution_name = null,unpack_loan_id = null
+            where id in
+         <foreach collection="list" item="item" open="(" separator="," close=")">
+			#{item.id}   
+         </foreach>  
+</update>  
+</mapper>

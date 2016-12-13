@@ -1,0 +1,236 @@
+package com.duanrong.business.account.service.impl;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+
+import base.exception.InsufficientBalance;
+import base.exception.OutOfDateException;
+import base.exception.QueryTimeTooLongException;
+import base.pagehelper.PageInfo;
+
+import com.duanrong.business.account.AccountEnum;
+import com.duanrong.business.account.BusinessEnum;
+import com.duanrong.business.account.PaymentEnum;
+import com.duanrong.business.account.dao.PaymentAccountDao;
+import com.duanrong.business.account.model.PaymentAccount;
+import com.duanrong.business.account.model.PaymentBill;
+import com.duanrong.business.account.model.PaymentChannel;
+import com.duanrong.business.account.service.PaymentAccountService;
+import com.duanrong.util.jedis.DRJedisDLock;
+
+@Service
+public class PaymentAccountServiceImpl implements PaymentAccountService {
+
+	@Resource
+	PaymentAccountDao paymentAccountDao;
+
+	@Resource
+	DataSourceTransactionManager txManager;
+
+	private static final String PAYMENT_ACCOUNT_DLOCK = "payment_account";
+
+	/**
+	 * 第三方入账
+	 * 
+	 * @param pamenyId
+	 *            支付机构
+	 * @param money
+	 *            入账金额
+	 * @param businessType
+	 *            业务类型
+	 * @param typeInfo
+	 *            描述
+	 * @param requestNo
+	 *            流水号
+	 */
+	@Override
+	public void transferIn(PaymentEnum pamenyId, double money,
+			BusinessEnum businessType, String typeInfo, String requestNo) {
+		if (DRJedisDLock.getDLock(PAYMENT_ACCOUNT_DLOCK + pamenyId, requestNo)) {
+			try {
+				PaymentAccount account = paymentAccountDao
+						.getPaymentAccountByPaymentId(pamenyId.toString());
+				account.setBalance(account.getBalance() + money);
+				account.setAvailableBalance(account.getAvailableBalance()
+						+ money);
+				account.setTime(new Date());
+				// 开启事务
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+				def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+				TransactionStatus status = txManager.getTransaction(def);
+				try {
+					paymentAccountDao.update(account);
+					PaymentBill paymentBill = new PaymentBill();
+					paymentBill.setChannel(pamenyId.toString());
+					paymentBill.setBalance(account.getBalance());
+					paymentBill.setMoney(money);
+					paymentBill.setRequestNo(requestNo);
+					paymentBill.setBusinessType(businessType.toString());
+					paymentBill.setType(AccountEnum.ti_balance.toString());
+					paymentBill.setTypeInfo(typeInfo);
+					paymentBill.setFreezeAmount(account.getFreezeAmount());
+					paymentAccountDao.insert(paymentBill);
+					// 提交事务
+					txManager.commit(status);
+				} catch (Exception e) {
+					// 回滚事务
+					txManager.rollback(status);
+					throw e;
+				}
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				DRJedisDLock.releaseDLock(PAYMENT_ACCOUNT_DLOCK + pamenyId,
+						requestNo);
+			}
+		}
+	}
+
+	/**
+	 * 第三方出账
+	 * 
+	 * @param pamenyId
+	 *            支付机构
+	 * @param money
+	 *            出账金额
+	 * @param businessType
+	 *            业务类型
+	 * @param typeInfo
+	 *            描述
+	 * @param requestNo
+	 *            流水号
+	 * @throws InsufficientBalance
+	 */
+	@Override
+	public void transferOut(PaymentEnum pamenyId, double money,
+			BusinessEnum businessType, String typeInfo, String requestNo)
+			throws InsufficientBalance {
+		if (DRJedisDLock.getDLock(PAYMENT_ACCOUNT_DLOCK + pamenyId, requestNo)) {
+			try {
+				PaymentAccount account = paymentAccountDao
+						.getPaymentAccountByPaymentId(pamenyId.toString());
+				if (account.getAvailableBalance() < money) {
+					throw new InsufficientBalance("账户余额不足！");
+				}
+				account.setAvailableBalance(account.getAvailableBalance()
+						- money);
+				account.setBalance(account.getBalance() - money);
+				account.setTime(new Date());
+				// 开启事务
+				DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+				def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+				TransactionStatus status = txManager.getTransaction(def);
+				try {
+					paymentAccountDao.update(account);
+					PaymentBill paymentBill = new PaymentBill();
+					paymentBill.setBalance(account.getBalance());
+					paymentBill.setChannel(pamenyId.toString());
+					paymentBill.setMoney(money);
+					paymentBill.setRequestNo(requestNo);
+					paymentBill.setBusinessType(businessType.toString());
+					paymentBill.setType(AccountEnum.to_balance.toString());
+					paymentBill.setTypeInfo(typeInfo);
+					paymentBill.setFreezeAmount(account.getFreezeAmount());
+					paymentAccountDao.insert(paymentBill);
+					// 提交事务
+					txManager.commit(status);
+				} catch (Exception e) {
+					// 回滚事务
+					txManager.rollback(status);
+					throw e;
+				}
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				DRJedisDLock.releaseDLock(PAYMENT_ACCOUNT_DLOCK + pamenyId,
+						requestNo);
+			}
+		}
+	}
+
+	/**
+	 * 第三方账户信息
+	 * 
+	 * @return
+	 */
+	@Override
+	public List<PaymentAccount> readPaymentAccount() {
+		return paymentAccountDao.getPaymentAccount();
+	}
+
+	/**
+	 * 第三方账户流水
+	 * 
+	 * @param pageNo
+	 * @param pageSize
+	 * @param paymentBill
+	 * @return
+	 * @throws QueryTimeTooLongException
+	 * @throws OutOfDateException
+	 */
+	@Override
+	public PageInfo<PaymentBill> readPageLite(int pageNo, int pageSize,
+			PaymentBill paymentBill) throws QueryTimeTooLongException {
+		if (paymentBill.getBeginTime() != null
+				&& paymentBill.getEndTime() != null) {
+			Calendar calendar = Calendar.getInstance();
+			calendar.setTime(paymentBill.getBeginTime());
+			calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH) + 1);
+			Date nextMonth = calendar.getTime();
+			if (nextMonth.getTime() < paymentBill.getEndTime().getTime()) {
+				throw new QueryTimeTooLongException("查询时间间隔超过一个月！");
+			}
+		}
+		if (paymentBill.getBeginTime() == null
+				&& paymentBill.getEndTime() == null) {
+			Calendar c1 = new GregorianCalendar();
+			c1.set(Calendar.HOUR_OF_DAY, 0);
+			c1.set(Calendar.MINUTE, 0);
+			c1.set(Calendar.SECOND, 0);
+			paymentBill.setBeginTime(c1.getTime());
+			Calendar c2 = new GregorianCalendar();
+			c2.set(Calendar.HOUR_OF_DAY, 23);
+			c2.set(Calendar.MINUTE, 59);
+			c2.set(Calendar.SECOND, 59);
+			paymentBill.setEndTime(c2.getTime());
+		}
+		if (paymentBill.getBeginTime() != null
+				&& paymentBill.getEndTime() == null) {
+			Calendar calendar = Calendar.getInstance();
+			calendar.setTime(paymentBill.getBeginTime());
+			calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH) + 1);
+			Date nextMonth = calendar.getTime();
+			paymentBill.setEndTime(nextMonth);
+		}
+		if (paymentBill.getBeginTime() == null
+				&& paymentBill.getEndTime() != null) {
+			Calendar calendar = Calendar.getInstance();
+			calendar.setTime(paymentBill.getEndTime());
+			calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH) - 1);
+			Date preMonth = calendar.getTime();
+			paymentBill.setEndTime(preMonth);
+		}
+		return paymentAccountDao.pageLite(pageNo, pageSize, paymentBill);
+	}
+
+	@Override
+	public PaymentChannel readChannelByCode(String code) {
+		return paymentAccountDao.getChannelByCode(code);
+	}
+
+	@Override
+	public PaymentAccount readPaymentAccountByPaymentId(String pamenyId) {
+		return paymentAccountDao.getPaymentAccountByPaymentId(pamenyId);
+	}
+
+}

@@ -1,0 +1,1354 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.user.mapper.UserMapper">
+	
+	<!-- 辅仁用户投资明细 -->
+	<resultMap type="com.duanrong.business.user.model.UserByFuRen" id="userByFuRen">
+		<result property="id" column="id" />
+		<result property="realName" column="realname" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="age" column="age" />
+		<result property="sex" column="sex" />
+		<result property="investIngmoney" column="investIngmoney" />
+		<result property="sumMoney" column="sumMoney" />
+		<result property="demandInMoney" column="demandInMoney" />
+		<result property="demandOutMoney" column="demandOutMoney" />
+	</resultMap>
+	
+	<!-- 新增投资用户明细  -->
+	<resultMap type="com.duanrong.business.user.model.newInvestUser" id="investUserInfoRm">
+		<id property="id" column="user_id" />
+		<result property="realName" column="realname" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result javaType="DATE" property="registerTime" column="register_time" />
+		<result property="managerName" column="offline_referrer" />
+		<result property="qq" column="QQ" />
+		<result property="remarkNum" column="remarkNum" />
+		<result property="remark" column="remark" />
+		<result property="admin" column="admin" />
+		<result property="remarktime" column="remarktime" />
+		<result property="userSource" column="user_source" />
+		<collection property="investInfo" ofType="com.duanrong.business.user.model.investInfo" >
+		   <id property="investId" column="invest_id" />
+		   <result property="loanName" column="name" />
+		   <result property="investMoney" column="money" />
+		   <result property="rate" column="rate" />
+		   <result javaType="DATE" property="investTime" column="time" />
+		   <result property="isAutoInvest" column="is_auto_invest" />
+		   <result property="investStauts" column="status" />
+		   <result property="operationType" column="operation_type" />
+		   <result property="deadline" column="deadline" />
+		   <result property="day" column="day" />
+		   <result property="redpacketId" column="redpacket_id" />
+		</collection>
+	</resultMap>
+	
+	<resultMap type="user" id="userRM">
+		<id property="userId" column="id" />
+		<result property="username" column="username" />
+		<result property="email" column="email" />
+		<result property="registerTime" column="register_time" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="status" column="status" />
+		<result property="password" column="password" />
+		<result property="cashPassword" column="cash_password" />
+		<result property="postAddress" column="post_address" />
+		<result property="postCode" column="post_code" />
+		<result property="realname" column="realname" />
+		<result property="idCard" column="id_card" />
+		<result property="balance" column="balance" />
+		<result property="frozenMoney" column="froze_money" /> 
+		<!-- 跟投相关,跟投活动结束后可以删除 -->
+		<!-- <result property="investMoneyTotal" column="invest_money_total" /> -->
+		<result property="investMoneyTotal1" column="invest_money_total1" />
+		<result property="investMoneyTotal" column="invest_money_total2" />
+		<result property="userType" column="user_type" />
+		<result property="userInterior" column="user_interior" />
+		
+		<result property="enterpriseName" column="enterprise_name" />
+		<result property="bankLicense" column="bank_license" />
+		<result property="orgNo" column="org_no" />
+		<result property="businessLicense" column="business_license" />
+		<result property="taxNo" column="tax_no" />
+		<result property="legal" column="legal" />
+		<result property="legalIdcard" column="legal_idcard" />
+		<result property="contact" column="contact" />
+		<result property="referrer" column="referrer" />
+		<result property="authenname" column="authenname" />
+		<result property="investNum" column="investNum" />
+		<result property="phoneNoAttribution" column="phone_no_attribution" />
+		<result property="phoneNoCity" column="phone_no_city" />
+		<result property="qq" column="QQ" /><!-- add by wangjing -->
+		<result property="weixin" column="weiXin" />
+		<result property="userSource" column="user_source" /><!-- add by 
+			wangjing -->
+		<result property="remarkNum" column="remarkNum" /><!-- add by wangjing -->
+		<result property="currMoney" column="currMoney" /><!-- add by wangjing -->
+		<result property="oreferrer" column="offline_referrer" />
+		<result property="userRemark" column="userRemark" />
+		<result property="inviteCode" column="invite_code" />
+		<result property="investTime" column="invest_time" />
+		<association property="userOtherInfo" javaType="userOtherInfo">
+			<id property="id" column="userOtherInfo_id" />
+			<result property="postAddress" column="o_post_address" />
+			<result property="postCode" column="o_post_code" />
+			<result property="userIP" column="o_user_ip" />
+			<result property="userSource" column="o_user_source" />
+		</association>
+
+		<association property="userLoginLog" column="id"
+			resultMap="com.duanrong.business.user.mapper.UserLoginLogMapper.userLoginLogRM" />
+
+	</resultMap>
+
+	<!-- 消息模板 -->
+	<resultMap type="template" id="templateRM">
+		<result property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="description" column="description" />
+		<result property="content" column="content" />
+		<result property="status" column="status" />
+		<result property="messageNode" column="message_node" />
+		<result property="messageWay" column="message_way" />
+	</resultMap>
+	<resultMap type="user" id="userRM1">
+		<result property="registerTime" column="registerTime" />
+		<result property="num" column="num" />
+	</resultMap>
+	<resultMap type="user" id="userRM2">
+		<result property="totalBlance" column="totalBlance" />
+		<result property="totalMoney" column="totalMoney" />
+		<result property="totalCurrMoney" column="totalCurrMoney" />
+	</resultMap>
+	<!-- 投资确认书 -->
+	<resultMap type="com.duanrong.business.user.model.UserInvestCheck" id="userInvestCheckRm">
+		<result property="id" column="user_id" />
+		<result property="uuid" column="id" />
+		<result property="name" column="name" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="userAddr" column="user_addr" />
+		<result javaType="DATE" property="exportTime" column="export_time" />
+	</resultMap>
+	<!-- 用户投资信息 -->
+	<resultMap type="com.duanrong.business.user.model.UserInfoConfirmation" id="userInfoConfirmation">
+		<result property="userName" column="user_name" />
+		<result javaType="DATE" property="investTime" column="invest_time" />
+		<result property="loanName" column="loan_name" />
+		<result property="loanId" column="loan_id" />
+		<result property="investMoney" column="money" />
+		<result property="operationType" column="operation_type" />
+		<result property="deadline" column="deadline" />
+		<result property="day" column="day" />
+		<result property="rate" column="rate" />
+		<result property="user_addr" column="post_address" />
+	</resultMap>
+	<resultMap type="com.duanrong.business.user.model.UserRemarkInfo" id="userRemarkInfoRm">
+		<result property="userId" column="id" />
+		<result property="QQ" column="QQ" />
+		<result property="realName" column="realname" />
+		<result property="userSource" column="user_visit_source" />
+		<result property="remark" column="remark" />
+		<result property="admin" column="admin" />
+		<result property="time" column="time" />
+	</resultMap>
+	
+	<select id="getUserInvestCheckinPageLite" resultMap="userInvestCheckRm">
+		SELECT u1.id,u2.post_address AS user_addr,u.id AS user_id,u1.export_time AS export_time,
+		u.mobile_number AS mobile_number,u.realname as name from `user` u LEFT JOIN user_invest_confirmation_letter u1 ON u1.user_id=u.id JOIN user_other_info u2 ON u2.id=u.id 
+ 		WHERE is_del!=0
+	</select>
+	
+	<!-- 分页查询 -->
+	<select id="pageLite" parameterType="user" resultMap="userRM">
+		SELECT *,
+		id AS user_id
+		FROM user
+		ORDER BY register_time DESC
+	</select>
+
+	<!-- 校验身份证号是否存在 -->
+	<select id="verifyIdCard" parameterType="map" resultType="long">
+		SELECT
+		COUNT(*) FROM user
+		WHERE id_card = #{idCard} AND id != #{userId}
+	</select>
+	<!-- 获取加密后数据 -->
+	<select id="getEncodeUserId" parameterType="map" resultType="String">
+		SELECT HEX(AES_ENCRYPT(#{userId},#{key})) userid FROM DUAL
+	</select>
+	
+	<!-- 获取用户数量 -->
+	<select id="getPerson" resultType="long">
+		SELECT COUNT(*) FROM `user`
+	</select>
+
+	<!-- 自定义添加用户数量查询 -->
+	<select id="getPerson2" resultType="string">
+		SELECT value FROM config
+		WHERE id = 'reg_person'
+	</select>
+
+	<!-- 更新注册用户数量 -->
+	<update id="updatePersonCount4Config">
+		UPDATE config
+		SET `value` = `value` + 47
+		WHERE
+		id =
+		'reg_person'
+	</update>
+
+	<select id="getUserByMobileNumber" parameterType="string"
+		resultMap="userRM">
+		SELECT *, id AS user_id
+		FROM user
+		WHERE mobile_number =
+		#{mobileNumber}
+	</select>
+
+	<!-- 查询是否内部员工 -->
+	<select id="getAvlidUserByMobileNumber" parameterType="string"
+		resultType="int">
+		SELECT count(*) from user_interior where mobile_number =
+		#{mobileNumber}
+	</select>
+
+	<select id="getUserByMail" parameterType="string" resultMap="userRM">
+		SELECT *, id AS user_id
+		FROM user
+		WHERE email =
+		#{email}
+	</select>
+
+	<select id="getUserByCard" parameterType="string" resultMap="userRM">
+		SELECT *, id AS user_id
+		FROM user
+		WHERE id_card =
+		#{idCard}
+	</select>
+
+	<select id="findAll" resultMap="userRM">
+		SELECT *, id AS user_id
+		FROM user
+	</select>
+
+	<select id="verifyLogin" parameterType="user" resultMap="userRM">
+		SELECT *, user.id AS user_id,(select count(*) as investnum from Invest
+		where user_id=user.id
+		and status !='流标' ) as investNum 
+		FROM user left join user_other_info ON `user`.id = user_other_info.id
+		<where>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(userId)">
+				AND user.id = #{userId}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(username)">
+				AND username = #{username}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(mobileNumber)">
+				AND mobile_number = #{mobileNumber}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(email)">
+				AND email = #{email}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(password)">
+				AND password = #{password}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(idCard)">
+				AND id_card = #{idCard}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(realname)">
+				AND realname = #{realname}
+			</if>
+		</where>
+	</select>
+
+	<delete id="delete" parameterType="string">
+		DELETE FROM user
+		WHERE id =
+		#{id}
+	</delete>
+
+	<select id="get" parameterType="string" resultMap="userRM">
+		SELECT *, id
+		AS user_id
+		FROM user
+		WHERE id = #{id}
+	</select>
+
+	<select id="getRoles" parameterType="string" resultType="string">
+		SELECT
+		role_id
+		FROM user_role
+		WHERE user_id = #{userId}
+	</select>
+
+	<insert id="insert" parameterType="user">
+		INSERT INTO user
+		(id,username,email,register_time,mobile_number,status,password,user_type,referrer)
+		VALUES
+		(#{userId},#{username},#{email},#{registerTime},#{mobileNumber},#{status},#{password},#{userType},#{referrer})
+	</insert>
+
+	<insert id="addRole" parameterType="map">
+		INSERT INTO user_role
+		(user_id,role_id)
+		VALUES
+		(#{userId},#{roleId})
+	</insert>
+
+	<update id="update" parameterType="user">
+		UPDATE user
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(password)">password=#{password},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(email)">email=#{email},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(status)">status=#{status},</if>
+			<if test="registerTime != null">register_time=#{registerTime},</if>
+			<if test="mobileNumber!=null">mobile_number=#{mobileNumber},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(cashPassword)">cash_password=#{cashPassword},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(postAddress)">post_address=#{postAddress},</if>
+			<if test="@util.MyStringUtils@isNumericSpecifyLength(postCode, 6)">post_code=#{postCode},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(realname)">realname=#{realname},</if>
+			<if test="idCard!=null">id_card=#{idCard},</if>
+			<!-- 跟投奖励相关字段:跟投奖励结束后可删除 -->
+			<if test="investMoneyTotal != null">invest_money_total=#{investMoneyTotal},</if>
+			<if test="investMoneyTotal1 != null">invest_money_total1=#{investMoneyTotal1},</if>
+
+
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(enterpriseName)">enterprise_name=#{enterpriseName},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(bankLicense)">bank_license=#{bankLicense},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(orgNo)">org_no=#{orgNo},</if>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(businessLicense)">business_license=#{businessLicense},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(taxNo)">tax_no=#{taxNo},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(legal)">legal=#{legal},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(legalIdcard)">legal_idcard=#{legalIdcard},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(contact)">contact=#{contact},</if>
+			<if test="balance != null">balance=#{balance},</if>
+			<if test="frozenMoney != null">froze_money=#{frozenMoney},</if>
+			<if test="qq != null">qq=#{qq},</if>
+			<if test="weixin != null">weiXin=#{weixin},</if>
+			<if test="referrer != null">referrer=#{referrer},</if>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(phoneNoAttribution)">phone_no_attribution=#{phoneNoAttribution},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(phoneNoCity)">phone_no_city=#{phoneNoCity},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(oreferrer)">offline_referrer=#{oreferrer},</if>
+			<if test="userInterior != null ">user_interior=#{userInterior},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(weixin)">weiXin=#{weixin},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(userType)">user_type=#{userType},</if>
+		</set>
+		WHERE id = #{userId}
+	</update>
+	<select id="getUserByRealname" parameterType="string" resultMap="userRM">
+		SELECT *, id AS user_id
+		FROM user
+		WHERE realname =
+		#{realname}
+	</select>
+	<!-- 获取每天的注册人数 -->
+	<select id="getTheNumberOfRegisteredEveryDay" parameterType="map"
+		resultType="long">
+		SELECT COUNT(*) FROM user
+		where DATE_SUB(CURDATE(), INTERVAL
+		1 DAY) &lt;= date(register_time)
+		and register_time &lt;CURDATE() and user_authentic!=1
+	</select>
+
+
+	<select id="pageInfo" parameterType="map" resultMap="userRM">
+		SELECT
+		r.*,o.id as userOtherInfo_id ,o.post_address as
+		o_post_address,o.post_code as
+		o_post_code,o.user_ip as
+		o_user_ip,o.user_source as
+		o_user_source,o.user_source as user_source
+		,r.id as user_id,
+		case when (select count(*) from user_role where
+		user_id=r.id and
+		role_id='INVESTOR')>=1 then '实名认证'
+		else '未实名认证' END
+		authenname,(select count(*) as investnum from Invest
+		where user_id=r.id
+		and status !='流标' ) as investNum,
+		(select login_ip from user_login_log where user_id = r.id order by login_time desc LIMIT 1) as login_ip,
+		(select count(*) from user_login_log where user_id = r.id) as num,
+		(select login_time from user_login_log where user_id = r.id order by login_time desc LIMIT 1) as login_time,
+		(select count(*) from user_visit_info where userid = r.id
+		and status=1) as
+		remarkNum,
+		(select sum(money) from invest where
+		user_id=r.id and status
+		in('还款中','投标成功')) as currMoney,
+		(select
+		sum(money) from invest where user_id=r.id and status!='流标') as
+		invest_money_total2,
+		(select group_concat(remark) from user_visit_info
+		vis where vis.userid=r.id)
+		as userRemark,
+		(select time from invest where
+		invest.status in('还款中','投标成功', '完成') AND
+		money>=100000 AND user_id=r.id
+		ORDER BY time limit 1) as invest_time
+		FROM
+		USER r
+		LEFT JOIN
+		user_other_info o ON r.id = o.id
+		where r.user_authentic!=1
+			<if test="userId != null and userId != ''">
+				AND r.id = #{userId}
+			</if>
+			<if test="email != null and email != ''">
+				AND r.email like '%${email}%'
+			</if>
+			<if test="userIp != null and userIp != ''">
+				AND o.user_ip = #{userIp}
+			</if>
+			<if test="usertype != null and usertype != ''">
+				AND r.user_type = #{usertype}
+			</if>
+			<if test="furen != null and furen != ''">
+				AND r.user_interior = 'furen'
+			</if>
+			<if test="duanrongw != null and duanrongw != ''">
+				AND r.user_interior = 'duanrongw'
+			</if>
+			<if test="nelson != null and nelson != ''">
+				AND r.user_interior = 'nelson'
+			</if>
+			<if test="organization != null and organization != ''">
+				AND r.user_interior = 'organization'
+			</if>
+			<if test="mnumber != null and mnumber != ''">
+				AND r.mobile_number = #{mnumber}
+			</if>
+			<if test="source != null and source != ''">
+				AND o.user_source like '%${source}%'
+			</if>
+			<if test="realname != null and realname != ''">
+				AND r.realname =#{realname}
+			</if>
+			<if test="card != null and card != ''">
+				AND r.id_card like '%${card}%'
+			</if>
+			<if test="salesman!= null and salesman!=''">		
+				<choose>
+					<when test="@util.MyStringUtils@isContains(salesman, '郑州业务员')">					
+						and (LENGTH(r.offline_referrer) &lt; 8
+						and SUBSTRING_INDEX(r.offline_referrer,':',1) not in
+						<foreach item="item" index="index" collection="salesman"
+							open="(" separator="," close=")">
+							#{item}
+						</foreach>
+						or r.offline_referrer is null)		
+					</when>
+					<otherwise>
+						and (SUBSTRING_INDEX(r.offline_referrer,':',1) not in
+						<foreach item="item" index="index" collection="salesman"
+							open="(" separator="," close=")">
+							#{item}
+						</foreach>
+						or r.offline_referrer is null)	
+					</otherwise>
+				</choose>
+			</if>
+			<if test="referrer != null and referrer != ''">
+				AND r.referrer = #{referrer}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.register_time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.register_time &lt;= #{end}
+			</if>
+
+			<if test="minMoney != null">
+				AND r.invest_money_total &gt;=#{minMoney}
+			</if>
+			<if test="maxMoney != null">
+				AND r.invest_money_total &lt;=#{maxMoney}
+			</if>
+
+			<if test="searc != null and searc == 'searc'">
+				and r.referrer is not null and r.referrer!=''
+			</if>
+			<if test="phone != null and phone == 'phone'">
+				AND r.mobile_number is not null and r.mobile_number!=''
+				and length( r.mobile_number )=11
+			</if>
+			<if test="phoneno != null and phoneno == 'phoneno'">
+				AND r.mobile_number is not null and r.mobile_number!=''
+				and length( r.mobile_number )=11
+				and (r.phone_no_attribution is null
+				or r.phone_no_attribution='' or
+				r.phone_no_city is null or
+				r.phone_no_city='')
+			</if>
+			<if test="notmobile != null and notmobile == 'notmobile'">
+				AND r.mobile_number is not null and r.mobile_number!=''
+			</if>
+			<if test="nouser != null and nouser == 'nouser'">
+				AND r.id not in (select DISTINCT user_id from invest
+				where status
+				in('还款中','投标成功', '完成'))
+				AND r.id NOT in (SELECT DISTINCT user_id FROM demand_treasure_transferin WHERE status ='confirm')
+			</if>
+			<choose>
+				<when test="customer != null and customer == 'customer'">
+					AND r.id in (select user_id from invest where
+					status
+					in('还款中','投标成功', '完成') and money>=100000 GROUP BY user_id
+					<choose>
+						<when
+							test="tstart != null and tend != null and tstart != '' and tend != '' ">
+							HAVING MIN(time) &gt;= #{tstart} and MIN(time) &lt;= #{tend}
+						</when>
+						<otherwise>
+							<choose>
+								<when test="tstart != null and tstart != '' ">
+									HAVING MIN(time) &gt;= #{tstart}
+								</when>
+								<when test="tend != null and  tend != '' ">
+									HAVING MIN(time) &lt;= #{tend}
+								</when>
+							</choose>
+						</otherwise>
+					</choose>
+					)
+				</when>
+				<otherwise>
+					<choose>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(tstart) and @org.apache.commons.lang3.StringUtils@isNotBlank(tend)">
+				AND r.id in (select user_id from invest where STATUS!='流标' and status!='等待确认' GROUP BY user_id HAVING  min(time) &gt;= #{tstart} and min(time) &lt;= #{tend})
+				</when>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(tstart) and @org.apache.commons.lang3.StringUtils@isBlank(tend)">
+			AND r.id in (select user_id from invest where STATUS!='流标' and status!='等待确认' GROUP BY user_id HAVING  min(time) &gt;= #{tstart} )
+				</when>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(tend) and @org.apache.commons.lang3.StringUtils@isBlank(tstart)">
+				AND  r.id in (select user_id from invest where STATUS!='流标' and status!='等待确认'  GROUP BY user_id HAVING  min(time) &lt;= #{tend})
+				</when>
+				<otherwise>
+				</otherwise>
+			</choose>
+				</otherwise>
+			</choose>
+			<if test="time != null and time == 'time'">
+				and exists (select * from invest where
+				invest.user_id=r.id and
+				invest.`status`!='流标')
+				AND DATE_SUB(CURDATE(),
+				INTERVAL 3 MONTH)>= (select MAX(login_time)
+				from user_login_log us
+				where us.user_id = r.id LIMIT 1)
+				AND DATE_SUB(CURDATE(), INTERVAL 3
+				MONTH)>= (select MAX(time) from
+				invest s where s.user_id = r.id LIMIT
+				1)
+			</if>
+			<if test="ids!= null and ids!=''">
+				<choose>
+					<when
+						test="@org.apache.commons.lang3.StringUtils@isNotBlank(rstart) and @org.apache.commons.lang3.StringUtils@isNotBlank(rend)">
+						AND r.id in (select DISTINCT userid from user_visit_info where
+						status=1 and time &gt;= #{rstart} and time &lt;= #{rend} and admin
+						in
+						<foreach item="item" index="index" collection="ids" open="("
+							separator="," close=")">
+							#{item}
+						</foreach>
+						)
+					</when>
+					<when
+						test="@org.apache.commons.lang3.StringUtils@isNotBlank(rstart) and @org.apache.commons.lang3.StringUtils@isBlank(rend)">
+						AND r.id in (select DISTINCT userid from user_visit_info where
+						status=1 and time &gt;= #{rstart} and admin
+						in
+						<foreach item="item" index="index" collection="ids" open="("
+							separator="," close=")">
+							#{item}
+						</foreach>
+						)
+					</when>
+					<when
+						test="@org.apache.commons.lang3.StringUtils@isNotBlank(rend) and @org.apache.commons.lang3.StringUtils@isBlank(rstart)">
+						AND r.id in (select DISTINCT userid from user_visit_info where
+						status=1 and time &lt;= #{rend} and admin
+						in
+						<foreach item="item" index="index" collection="ids" open="("
+							separator="," close=")">
+							#{item}
+						</foreach>
+						)
+					</when>
+					<otherwise>
+						AND r.id in (select userid from user_visit_info where STATUS=1 and
+						admin in
+						<foreach item="item" index="index" collection="ids" open="("
+							separator="," close=")">
+							#{item}
+						</foreach>
+						)
+					</otherwise>
+				</choose>
+			</if>
+			<if test="ids== null or ids==''">
+				<choose>
+					<when
+						test="@org.apache.commons.lang3.StringUtils@isNotBlank(rstart) and @org.apache.commons.lang3.StringUtils@isNotBlank(rend)">
+						AND r.id in (select DISTINCT userid from user_visit_info
+						where
+						status=1 and time &gt;= #{rstart} and time &lt;= #{rend})
+					</when>
+					<when
+						test="@org.apache.commons.lang3.StringUtils@isNotBlank(rstart) and @org.apache.commons.lang3.StringUtils@isBlank(rend)">
+						AND r.id in (select DISTINCT userid from user_visit_info
+						where
+						status=1 and time &gt;= #{rstart})
+					</when>
+					<when
+						test="@org.apache.commons.lang3.StringUtils@isNotBlank(rend) and @org.apache.commons.lang3.StringUtils@isBlank(rstart)">
+						AND r.id in (select DISTINCT userid from user_visit_info
+						where
+						status=1 and time &lt;= #{rend})
+					</when>
+					<otherwise>
+					</otherwise>
+				</choose>
+			</if>
+			<if test="sooner!= null and sooner == 'sooner'">
+			   AND r.id in (SELECT m.id FROM USER m WHERE
+				(
+				SELECT min(time) FROM user_visit_info WHERE STATUS = 1 AND userid = m.id
+				) &lt;(
+			    SELECT min(time) FROM invest WHERE STATUS != '流标' and status!='等待确认' AND user_id = m.id
+				)
+				or
+				(SELECT min(time) FROM user_visit_info WHERE STATUS = 1 AND userid = m.id )
+				&lt;(SELECT min(confirm_time) FROM demand_treasure_transferin WHERE status ='confirm')
+				)			
+			</if>
+		ORDER BY ${type} ${ordertype}
+	</select>
+	<select id="verifyUser" parameterType="user" resultType="int">
+		SELECT
+		count(*)
+		FROM user
+		WHERE id !=
+		#{userId} and
+		mobile_number=#{mobileNumber}
+	</select>
+
+	<select id="getTemplateById" resultMap="templateRM"
+		parameterType="String">
+		SELECT user_message_template.*,
+		user_message_template.template AS content FROM user_message_template
+		WHERE id=#{id}
+	</select>
+
+	<!-- 系统参数配置 -->
+	<resultMap type="config" id="configRM">
+		<result property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="description" column="description" />
+		<result property="value" column="value" />
+		<result property="type" column="type" />
+	</resultMap>
+
+	<!-- 系统配置参数 -->
+	<select id="getConfigForPageLite" resultMap="configRM"
+		parameterType="config">
+		SELECT * FROM config where id != 'ip_check'
+		<if test="id != null and id != ''">
+			AND id = #{id}
+		</if>
+		<if test="name != null and name != ''">
+			AND name LIKE '%${name}%'
+		</if>
+		<if test="type != null and type != ''">
+			AND type LIKE '%${type}%'
+		</if>
+		ORDER BY type
+	</select>
+
+
+	<update id="updateConfig" parameterType="config">
+		UPDATE config
+		<set>
+			<if test="value != null and value != '' ">value=#{value},</if>
+			<if test="description != null and description != '' ">description=#{description},</if>
+			<if test="type != null and type != '' ">value=#{value},</if>
+			<if test="name != null and name != '' ">name=#{name},</if>
+		</set>
+		WHERE id = #{id}
+	</update>
+
+	<insert id="insertConfig" parameterType="config">
+		insert into config(id,
+		name, value, description) values(#{id}, #{name}, #{value},
+		#{description})
+	</insert>
+
+	<!-- 系统配置参数 -->
+	<select id="getConfigById" resultMap="configRM" parameterType="string">
+		SELECT * FROM config where id=#{id}
+	</select>
+	<select id="getUserNum" parameterType="map" resultMap="userRM1">
+		SELECT register_time as registerTime,count(*) as num
+		FROM user
+		<where>
+			<if test="type != null and type != '' and type=='today'">
+				AND DATE(register_time)=CURDATE()
+			</if>
+			<if test="type != null and type != '' and type=='yesterday'">
+				AND DATE_SUB(CURDATE(), INTERVAL 1 DAY) &lt;=
+				date(register_time)
+			</if>
+			<if test="type != null and type != '' and type=='week'">
+				AND DATE_SUB(CURDATE(), INTERVAL 1 WEEK) &lt;=
+				date(register_time)
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND register_time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND register_time &lt;= #{end}
+			</if>
+		</where>
+		GROUP BY date(register_time)
+	</select>
+
+
+	<select id="getUserTotalMoney" parameterType="map" resultMap="userRM2">
+		SELECT
+		sum(balance) as totalBlance,
+		sum((select sum(money) from invest where user_id=r.id and status!='流标' and
+		status!='等待确认')) as totalMoney,
+		sum((select sum(money) from invest where user_id=r.id and status
+		in('还款中','投标成功'))) as totalCurrMoney FROM USER r
+		LEFT JOIN user_other_info o ON r.id = o.id
+		<where>
+			<if test="userId != null and userId != ''">
+				AND r.id = #{userId}
+			</if>
+			<if test="email != null and email != ''">
+				AND r.email like '%${email}%'
+			</if>
+			<if test="userIp != null and userIp != ''">
+				AND o.user_ip = #{userIp}
+			</if>
+			<if test="usertype != null and usertype != ''">
+				AND r.user_type = #{usertype}
+			</if>
+			<if test="mnumber != null and mnumber != ''">
+				AND r.mobile_number = #{mnumber}
+			</if>
+			<if test="source != null and source != ''">
+				AND o.user_source like '%${source}%'
+			</if>
+			<if test=" realname != null and realname != ''">
+				AND r.realname like '%${realname}%'
+			</if>
+			<if test="card != null and card != ''">
+				AND r.id_card like '%${card}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.register_time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.register_time &lt;= #{end}
+			</if>
+			<if test="minMoney != null">
+				AND r.invest_money_total &gt;=#{minMoney}
+			</if>
+			<if test="maxMoney != null">
+				AND r.invest_money_total &lt;=#{maxMoney}
+			</if>
+			<if test="salesman!= null and salesman!=''">
+				<choose>
+					<when test="@util.MyStringUtils@isContains(salesman, '郑州业务员')">					
+						and (LENGTH(r.offline_referrer) &lt; 8
+						and SUBSTRING_INDEX(r.offline_referrer,':',1) not in
+						<foreach item="item" index="index" collection="salesman"
+							open="(" separator="," close=")">
+							#{item}
+						</foreach>
+						or r.offline_referrer is null)		
+					</when>
+					<otherwise>
+						and (SUBSTRING_INDEX(r.offline_referrer,':',1) not in
+						<foreach item="item" index="index" collection="salesman"
+							open="(" separator="," close=")">
+							#{item}
+						</foreach>
+						or r.offline_referrer is null)	
+					</otherwise>
+				</choose>
+			</if>
+			<if test="referrer != null and referrer != ''">
+				AND r.referrer = #{referrer}
+			</if>
+			<if test="searc != null and searc == 'searc'">
+				and r.referrer is not null and r.referrer!=''
+			</if>
+			<choose>
+				<when test="customer != null and customer == 'customer'">
+					AND r.id in (select user_id from invest where
+					status
+					in('还款中','投标成功', '完成') and money>=100000 GROUP BY user_id
+					<choose>
+						<when
+							test="tstart != null and tend != null and tstart != '' and tend != '' ">
+							HAVING MIN(time) &gt;= #{tstart} and MIN(time) &lt;= #{tend}
+						</when>
+						<otherwise>
+							<choose>
+								<when test="tstart != null and tstart != '' ">
+									HAVING MIN(time) &gt;= #{tstart}
+								</when>
+								<when test="tend != null and  tend != '' ">
+									HAVING MIN(time) &lt;= #{tend}
+								</when>
+							</choose>
+						</otherwise>
+					</choose>
+					)
+				</when>
+				<otherwise>
+					<choose>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(tstart) and @org.apache.commons.lang3.StringUtils@isNotBlank(tend)">
+				AND r.id in (select user_id from invest where STATUS!='流标' and status!='等待确认' GROUP BY user_id HAVING  min(time) &gt;= #{tstart} and min(time) &lt;= #{tend})
+				</when>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(tstart) and @org.apache.commons.lang3.StringUtils@isBlank(tend)">
+			AND r.id in (select user_id from invest where STATUS!='流标' and status!='等待确认' GROUP BY user_id HAVING  min(time) &gt;= #{tstart} )
+				</when>
+				<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(tend) and @org.apache.commons.lang3.StringUtils@isBlank(tstart)">
+				AND  r.id in (select user_id from invest where STATUS!='流标' and status!='等待确认'  GROUP BY user_id HAVING  min(time) &lt;= #{tend})
+				</when>
+				<otherwise>
+				</otherwise>
+			</choose>
+				
+				</otherwise>
+			</choose>
+			<if test="nouser != null and nouser == 'nouser'">
+				AND r.id not in (select DISTINCT user_id from invest where status!='流标'
+				and status!='等待确认')
+			</if>
+			<if test="time != null and time == 'time'">
+				and exists (select * from invest where invest.user_id=r.id and
+				invest.`status`!='流标')
+				AND DATE_SUB(CURDATE(), INTERVAL 3 MONTH)>= (select MAX(login_time)
+				from user_login_log us where us.user_id = r.id LIMIT 1)
+				AND DATE_SUB(CURDATE(), INTERVAL 3 MONTH)>= (select MAX(time) from
+				invest s where s.user_id = r.id LIMIT 1)
+			</if>
+			<if test="ids!=null and ids!=''">
+				<choose>
+					<when
+						test="@org.apache.commons.lang3.StringUtils@isNotBlank(rstart) and @org.apache.commons.lang3.StringUtils@isNotBlank(rend)">
+						AND r.id in (select DISTINCT userid from user_visit_info where
+						status=1 and time &gt;= #{rstart} and time &lt;= #{rend} and admin
+						in
+						<foreach item="item" index="index" collection="ids" open="("
+							separator="," close=")">
+							#{item}
+						</foreach>
+						)
+					</when>
+					<when
+						test="@org.apache.commons.lang3.StringUtils@isNotBlank(rstart) and @org.apache.commons.lang3.StringUtils@isBlank(rend)">
+						AND r.id in (select DISTINCT userid from user_visit_info where
+						status=1 and time &gt;= #{rstart} and admin
+						in
+						<foreach item="item" index="index" collection="ids" open="("
+							separator="," close=")">
+							#{item}
+						</foreach>
+						)
+					</when>
+					<when
+						test="@org.apache.commons.lang3.StringUtils@isNotBlank(rend) and @org.apache.commons.lang3.StringUtils@isBlank(rstart)">
+						AND r.id in (select DISTINCT userid from user_visit_info where
+						status=1 and time &lt;= #{rend} and admin
+						in
+						<foreach item="item" index="index" collection="ids" open="("
+							separator="," close=")">
+							#{item}
+						</foreach>
+						)
+					</when>
+					<otherwise>
+						AND r.id in (select userid from user_visit_info where STATUS=1 and
+						admin
+						in
+						<foreach item="item" index="index" collection="ids" open="("
+							separator="," close=")">
+							#{item}
+						</foreach>
+
+						)
+					</otherwise>
+				</choose>
+			</if>
+
+			<if test="ids== null or ids==''">
+				<choose>
+					<when
+						test="@org.apache.commons.lang3.StringUtils@isNotBlank(rstart) and @org.apache.commons.lang3.StringUtils@isNotBlank(rend)">
+						AND r.id in (select DISTINCT userid from user_visit_info where
+						status=1 and time &gt;= #{rstart} and time &lt;= #{rend})
+					</when>
+					<when
+						test="@org.apache.commons.lang3.StringUtils@isNotBlank(rstart) and @org.apache.commons.lang3.StringUtils@isBlank(rend)">
+						AND r.id in (select DISTINCT userid from user_visit_info where
+						status=1 and time &gt;= #{rstart})
+					</when>
+					<when
+						test="@org.apache.commons.lang3.StringUtils@isNotBlank(rend) and @org.apache.commons.lang3.StringUtils@isBlank(rstart)">
+						AND r.id in (select DISTINCT userid from user_visit_info where
+						status=1 and time &lt;= #{rend})
+					</when>
+				</choose>
+			</if>
+			<if test="sooner!= null and sooner == 'sooner'">
+				AND r.id in (SELECT m.id FROM USER m WHERE
+				(
+				SELECT min(time) FROM user_visit_info WHERE STATUS = 1 AND userid = m.id
+				) &lt;(
+			    SELECT min(time) FROM invest WHERE STATUS != '流标' and status!='等待确认' AND user_id = m.id
+				)
+				or
+				(SELECT min(time) FROM user_visit_info WHERE STATUS = 1 AND userid = m.id )
+				&lt;(SELECT min(confirm_time) FROM demand_treasure_transferin WHERE status ='confirm')
+				)
+			</if>
+		</where>
+	</select>
+	<!-- 获取每天的注册人数 -->
+	<select id="getTheNumberOfAccountEveryDay" parameterType="map"
+		resultType="long">
+		SELECT COUNT(*) FROM trusteeship_account
+		WHERE <![CDATA[create_time < #{now}]]>
+		AND create_time > #{yesterday} AND `status`= #{status}
+	</select>
+	<select id="findAdminUsers" parameterType="map" resultMap="userRM">
+		select *, id as user_id from user where id in (select DISTINCT u.id
+		from user u left join user_role r on u.id=r.user_id
+		where r.role_id not
+		in ('INVESTOR','MEMBER','LOANER'))
+	</select>
+	<update id="updateUserPhoneArea" parameterType="user">
+		UPDATE user
+		<set>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(phoneNoAttribution)">phone_no_attribution=#{phoneNoAttribution},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(phoneNoCity)">phone_no_city=#{phoneNoCity},</if>
+		</set>
+
+		WHERE id = #{userId}
+	</update>
+
+	<select id="getUserByInviteCode" parameterType="string"
+		resultMap="userRM">
+		SELECT *, id AS user_id
+		FROM user
+		WHERE invite_code =
+		#{inviteCode}
+	</select>
+
+	<select id="getCountByReffer" parameterType="map" resultType="int">
+		SELECT count(distinct(user.id))
+		FROM user join invest on user.id =
+		invest.user_id
+		WHERE user.register_time > '2015-06-20' AND
+		invest.status in('还款中','投标成功',
+		'完成') AND user.register_time >
+		#{firstInvestTime} AND user.referrer =
+		#{referrer} and
+		invest.redpacket_for_visitor=1
+	</select>
+	
+<!-- 查询新增投资用户明细 (全部)-->
+	<select id="getInvestUserInfo1PageLite" resultMap="investUserInfoRm" parameterType="map">
+select distinct(i.user_id),(select count(*) from user_visit_info where userid = u.id and status=1) as remarkNum ,
+u.mobile_number,u.user_interior,u.qq,u.realname,u.register_time,u.offline_referrer, o.user_source,
+i.id AS invest_id,i.money,i.rate,i.time,i.is_auto_invest,i.status,l.name,l.operation_type,l.day,l.deadline, IFNULL(i.redpacket_id,0)AS redpacket_id 
+FROM invest i 
+	JOIN `user` u ON u.id=i.user_id 
+	JOIN user_other_info o ON o.id=i.user_id 
+	JOIN loan l ON l.id=i.loan_id  
+	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkstart) or @org.apache.commons.lang3.StringUtils@isNotBlank(remarkend) or @org.apache.commons.lang3.StringUtils@isNotBlank(remarkUserId) and remarkUserId!='all'  "> 
+	join `user_visit_info` u1 on u.id=u1.userid 
+</if>
+	WHERE  
+	  	i.status!='流标'
+	  	<if test="remark=='remark'">
+	  	and (select count(*) from user_visit_info where userid = u.id
+		and status=1) &gt;0
+	  	</if>
+	  	<if test="remark=='noRemark'">
+	  	and (select count(*) from user_visit_info where userid = u.id
+		and status=1) &lt;=0
+	  	</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkstart)">
+			 and u1.time &gt;= #{remarkstart} 
+			</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkend)">
+			 and u1.time &lt;= #{remarkend} 
+			</if>
+		<if test="remarkUserId != 'all' and @org.apache.commons.lang3.StringUtils@isNotBlank(remarkUserId) ">
+			 and u1.admin = #{remarkUserId} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+			 and i.time &gt;= #{start} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND i.time &lt;= #{end}
+		</if>
+
+	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+	AND  i.user_id not in (select DISTINCT user_id FROM invest WHERE  time &lt;#{start}  AND status !='流标')
+</if>
+	   
+	ORDER BY u.register_time DESC ,u.id,i.time 
+	</select>
+<!-- 查询新增投资用户明细 (已备注)-->
+	<select id="getInvestUserInfo1RemarkPageLite" resultMap="investUserInfoRm" parameterType="map">
+	select distinct(i.user_id),(select count(*) from user_visit_info where userid = u.id
+		and status=1) as remarkNum ,u.mobile_number,u.qq,u.user_interior,u.realname,u.register_time,u.offline_referrer,
+		u1.remark,u1.admin,u1.time as remarktime,
+		i.id AS invest_id,i.money,i.rate,i.time,i.is_auto_invest,i.status,l.name,l.operation_type,l.day,l.deadline,
+	IFNULL(i.redpacket_id,0)AS redpacket_id 
+	FROM invest i JOIN `user` u ON u.id=i.user_id
+	JOIN loan l ON l.id=i.loan_id  
+	<!-- <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkstart) or @org.apache.commons.lang3.StringUtils@isNotBlank(remarkend) or @org.apache.commons.lang3.StringUtils@isNotBlank(remarkUserId)"> -->
+	join `user_visit_info` u1 on u.id=u1.userid 
+<!-- 	</if> -->
+	WHERE  	i.status!='流标'
+	and (select count(*) from user_visit_info where userid = u.id
+		and status=1) &gt;0
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkstart)">
+			 and u1.time &gt;= #{remarkstart} 
+			</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkend)">
+			 and u1.time &lt;= #{remarkend} 
+			</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkUserId)">
+			 and u1.admin = #{remarkUserId} 
+			</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+			and i.time &gt;= #{start} 
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND i.time &lt;= #{end}
+			</if>
+		AND  i.user_id not in (select DISTINCT user_id FROM invest WHERE  time &lt;#{start}  AND status !='流标')  ORDER BY u.register_time DESC ,u.id,i.time 
+	</select>
+		<!-- 查询新增投资用户明细 (未备注)-->
+	<select id="getInvestUserInfo1NoRemarkPageLite" resultMap="investUserInfoRm" parameterType="map">
+	select distinct(i.user_id),(select count(*) from user_visit_info where userid = u.id
+		and status=1) as remarkNum ,u.mobile_number,u.qq,u.realname,u.user_interior,u.register_time,u.offline_referrer,
+		u1.remark,u1.admin,u1.time as remarktime,
+		i.id AS invest_id,i.money,i.rate,i.time,i.is_auto_invest,i.status,l.name,l.operation_type,l.day,l.deadline,
+	IFNULL(i.redpacket_id,0)AS redpacket_id 
+	FROM invest i JOIN `user` u ON u.id=i.user_id
+	JOIN loan l ON l.id=i.loan_id  
+<!-- <if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkstart) or @org.apache.commons.lang3.StringUtils@isNotBlank(remarkend) or @org.apache.commons.lang3.StringUtils@isNotBlank(remarkUserId)"> -->
+	join `user_visit_info` u1 on u.id=u1.userid 
+<!-- </if>  -->
+	WHERE 	i.status!='流标'
+	and (select count(*) from user_visit_info where userid = u.id
+		and status=1) &lt;=0
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkstart)">
+			 and u1.time &gt;= #{remarkstart} 
+			</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkend)">
+			 and u1.time &lt;= #{remarkend} 
+			</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkUserId)">
+			 and u1.admin = #{remarkUserId} 
+			</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+			 and i.time &gt;= #{start} 
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND i.time &lt;= #{end}
+			</if>
+		AND  i.user_id not in (select DISTINCT user_id FROM invest WHERE  time &lt;#{start}  AND status !='流标')   ORDER BY u.register_time DESC ,u.id,i.time 
+	</select>
+	
+	<!-- 插入投资确认书用户 -->
+	<insert id="insertUserInfoCheck" parameterType="map">
+		INSERT INTO user_invest_confirmation_letter
+		(id,user_id,is_del)
+		VALUES
+		(#{id},#{userId},#{isDel})
+	</insert>
+	<!-- 假删除用户信息 -->
+	<update id="delUserinfo" parameterType="String">
+		UPDATE user_invest_confirmation_letter
+		SET `is_del` = 0
+		WHERE
+		id =
+		#{id}
+	</update>
+	
+	
+	<!-- 查部分用户投资记录 (下载) -->
+	<select id="getUserInfoConfirmation" parameterType="map" resultMap="userInfoConfirmation">
+		SELECT u.realname AS user_name,u1.post_address,i.time as invest_time,i.interest as interest,i.loan_id,i.money,l.name as loan_name,l.rate,l.operation_type,l.day,l.deadline 
+		FROM invest i JOIN `user` u ON u.id=i.user_id 
+		JOIN loan l ON l.id=i.loan_id  
+		JOIN user_other_info u1 ON u.id=u1.id 
+		WHERE i.user_id=#{userId}  and i.money>=1000 and i.status!='流标'
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+		AND  i.time &gt;= #{start} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+		AND i.time &lt;= #{end}
+		</if>
+	</select>
+	<!-- 根据时间查询出用户是否投资(查询) -->
+		<select id="getUserInvestCheckinByTimePageLite" parameterType="map" resultMap="userInvestCheckRm">
+		SELECT DISTINCT(u1.id),u2.post_address AS user_addr,u.id AS user_id,u1.export_time AS export_time,
+		u.mobile_number AS mobile_number,u.realname as name from `user` u LEFT JOIN user_invest_confirmation_letter u1 ON u1.user_id=u.id JOIN user_other_info u2 ON u2.id=u.id 
+ 		join invest i on u.id=i.user_id 
+ 		WHERE is_del!=0   and i.money>=1000 and i.status!='流标'
+ 		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+		AND  i.time &gt;= #{start} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+		AND i.time &lt;= #{end}
+		</if>
+	</select>
+	
+	<!-- 查询模板 -->
+	<select id="getTemplate" parameterType="map" resultType="String">
+		SELECT template FROM  user_message_template WHERE id=#{id}
+	</select>
+	<!-- 更新导出时间 -->
+	<update id="updateExportTime" parameterType="map">
+		UPDATE user_invest_confirmation_letter
+		SET `export_time` = #{exportTime}
+		WHERE
+		user_id =
+		#{userId}	
+	</update>
+	<select id="getUserIds" resultType="String">
+		SELECT user_id FROM  user_invest_confirmation_letter  where is_del='1'
+	</select>
+	
+	<select id="readInvestInfoByFuRen" parameterType="map" resultMap="userByFuRen">
+		select id,realname, mobile_number,
+		DATE_FORMAT(FROM_DAYS(TO_DAYS(NOW())-TO_DAYS(SUBSTR(id_card FROM 7 FOR 8))), '%Y')+0 AS age,
+		if(id_card is null, '', if(mod(substr(id_card, 17, 1),2)=1, '男', '女')) as sex,
+		investIngmoney,sumMoney,demandInMoney,demandOutMoney
+		from `user`
+		left join (
+			select user_id, sum(money) as InvestIngmoney
+				from invest as inv
+				where status in('投标成功','还款中')
+				group by user_id) as tmp
+		on `user`.id = tmp.user_id
+		LEFT JOIN (
+					SELECT user_id,SUM(money)AS sumMoney 
+					FROM invest AS i 
+					WHERE status!='流标' 
+				GROUP BY user_id) AS tmp1
+		ON `user`.id=tmp1.user_id
+		LEFT JOIN (   
+				SELECT user_id,SUM(money)AS demandInMoney
+				FROM demand_treasure_bill WHERE  type='in')AS tmp2
+		ON `user`.id=tmp2.user_id
+		LEFT JOIN (
+				SELECT user_id,SUM(money)AS demandOutMoney
+				FROM demand_treasure_bill WHERE  type='out')AS tmp3
+	ON `user`.id=tmp3.user_id
+	where user_interior = 'furen'
+	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(userId)">
+		and id=#{userId}
+	</if>
+	</select>
+	<select id="readExportInvestByFuRen" resultMap="userByFuRen">
+		select id,realname, mobile_number,
+		DATE_FORMAT(FROM_DAYS(TO_DAYS(NOW())-TO_DAYS(SUBSTR(id_card FROM 7 FOR 8))), '%Y')+0 AS age,
+		if(id_card is null, '', if(mod(substr(id_card, 17, 1),2)=1, '男', '女')) as sex,
+		investIngmoney,sumMoney,demandInMoney,demandOutMoney
+		from `user`
+		left join (
+			select user_id, sum(money) as InvestIngmoney
+				from invest as inv
+				where status in('投标成功','还款中')
+				group by user_id) as tmp
+		on `user`.id = tmp.user_id
+		LEFT JOIN (
+					SELECT user_id,SUM(money)AS sumMoney 
+					FROM invest AS i 
+					WHERE status!='流标' 
+				GROUP BY user_id) AS tmp1
+		ON `user`.id=tmp1.user_id
+		LEFT JOIN (   
+				SELECT user_id,SUM(money)AS demandInMoney
+				FROM demand_treasure_bill WHERE  type='in')AS tmp2
+		ON `user`.id=tmp2.user_id
+		LEFT JOIN (
+				SELECT user_id,SUM(money)AS demandOutMoney
+				FROM demand_treasure_bill WHERE  type='out')AS tmp3
+	ON `user`.id=tmp3.user_id
+	where user_interior = 'furen'
+	</select>
+	<select id="getRemarkInfo" parameterType="map" resultMap="userRemarkInfoRm">
+		SELECT a.* from (SELECT DISTINCT(u.id),u.QQ ,u.realname,u2.user_visit_source,
+		u1.remark,u1.admin,u1.time FROM `user` u JOIN user_visit_info u1 ON u.id=userid JOIN user_other_info u2 ON u2.id=u.id  join invest i ON i.user_id=u.id
+		WHERE 
+		(select count(*) from user_visit_info where userid = u.id and status=1) >0 
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+		 and i.time &gt;= #{start} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+		AND i.time &lt;= #{end}
+		</if>
+		AND  i.user_id not in (select DISTINCT user_id FROM invest WHERE  time &lt;#{start}  AND status !='流标')  and u1.`status`='1' ORDER BY time desc) a GROUP BY id 
+	</select>
+	<!-- 用户数量 未备注 -->
+	<select id="getPeopleCountNoRemark" parameterType="map" resultType="int" >
+		SELECT  count(DISTINCT(i.user_id)) FROM invest i JOIN `user` u ON u.id = i.user_id 
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkstart) or @org.apache.commons.lang3.StringUtils@isNotBlank(remarkend) or @org.apache.commons.lang3.StringUtils@isNotBlank(remarkUserId) and remarkUserId!='all'  ">
+			join `user_visit_info` u1 on u.id=u1.userid 
+		</if>
+		WHERE  	i.status!='流标'
+		and (select count(*) from user_visit_info where userid = u.id
+		and status=1) &lt;=0
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkstart)">
+			 and u1.time &gt;= #{remarkstart} 
+			</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkend)">
+			 and u1.time &lt;= #{remarkend} 
+			</if>
+		<if test="remarkUserId != 'all' and @org.apache.commons.lang3.StringUtils@isNotBlank(remarkUserId) ">
+			 and u1.admin = #{remarkUserId} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+		 AND i.time &gt;= #{start} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+		AND i.time &lt;= #{end}
+		</if>
+		and i.user_id not in (select DISTINCT user_id FROM invest WHERE  time &lt;#{start}  AND status !='流标')
+	
+	</select>
+	<!-- 查询所有的用户数量已备注的 -->
+	<select id="getPeopleCountRemark" parameterType="map" resultType="int" >
+		SELECT  count(DISTINCT(i.user_id)) FROM invest i JOIN `user` u ON u.id = i.user_id 
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkstart) or @org.apache.commons.lang3.StringUtils@isNotBlank(remarkend) or @org.apache.commons.lang3.StringUtils@isNotBlank(remarkUserId) and remarkUserId!='all'  ">
+			join `user_visit_info` u1 on u.id=u1.userid 
+		</if>
+		WHERE  	i.status!='流标'
+		and (select count(*) from user_visit_info where userid = u.id
+		and status=1) &gt;0
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkstart)">
+			 and u1.time &gt;= #{remarkstart} 
+			</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkend)">
+			 and u1.time &lt;= #{remarkend} 
+			</if>
+		<if test="remarkUserId != 'all' and @org.apache.commons.lang3.StringUtils@isNotBlank(remarkUserId) ">
+			 and u1.admin = #{remarkUserId} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+		 AND i.time &gt;= #{start} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+		AND i.time &lt;= #{end}
+		</if>
+		and i.user_id not in (select DISTINCT user_id FROM invest WHERE  time &lt;#{start}  AND status !='流标')
+	</select>
+		<!-- 查询所有的用户数量 -->
+	<select id="getPeopleCount" parameterType="map" resultType="int">
+	SELECT  count(DISTINCT(i.user_id)) FROM invest i 
+	JOIN `user` u ON u.id=i.user_id 
+	JOIN user_other_info o ON o.id=i.user_id 
+	JOIN loan l ON l.id=i.loan_id  
+	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkstart) or @org.apache.commons.lang3.StringUtils@isNotBlank(remarkend) or @org.apache.commons.lang3.StringUtils@isNotBlank(remarkUserId) and remarkUserId!='all'  "> 
+	join `user_visit_info` u1 on u.id=u1.userid 
+</if>
+	WHERE  
+	  	i.status!='流标'
+	  	<if test="remark=='remark'">
+	  	and (select count(*) from user_visit_info where userid = u.id
+		and status=1) &gt;0
+	  	</if>
+	  	<if test="remark=='noRemark'">
+	  	and (select count(*) from user_visit_info where userid = u.id
+		and status=1) &lt;=0
+	  	</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkstart)">
+			 and u1.time &gt;= #{remarkstart} 
+			</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(remarkend)">
+			 and u1.time &lt;= #{remarkend} 
+			</if>
+		<if test="remarkUserId != 'all' and @org.apache.commons.lang3.StringUtils@isNotBlank(remarkUserId) ">
+			 and u1.admin = #{remarkUserId} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+			 and i.time &gt;= #{start} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND i.time &lt;= #{end}
+		</if>
+
+	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+	AND  i.user_id not in (select DISTINCT user_id FROM invest WHERE  time &lt;#{start}  AND status !='流标')
+</if>
+	   
+	ORDER BY u.register_time DESC ,u.id,i.time 
+	</select>
+	
+	
+	
+	<!-- 查找管理员 -->
+	<select id="queryAdmin" parameterType="user" resultType="user">
+		SELECT
+			DISTINCT 
+			a.id userId,
+			a.realname realname,
+			a.mobile_number mobileNumber,
+			a.register_time registerTime,
+			a.status status,
+			a.phone_no_attribution phoneNoAttribution,
+			a.phone_no_city phoneNoCity
+		FROM
+			USER a,
+			user_role b,
+			role c
+		where
+			a.id = b.user_id
+			and b.role_id = c.id
+			and c.id not in ('INVESTOR', 'LOANER', 'MEMBER')
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(userId)">
+				AND a.id = #{userId}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(username)">
+				AND username like concat('%',#{username},'%')
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(mobileNumber)">
+				AND mobile_number = #{mobileNumber}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(email)">
+				AND email = #{email}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(password)">
+				AND password = #{password}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(idCard)">
+				AND id_card = #{idCard}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(realname)">
+				AND realname = #{realname}
+			</if>
+		order by a.register_time DESC
+	</select>
+	
+	
+	
+</mapper>

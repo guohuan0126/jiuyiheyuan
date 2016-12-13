@@ -1,0 +1,257 @@
+package com.duanrong.business.recharge.service.impl;
+
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.stereotype.Service;
+
+import util.Log;
+import util.MyStringUtils;
+import base.model.PageData;
+import base.pagehelper.PageInfo;
+
+import com.duanrong.business.payMentChannel.model.PayMentChannel;
+import com.duanrong.business.paymentInstitution.dao.PaymentCompanyDao;
+import com.duanrong.business.paymentInstitution.model.PaymentCompany;
+import com.duanrong.business.recharge.dao.RechargeDao;
+import com.duanrong.business.recharge.model.Recharge;
+import com.duanrong.business.recharge.service.RechargeService;
+import com.duanrong.business.risk.service.SystemBillService;
+import com.duanrong.business.user.UserConstants;
+import com.duanrong.business.user.service.UserMoneyService;
+import com.duanrong.newadmin.utility.AESUtil;
+import com.duanrong.util.ArithUtil;
+
+@Service
+public class RechargeServiceImpl implements RechargeService {
+
+	private final Lock lock = new ReentrantLock();
+
+	@Resource
+	RechargeDao rechargeDao;
+
+	@Resource
+	UserMoneyService userMoneyService;
+
+	@Resource
+	SystemBillService systemBillService;
+	
+	@Resource
+	PaymentCompanyDao paymentCompanyDao;
+
+	@Resource
+	Log log;
+
+	@Override
+	public List<Recharge> getByCondition(Recharge recharge) {
+		return rechargeDao.getByCondition(recharge);
+	}
+
+	@Override
+	public Double readTotalRecharge(Recharge recharge) {
+		Double d=0d;
+		d= rechargeDao.getTotalRecharge(recharge);
+		if( d!=null) return d ; 
+		else return (double) 0;
+	}
+
+	@Override
+	public PageData<Recharge> findPaging(int pageNo, int pageSize,
+			Recharge recharge) {
+		return rechargeDao.findPaging(pageNo, pageSize, recharge);
+	}
+
+	@Override
+	public Long getRechargeCount(Recharge recharge) {
+		return rechargeDao.getCount(recharge);
+	}
+
+	@Override
+	public void insert(Recharge recharge) {
+		rechargeDao.insert(recharge);
+	}
+
+	@Override
+	public Recharge get(String id) {
+		return rechargeDao.get(id);
+	}
+
+	@Override
+	public void rechargeSuccess(String rechargeId) {
+		lock.lock();
+		try {
+			Recharge recharge = get(rechargeId);
+			if (StringUtils.equals(recharge.getStatus(),
+					UserConstants.RechargeStatus.WAIT_PAY)) {
+				// 修改状态为成功
+				recharge.setStatus(UserConstants.RechargeStatus.SUCCESS);
+				// 设置充值成功时间
+				recharge.setSuccessTime(new Date());
+				// 更新
+				rechargeDao.update(recharge);
+
+				String userId = recharge.getUserId();
+				Double money = recharge.getActualMoney();
+				String operatorInfo = "充值";
+				// 往user_bill表中插入值并计算余额
+				userMoneyService.transferIntoBalance(userId, money,
+						operatorInfo, null);
+				// 系统账户
+				// 系统账户金额操作不能影响用户的账户
+				try {
+					String rechargeWay = recharge.getRechargeWay();
+					double systemMoney = 0;
+					if (MyStringUtils.equalsIgnoreCaseAnyString(rechargeWay,
+							"pc", null)) {
+						systemMoney = ArithUtil.round(
+								recharge.getActualMoney() * 0.002, 2);
+					} else {
+						systemMoney = ArithUtil.round(
+								recharge.getActualMoney() * 0.003, 2);
+					}
+					String detail = MyStringUtils.append("用户ID：", userId,
+							"，充值ID：", rechargeId);
+					systemBillService.transferOut(systemMoney, "充值手续费", detail);
+				} catch (Exception ex) {
+					log.errLog("充值，系统账户操作", ex);
+				}
+			}
+		} catch (Exception e) {
+			log.errLog("处理充值成功", e);
+		} finally {
+			lock.unlock();
+		}
+
+	}
+
+	@Override
+	public void update(Recharge recharge) {
+		rechargeDao.update(recharge);
+	}
+
+	@Override
+	public PageInfo<Recharge> readAllRecharge(int pageNo, int pageSize,
+			Recharge recharge) {
+		PageInfo<Recharge> pageInfo =  rechargeDao.pageLite(pageNo, pageSize, recharge);
+		List<Recharge> resultList = pageInfo.getResults();
+		for (Recharge recharge2 : resultList) {
+			String cardNo = "";
+			try {
+				cardNo = AESUtil.decode(recharge2.getCardNo());
+				recharge2.setCardNo(cardNo.substring(0,4)+"********"+cardNo.substring(cardNo.length()-4));	
+			} catch (Exception e) {
+				// TODO: handle exception
+			}
+		}
+		pageInfo.setResults(resultList);
+		return pageInfo;
+	}
+
+	@Override
+	public Double getTotalFee(Recharge recharge) {
+		Double d=0d;
+		d= rechargeDao.getTotalFee(recharge);
+		if( d!=null) return d ; 
+		else return (double) 0;
+	}
+
+	@Override
+	public double getRechargeMoneyPerDay(Map<String, Object> params) {
+		return rechargeDao.getRechargeMoneyPerDay(params);
+	}
+
+	@Override
+	public List<Recharge> getRechargeNum(Map map) {
+		return rechargeDao.getRechargeNum(map);
+	}
+
+	@Override
+	public void save(Recharge recharge) {
+		rechargeDao.save(recharge);
+	}
+
+	/**
+	 * 【去除固定借款人】总充值金额
+	 */
+	@Override
+	public BigDecimal readExcludeFixedBorrowerFee(Recharge recharge) {
+		return rechargeDao.getExcludeFixedBorrowerFee(recharge);
+	}
+	
+	@Override
+	public void rechargeSuccess(String rechargeId,String type) {
+		synchronized (RechargeServiceImpl.class) {
+			try {
+				Recharge recharge = get(rechargeId);
+				/*if (StringUtils.equals(recharge.getStatus(),
+						UserConstants.RechargeStatus.WAIT_PAY)) {*/
+					// 修改状态为成功
+					recharge.setStatus(UserConstants.RechargeStatus.SUCCESS);
+					// 设置充值成功时间
+					recharge.setSuccessTime(new Date());
+					//充值方式
+					String userId = recharge.getUserId();
+					Double money = recharge.getActualMoney();
+					String operatorInfo = "充值成功";
+					try {
+						double rate = 0.0;
+						PayMentChannel company = paymentCompanyDao.getPaymentCompany(recharge.getPayMentId()); 
+						if(MyStringUtils.equalsIgnoreCaseAnyString(recharge.getType(), "quick", "补单")){
+							rate = company.getRateQuick();
+						}else{
+							rate = company.getRateGateway();
+						}
+						double fee = ArithUtil.round(recharge.getActualMoney()*rate,2);
+						recharge.setFee(fee);
+					} catch (Exception e) {
+						log.errLog("计算充值手续费失败", recharge.toString()+",Excetpion:"+e);
+					}
+					// 往user_bill表中插入值并计算余额transferIntoBalance
+					userMoneyService.transferIntoBalance(userId,
+							money, operatorInfo, null);
+
+					// 更新recharge表，放在user_bill插入操作之后，以免出现事物不同步的问题
+					rechargeDao.update(recharge);
+
+				/*}*/
+			} catch (Exception ex) {
+				log.errLog("处理充值失败", ex);
+				throw ex;
+			}
+		}
+	}
+
+	@Override
+	public int readRechargeSuccessPeople(Recharge recharge) {
+		return rechargeDao.getRechargeSuccessPeople(recharge);
+	}
+
+	@Override
+	public BigDecimal readExcludeFixedBorrowerFeeFail(Recharge recharge) {
+		return rechargeDao.getExcludeFixedBorrowerFeeFail(recharge);
+	}
+
+	@Override
+	public int readRechargeFailPeople(Recharge recharge) {
+		return rechargeDao.getRechargeFailPeople(recharge);
+	}
+	
+	
+	
+	public static void main(String[] args) {
+		 ApplicationContext ctx = new ClassPathXmlApplicationContext(
+		 "applicationContext.xml");
+		RechargeService rechargeService = ctx.getBean(RechargeService.class);
+		rechargeService.rechargeSuccess("dmsoRECH597420160913102929673000018", "pc");
+	}
+	
+}

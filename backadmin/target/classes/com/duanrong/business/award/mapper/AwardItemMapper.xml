@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.award.mapper.AwardItemMapper">
+	<resultMap type="awardItem" id="awardItemRM">
+		<id property="id" column="id" />
+		<result property="approvMsg" column="approve_msg" />
+		<result property="approveTime" column="approve_time" />
+		<result property="approveUserID" column="approveUserID" />
+		<result property="createUserID" column="createUserID" />
+		<result property="createTime" column="createtime" />
+		<result property="description" column="description" />
+		<result property="itemType" column="itemType" />
+		<result property="money" column="money" />
+		<result property="moneyAmount" column="moneyAmount" />
+		<result property="moneyType" column="moneyType" />
+		<result property="name" column="name" />
+		<result property="status" column="status" />
+		<result property="userCount" column="userCount" />
+		<result property="userMsg" column="userMsg" />
+		<result property="loanId" column="loan_id" />
+		<result property="loanName" column="loan_name" />
+		<result property="recheckMessage" column="recheck_message" />
+		<result property="recheckTime" column="recheck_time" />
+		<result property="recheckUser" column="recheck_user" />
+		<result property="alterCause" column="alterCause" />
+		<result property="alterTime" column="alterTime" />
+		<result property="alterUserID" column="alterUserID" />
+		<result property="maxAwardMoneyRestrict" column="maxAwardMoneyRestrict" />
+		<result property="sendVerifyCode" column="sendVerifyCode" />
+		<result property="percentageRate" column="percentageRate" />
+		<result property="sendMoney" column="send_money" />
+		<result property="sendCount" column="send_count" />
+	</resultMap>
+
+
+	<resultMap type="weixin" id="weixinRM">
+		<id property="id" column="id" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="userId" column="user_id" />
+		<result property="weixinMoney" column="weixin_money" />
+		<result property="followInvestMoney" column="followInvest_money" />
+		<result property="loanId" column="loan_id" />
+		<result property="investId" column="invest_id" />
+		<result property="remark" column="remark" />
+		<result property="statuss" column="statuss" />
+	</resultMap>
+	<resultMap type="awardItem" id="exportRM">
+		<id property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="description" column="description" />
+		<result property="loanType" column="loan_type" />
+		<result property="itmeAddress" column="item_address" />
+		<result property="money" column="money" />
+		<result property="sendTime" column="sendTime" />
+	</resultMap>
+
+	<!-- 添加奖励项目 -->
+	<insert id="insertAwardItem" parameterType="awardItem"
+		useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO
+		awarditem(approve_msg,
+		approve_time, approveUserID,
+		createUserID,
+		createtime, description,
+		itemType, money,
+		moneyAmount, moneyType, name,
+		status, userCount,
+		userMsg, loan_id, recheck_message, recheck_time,
+		recheck_user,
+		alterCause, alterTime, alterUserID,
+		maxAwardMoneyRestrict,
+		sendVerifyCode, percentageRate) VALUES(
+		#{approvMsg}, #{approveTime},
+		#{approveUserID}, #{createUserID},
+		#{createTime}, #{description},
+		#{itemType}, #{money},
+		#{moneyAmount},
+		#{moneyType},
+		#{name}, #{status},
+		#{userCount}, #{userMsg}, #{loanId},
+		#{recheckMessage}, #{recheckTime},
+		#{recheckUser}, #{alterCause},
+		#{alterTime}, #{alterUserID},
+		#{maxAwardMoneyRestrict},
+		#{sendVerifyCode}, #{percentageRate})
+	</insert>
+
+	<!-- 获取根据Id奖励项目 -->
+	<select id="get" parameterType="int" resultMap="awardItemRM">
+		select * from
+		awarditem where id = #{id}
+	</select>
+
+	<!-- 条件查新 -->
+	<select id="pageLite" parameterType="awardItem" resultMap="awardItemRM">
+		select awarditem.*,(SELECT loan.`name` FROM loan WHERE loan.id =
+		awarditem.loan_id) AS loan_name, (SELECT SUM(money) FROM awarditemuser
+		WHERE awardItem_id=awarditem.id AND status='发送成功' and display=1) AS send_money,
+		(SELECT COUNT(*) FROM awarditemuser WHERE awardItem_id=awarditem.id
+		AND status='发送成功' and display=1) AS send_count
+		FROM
+		awarditem where status != '撤销奖励'
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(approvMsg)">
+			AND approve_msg LIKE '%${approvMsg}%'
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(approveUserID) ">
+			AND approveUserID = #{approveUserID}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(createUserID) ">
+			AND createUserID = #{createUserID}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(description)">
+			AND description LIKE '%${description}%'
+		</if>
+		<choose>
+			<when test="itemType == 'unfinance' or itemType == ''">
+				AND itemType != 'finance'
+			</when>
+			<otherwise>
+				AND itemType = #{itemType}
+			</otherwise>
+		</choose>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(moneyType) ">
+			AND moneyType = #{moneyType}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(name)">
+			AND name LIKE '%${name}%'
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(status)">
+			AND status = #{status}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(loanId) ">
+			AND loan_id = #{loanId}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(recheckUser)">
+			AND recheck_user = #{recheckUser}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(sendVerifyCode)">
+			AND sendVerifyCode = #{sendVerifyCode}
+		</if>
+		ORDER BY createtime DESC
+	</select>
+
+	<update id="update" parameterType="awardItem">
+		UPDATE awarditem
+		<set>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(sendVerifyCode)">sendVerifyCode=#{sendVerifyCode},</if>
+			<if test="maxAwardMoneyRestrict != null">maxAwardMoneyRestrict=#{maxAwardMoneyRestrict},</if>
+			<if test="status != null">status=#{status},</if>
+		</set>
+		WHERE id=#{id};
+	</update>
+	<update id="deleteAwardItemById" parameterType="int">
+		update awarditem
+		set status='撤销奖励' where id=#{itemId} and status!='已发送'
+
+	</update>
+
+	<!-- 获取根据Id奖励项目 -->
+	<select id="isSendAward" parameterType="awardItem" resultMap="awardItemRM">
+		SELECT * FROM
+		awarditem
+		<where>
+			<if test="loanId != null and loanId != ''">
+				AND loan_id =#{loanId}
+			</if>
+			<if test="moneyType != null">
+				AND moneyType =#{moneyType}
+				<if
+					test="moneyType == 'percentage' and percentageRate !=null and percentageRate > 0">
+					AND percentageRate =#{percentageRate}
+				</if>
+			</if>
+			<if test="itemType != null and itemType == 'compensation'">
+				AND itemType =#{itemType}
+			</if>
+			<if test="itemType != null and itemType == 'newbieEnjoy'">
+				AND itemType =#{itemType}
+			</if>
+			<if test="itemType != null and itemType == '51AddInterest'">
+				AND itemType =#{itemType}
+			</if>
+			<choose>
+				<when test="status != null and status == 'sendAndCreate'">
+					AND status in ('等待发送','审批通过','复核通过','已发送','等待复核','复核通过')
+				</when>
+				<otherwise>
+					AND status = #{status}
+				</otherwise>
+			</choose>
+		</where>
+	</select>
+
+	<!-- 获取微信奖励 -->
+	<select id="getWeiXinActivity" parameterType="weixin" resultMap="weixinRM">
+		SELECT * FROM wei_xin_activity
+		<where>
+			<if test="loanId != null and loanId != ''">
+				AND loan_id =#{loanId}
+			</if>
+			<if test="statuss != null and statuss != ''">
+				AND statuss =#{statuss}
+			</if>
+		</where>
+	</select>
+
+	<!-- 5%和10%奖励是否创建 -->
+	<select id="isCreatePercentageAwardItem" parameterType="map"
+		resultMap="awardItemRM">
+		SELECT * FROM awarditem WHERE loan_id = #{loanId} AND
+		percentageRate = #{rate} AND itemType = #{itemType} AND moneyType =
+		#{moneyType} AND `status`
+		IN ('等待发送','审批通过','复核通过','已发送','等待复核','复核通过')
+	</select>
+
+	<select id="conditions5AwardBySumMoney" parameterType="map"
+		resultType="double">
+		<![CDATA[
+			SELECT
+			SUM(money)
+			FROM
+			invest
+			WHERE
+			user_id = #{userId}
+			AND time >= #{registerTime}
+			AND time <= #{endTime}
+			AND id != #{investId}
+			AND
+			`status` != '流标'
+		]]>
+	</select>
+
+	<select id="isCreateFollowInvestAwardItem" parameterType="map"
+		resultMap="awardItemRM">
+		<![CDATA[
+			SELECT
+			*
+			FROM
+			awarditem
+			WHERE
+			loan_id = #{loanId}
+			and status in (${status}) and  moneyType = 'ladder'
+		]]>
+	</select>
+
+	<resultMap type="invest" id="investRM">
+		<association property="award5Invest"
+			resultMap="com.duanrong.business.invest.model.Invest.investRM"></association>
+	</resultMap>
+
+	<select id="conditions5AwardByInvests" parameterType="map"
+		resultMap="com.duanrong.business.invest.model.Invest.investRM">
+		<![CDATA[
+			SELECT
+				*
+			FROM
+				invest
+			WHERE
+				user_id = #{userId}
+			AND time >= #{investStartTime}
+			AND time <= #{investEndTime}
+			AND STATUS != '流标'
+			ORDER BY
+				time ASC
+		]]>
+	</select>
+
+
+	<!-- 更新一条为新纪录updateWeiXinActivity -->
+	<update id="updateWeiXinActivity" parameterType="weixin">
+		update
+		wei_xin_activity
+		<set>
+			<if test="statuss != null">statuss=#{statuss},</if>
+		</set>
+		WHERE loan_id=#{loanId}
+	</update>
+
+
+	<select id="findFollowInvestAward" parameterType="map" resultMap="com.duanrong.business.invest.model.Invest.investRM">
+			SELECT
+				*
+			FROM
+				invest
+			WHERE
+				return_pond = 'Y' AND STATUS = '完成'
+			<if test="userId != 'all'"> AND user_id=#{userId}</if>
+	</select>
+	
+	<select id="findInvestByFollowStatusAndInvestStatus" parameterType="map" resultMap="com.duanrong.business.invest.model.Invest.investRM">
+			SELECT
+				*
+			FROM
+				invest
+				
+			WHERE
+				STATUS = '还款中' AND return_pond = 'N'
+			<if test="userId != 'all'"> AND user_id=#{userId}</if>
+	</select>
+	<select id="getAwards" parameterType="map" resultMap="exportRM">
+		select * from 
+			(
+			select awarditem.id ,awarditem.name, awarditem.description,loan.loan_type,loan.item_address,
+			(select sum(money) from awarditemuser where awarditemuser.awardItem_id = awarditem.id and awarditemuser.`status`='发送成功' and awarditemuser.`display`=1)as money,
+			(select sendTime from awarditemuser where awarditemuser.awardItem_id = awarditem.id and awarditemuser.`display`=1 LIMIT 1 ) as sendtime
+			from awarditem 
+			left join loan on awarditem.loan_id = loan.id
+			where awarditem.`status`='已发送' 
+			
+			) t
+			<where>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND sendtime &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND sendtime &lt;= #{end}
+			</if>
+		</where>
+</select>
+<update id="updateAawarditemMoney" parameterType="map">
+		UPDATE awarditem
+		<set>
+			<if test="moneyAmount != null">moneyAmount=#{moneyAmount},</if>
+			<if test="userCount != null">userCount=#{userCount},</if>
+		</set>
+		WHERE id=#{id};
+	</update>
+
+</mapper>

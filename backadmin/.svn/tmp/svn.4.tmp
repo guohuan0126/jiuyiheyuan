@@ -1,0 +1,684 @@
+package com.duanrong.payment.service.impl;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.message.BasicNameValuePair;
+import org.dom4j.Document;
+import org.dom4j.DocumentHelper;
+import org.jsoup.helper.StringUtil;
+import org.springframework.stereotype.Service;
+
+import util.Log;
+import util.MyCollectionUtils;
+import util.XMLUtil;
+
+import com.duanrong.business.bankcard.model.BankCard;
+import com.duanrong.business.bankcard.service.BankCardService;
+import com.duanrong.business.paymentInstitution.model.PaymentDefrayPay;
+import com.duanrong.business.paymentInstitution.service.PaymentDefrayPayService;
+import com.duanrong.business.trusteeship.model.TrusteeshipYeepayConstants;
+import com.duanrong.business.user.model.User;
+import com.duanrong.business.user.service.UserMoneyService;
+import com.duanrong.business.user.service.UserService;
+import com.duanrong.business.withdraw.dao.WithdrawCashDao;
+import com.duanrong.business.withdraw.model.PaymentWithdrawRecord;
+import com.duanrong.business.withdraw.service.PaymentWithdrawRecordService;
+import com.duanrong.business.withdraw.service.impl.WithdrawCashBO;
+import com.duanrong.payment.PaymentConstants;
+import com.duanrong.payment.jd.defraypay.CodeConst;
+import com.duanrong.payment.jd.defraypay.Contants;
+import com.duanrong.payment.jd.defraypay.RequestUtil;
+import com.duanrong.payment.service.PaymentWithdrawCashService;
+import com.duanrong.util.DateUtil;
+import com.duanrong.util.Dom4jUtil;
+import com.duanrong.util.Week;
+import com.duanrong.util.client.DRHTTPSClient;
+import com.duanrong.yeepay.service.TrusteeshipQueryBusinessService;
+import com.duanrong.yeepay.xml.GeneratorXML;
+import com.duanrong.yeepaysign.CFCASignUtil;
+import com.fuiou.util.MD5;
+
+@Service
+public class PaymentWithdrawCashServiceImpl implements PaymentWithdrawCashService {
+
+	@Resource
+	PaymentWithdrawRecordService paymentWithdrawRecordService;
+	
+	@Resource
+	WithdrawCashBO withdrawCashBO;
+	
+	@Resource
+	WithdrawCashDao withdrawCashDao;
+	
+	@Resource
+	BankCardService bankCardService;
+	
+	@Resource
+	UserService userService;
+	
+	@Resource
+	UserMoneyService userMoneyService;
+	
+	@Resource
+	PaymentDefrayPayService paymentDefrayPayService;
+	
+	@Resource
+	TrusteeshipQueryBusinessService trusteeshipQueryBusinessService;
+	
+	@Resource
+	Log log;
+
+	/**
+	 * 验证易宝是否冻结
+	 */
+	@Override
+	public String verifyWithdrawCash() {
+		//查询是否有两个相同流水号相同的数据
+		List<PaymentWithdrawRecord> list = paymentWithdrawRecordService.getRepeatRecords();
+		String orderIds = "";
+		if (MyCollectionUtils.isNotBlank(list)) {
+			for(PaymentWithdrawRecord record : list){
+				orderIds += record.getMarkId()+",";
+			}
+			log.errLog("京东代付校验", "流水号"+orderIds+"重复，请联系技术人员",1);
+			return "流水号"+orderIds+"重复，请联系技术人员";
+		}
+		/***************查询今天要代付的数据，易宝是否冻结成功*****************/
+		PaymentWithdrawRecord record = new PaymentWithdrawRecord();
+		record.setRequestTime(new Date());
+		List<PaymentWithdrawRecord> records = paymentWithdrawRecordService.getWithdrawRecords(record);
+		int i = 0;
+		int j = 0;
+		if (MyCollectionUtils.isNotBlank(records)) {
+			Date date = new Date();
+			for(PaymentWithdrawRecord temrecord : records){
+				if(verifyData(temrecord,date)){
+					i++;
+					continue;
+				}
+				orderIds += temrecord.getMarkId()+",";
+				j++;
+			}
+			if(j>0){
+				log.errLog("京东代付校验","本次校验成功"+i+"条,失败"+j+"条。流水号"+orderIds+"校验失败",1);
+			}
+			return "验证完成，成功"+i+"条，失败"+j+"条。";
+		}else{
+			return "未找到相应数据";
+		}
+	}
+	
+	private boolean verifyData(PaymentWithdrawRecord record,Date date) {
+			String respInfo = null;
+			try {
+				respInfo = trusteeshipQueryBusinessService.query(record.getMarkId());
+				Document respXML = DocumentHelper.parseText(respInfo);
+				Map<String, String> resultMap = Dom4jUtil.xmltoMap(respInfo);
+				String code = resultMap.get("code");
+				String records = resultMap.get("records");
+				if ("1".equals(code) && StringUtils.isNotBlank(records)) {
+					String amount = respXML.selectSingleNode(
+							"/response/records/record/amount").getStringValue();
+					String status = respXML.selectSingleNode(
+							"/response/records/record/status").getStringValue();
+					if("PREAUTH".equals(status)&&StringUtils.isNotBlank(amount)
+							&&Double.parseDouble(amount)==record.getMoney()){
+						return true;
+					}
+				}
+				record.setResponseData(respInfo);
+				record.setResponseTime(date);
+				record.setStatus("refused");//易宝的状态
+				paymentWithdrawRecordService.update(record);
+			} catch (Exception e) {
+				log.errLog("京东代付", "校验易宝数据异常，流水号"+record.getMarkId());
+			}
+			return false;
+	}
+
+	/**
+	 * 确认提现，进行京东代付操作
+	 * 如果orderId为空，即为批量操作，需要判断时间，查询今天之前的未处理的正常数据
+	 * 如果orderId有值，即为单个操作，直接进行代付操作
+	 */
+	@Override
+	public String confirmWithdrawCash(String orderId) {
+		/********************验证信息**********************/
+		PaymentWithdrawRecord record = new PaymentWithdrawRecord();
+		Date date = new Date();
+		if(StringUtil.isBlank(orderId)){
+			//判断时间
+			Integer i = withdrawCashDao.getHolidayDate(date,"holiday");
+			if(i>0){
+				return "节假日不支持批量确认";
+			}
+			Integer j = withdrawCashDao.getHolidayDate(date,"work");
+			if(j==0&&(Week.SATURDAY==DateUtil.getWeek(date)||Week.SUNDAY==DateUtil.getWeek(date))){
+				return "周末不支持批量确认";
+			}
+			//查询昨天的数据
+			record.setRequestTime(date);
+		}else{
+			record.setId(orderId);
+			//校验
+		}
+		if(!verifyMoney(record)){
+			return "金额不足";
+		}
+		/********************查询转账数据，进行代付**********************/
+		List<PaymentWithdrawRecord> list = paymentWithdrawRecordService.getWithdrawRecords(record);
+		if(StringUtils.isNotBlank(orderId)&&list.size()==1){
+			record = list.get(0);
+			if(!verifyData(record, date)){
+				return "验证失败，易宝未冻结或冻结金额不正确";
+			}
+		}
+		
+		if (MyCollectionUtils.isNotBlank(list)) {
+			return createDefrayPay(list);
+		}else{
+			return "未找到相应数据";
+		}
+	}
+	
+	@Override
+	public boolean callback(ServletRequest request, ServletResponse response)
+			throws Exception {
+		return false;
+	}
+
+	/**
+	 * 京东代付服务器通知
+	 * 通知时间：金额到账时
+	 * 获取返回参数
+	 * 查询京东代付表数据
+	 * 解析验证签名后，通知京东接收成功
+	 * 交易成功，确认易宝数据
+	 * 交易失败，进行人工处理
+	 */
+	@Override
+	public String S2SCallback(HttpServletRequest request,HttpServletResponse response)throws Exception {
+		String orderId = request.getParameter("out_trade_no");
+		if(StringUtils.isBlank(orderId)){
+			log.errLog("代付服务器通知", "返回数据orderId为空");
+			return null;
+		}
+		Map<String, String[]> params = request.getParameterMap();  
+        String data = "";  
+        for (String key : params.keySet()) {  
+            String[] values = params.get(key);  
+            for (int i = 0; i < values.length; i++) {  
+                String value = values[i];  
+                data += key + "=" + value + "&";  
+            }  
+        }  
+        data = data.substring(0, data.length() - 1); 
+        
+		PaymentDefrayPay paymentDefrayPay = paymentDefrayPayService.get(orderId);
+		PaymentWithdrawRecord record = paymentWithdrawRecordService.read(orderId, orderId, "JDpay");
+		if(paymentDefrayPay==null||record==null){
+			log.errLog("代付服务器通知", "未找到本地数据，流水号："+orderId);
+			System.out.println("未找到数据");
+			return null;
+		}
+		paymentDefrayPay.setResponseData(data.toString());
+		RequestUtil demoUtil = new RequestUtil();
+		try {
+			// 响应的参数 为XML格式
+			Map<String,String> map = demoUtil.verifySingNotify(data);
+			record.setConfirmResponseTime(new Date());
+			if(map==null){
+				log.errLog("代付服务器通知", "验证签名不成功,返回数据:"+data);
+				paymentDefrayPay.setStatus("fail");
+				paymentDefrayPay.setMsg("验证签名不成功");
+			}else{
+				response.getWriter().write("SUCCESS");
+				log.infoLog("京东代付", "通知京东接收成功"+orderId);
+				String trade_status = map.get("trade_status");
+				paymentDefrayPay.setMoney(Integer.parseInt(map.get("trade_amount")));
+				if(CodeConst.TRADE_FINI.equals(trade_status)){//交易成功
+					paymentDefrayPay.setStatus("success");
+					record.setIsDefrayPay("success");
+					String respInfo = confirmYeepay(map.get("out_trade_no"));
+					record.setConfirmResponseData(respInfo);
+					// 响应信息
+					if(StringUtils.isNotBlank(respInfo)){
+						Map<String, String> resultMap = Dom4jUtil.xmltoMap(respInfo);
+						String code = resultMap.get("code");
+						if (StringUtils.equals("1", code)) {
+							record.setStatus("confirm");
+						} else {
+							record.setIsDefrayPay("fail");
+							log.errLog("京东代付", "易宝确认交易失败,流水号："+orderId+"，易宝返回数据："+respInfo);
+						}
+					}				
+					paymentDefrayPay.setMsg("交易成功");
+				}else if(CodeConst.TRADE_CLOS.equals(trade_status)){
+					paymentDefrayPay.setStatus("fail");
+					paymentDefrayPay.setMsg("交易关闭，交易失败");
+					log.errLog("京东代付", "京东代付交易失败,流水号："+orderId+"，京东返回数据："+data);
+				}else if(CodeConst.TRADE_WPAR.equals(trade_status)||CodeConst.TRADE_BUID.equals(trade_status)||CodeConst.TRADE_ACSU.equals(trade_status)){
+					paymentDefrayPay.setStatus(trade_status);
+					paymentDefrayPay.setMsg("等待支付结果，处理中");
+				}
+			}
+		} catch (UnsupportedEncodingException e) {
+			log.errLog("京东代付", "服务器通知解析异常"+e);
+		}
+		paymentDefrayPay.setResponseTime(new Date());
+		paymentDefrayPayService.update(paymentDefrayPay);
+		paymentWithdrawRecordService.update(record);
+		return "";
+	}
+	
+	private String confirmYeepay(String orderId){
+		try{
+			GeneratorXML xml = new GeneratorXML();
+			xml.setPlatformNo(TrusteeshipYeepayConstants.Config.MER_CODE);
+			xml.setRequestNo(orderId);
+			xml.setMode("CONFIRM");
+			xml.setNotifyUrl(TrusteeshipYeepayConstants.ResponseS2SUrl.PRE_RESPONSE_URL
+					+ TrusteeshipYeepayConstants.OperationType.THANAUTH);			
+			String content = null;
+			try {
+				content = XMLUtil.getXML(xml);
+			} catch (Exception e) {
+				log.errLog("创建转账确认XML拼接异常", e);
+			}
+
+			String sign = CFCASignUtil.sign(content);
+			// 包装参数
+			Map<String, String> params = new HashMap<String, String>();
+			params.put("req", content);
+			params.put("sign", sign);
+
+			log.infoLog("转账确认XML", content);
+			log.infoLog("转账确认sign", sign);
+			// 创建直连请求
+			HttpClient client = new HttpClient();
+			PostMethod postMethod = new PostMethod(
+					TrusteeshipYeepayConstants.RequestUrl.RequestDirectUrl);
+			postMethod.setParameter("req", content);
+			postMethod.setParameter("sign", sign);		
+			postMethod.setParameter("service", "COMPLETE_TRANSACTION");
+			int statusCode = client.executeMethod(postMethod);
+			if (statusCode != HttpStatus.SC_OK) {
+				log.errLog("Class PaymentWithdrawCashServiceImpl.transferInConfirm", "Method failed: " + postMethod.getStatusLine());
+			}
+			// 获得返回的结果
+			byte[] responseBody = postMethod.getResponseBody();
+			String respInfo = new String(responseBody, "UTF-8");
+			log.infoLog("京东代付", "易宝确认:orderId"+orderId+","+respInfo);
+			return  respInfo;
+		}catch (Exception ex) {
+			log.errLog("京东代付", "易宝转账确认操作异常"+ex);
+		}
+		return null;
+	}
+
+	@Override
+	public Map<String,String> tradeQuery(String orderId) {
+		Map<String,String> paramMap = new HashMap<String, String>();
+		paramMap.put("customer_no",PaymentConstants.JDConfig.DEFRAYPAY_NO);//提交者会员号
+		Date date = new Date();
+		String dateTime = DateUtil.DateToString(date, "yyyyMMdd")+"T"+DateUtil.DateToString(date, "HHmmss");
+		paramMap.put("request_datetime",dateTime);//请求时间
+		paramMap.put("out_trade_no",orderId);//商户订单号
+		RequestUtil demoUtil = new RequestUtil();
+		String responseText = "";
+		Map<String,String> map = new HashMap<>();
+		try {
+			responseText = demoUtil.tradeRequestSSL(paramMap,"https://mapi.jdpay.com/npp10/trade_query",null);
+			map = demoUtil.verifySingReturnData(responseText);
+			if(map==null){
+				log.errLog("京东单笔业务查询", "验证签名失败"+"流水号："+orderId);
+			}else{
+				log.infoLog("京东单笔业务查询", "流水号："+orderId+","+map.toString());
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return map;
+	}
+
+
+	private String createDefrayPay(List<PaymentWithdrawRecord> list){
+		int i = 0;
+		int j = 0;
+		Date date = new Date();
+		String orderIds = "";
+		for(PaymentWithdrawRecord temrecord : list){
+			try {
+				Map<String,String> paramMap = init(temrecord);//创建请求业务数据
+				if(null==paramMap){
+					j++;
+					orderIds += temrecord.getMarkId()+",";
+					continue;
+				}
+				PaymentDefrayPay paymentDefrayPay = paymentDefrayPayService.get(temrecord.getMarkId());
+				if(paymentDefrayPay==null){
+					paymentDefrayPay = new PaymentDefrayPay();
+					paymentDefrayPay.setRequestNo(temrecord.getMarkId());
+					paymentDefrayPay.setPaymentNo(temrecord.getMarkId());
+					paymentDefrayPay.setRequestData(paramMap.toString());
+					paymentDefrayPay.setRequestUrl("https://mapi.jdpay.com/npp10/defray_pay");
+					paymentDefrayPay.setRequestTime(date);
+					paymentDefrayPay.setUserId(temrecord.getUserId());
+					paymentDefrayPay.setStatus("sended");
+					paymentDefrayPayService.insert(paymentDefrayPay);
+				}
+				temrecord.setIsDefrayPay("sended");
+				paymentWithdrawRecordService.update(temrecord);
+				if(defrayPay(paramMap)){//京东代付
+					i++;
+				}else{
+					j++;
+					orderIds += temrecord.getMarkId()+",";
+				}
+			} catch (Exception e) {
+				j++;
+				orderIds += temrecord.getMarkId()+",";
+			}
+		}
+		if(j>0){
+			log.errLog("代付操作成功","操作成功，其中："+i+"条京东代付处理中,等待支付结果。"+j+"条失败，失败流水号"+orderIds,1);
+		}
+		String resulet = j>0?"":",失败流水号"+orderIds;
+		return "操作成功，其中："+i+"条京东代付处理中,等待支付结果。"+j+"条失败"+resulet;
+	}
+	
+	/**
+	 * 拼接京东代付参数
+	 * @param record
+	 * @return
+	 */
+	private  Map<String,String> init(PaymentWithdrawRecord record){
+		//查询用户，银行卡信息，用户拼接参数
+		Map<String, String> map = new HashMap<String, String>();
+		User user = userService.get(record.getUserId());
+		BankCard bankCard = bankCardService.read(record.getCardId());
+		if(user==null||null==bankCard){
+			log.errLog("京东代付", "拼接京东代付参数，查询数据异常：userId:"+record.getUserId()+"，银行卡id:"+record.getCardId());
+			return null;
+		}
+		map.put("customer_no",PaymentConstants.JDConfig.DEFRAYPAY_NO);
+		Date date = new Date();
+		String dateTime = DateUtil.DateToString(date, "yyyyMMdd")+"T"+DateUtil.DateToString(date, "HHmmss");
+		map.put("request_datetime",dateTime);
+		map.put("out_trade_no",record.getMarkId());//外部交易号
+		DecimalFormat df = new DecimalFormat("##0");
+		map.put("trade_amount",df.format(record.getMoney()*100));
+		map.put("trade_currency",PaymentConstants.Currency.CNY);
+		map.put("trade_subject","代付");
+		map.put("pay_tool","TRAN");
+		map.put("payee_bank_code",bankCard.getBank());
+		map.put("payee_card_type","DE");
+		map.put("payee_account_type","P");
+		map.put("payee_account_no",bankCard.getCardNo());
+		map.put("payee_account_name",user.getRealname());
+		map.put("payee_id_type","ID");
+		map.put("payee_id_no",user.getIdCard());
+		map.put("notify_url",PaymentConstants.ResponseS2SUrl + PaymentConstants.JDConfig.DEFRAYPAY);//商户处理数据的异步通知地址
+		return map;
+	}
+	
+	/**
+	 * 检验提现金额和余额
+	 * @param record
+	 * @return
+	 */
+	private boolean verifyMoney(PaymentWithdrawRecord record){
+		double withSum = paymentWithdrawRecordService.readWithdrawMoneyPerDay(record);
+		double jdbalance = getJDbalance();
+		return jdbalance>withSum;
+	}
+	
+	@Override
+	public double getJDbalance(){
+		Map<String, String> paramMap = new HashMap<String, String>();
+		Date date = new Date();
+		String dateTime = DateUtil.DateToString(date, "yyyyMMdd")+"T"+DateUtil.DateToString(date, "HHmmss");
+		paramMap.put("customer_no",PaymentConstants.JDConfig.DEFRAYPAY_NO);//提交者会员号（商户会员号）
+		paramMap.put("request_datetime",dateTime);
+		paramMap.put("out_trade_no","demodaifu1001");
+		paramMap.put("buyer_info","{\"customer_code\":\""+PaymentConstants.JDConfig.DEFRAYPAY_NO+"\",\"customer_type\":\"CUSTOMER_NO\"}");//customer_code必须和上面的会员号一致
+		paramMap.put("query_type","BUSINESS_BASIC");
+		paramMap.put("ledger_type","00");
+		RequestUtil demoUtil = new RequestUtil();
+		String responseText = "";
+		try {
+			responseText = demoUtil.tradeRequestSSL(paramMap,"https://mapi.jdpay.com/npp10/account_query",null);
+			Map<String,String> map = demoUtil.verifySingReturnData(responseText);
+			if(map==null){
+				log.errLog("京东代付", "查询账户余额，验证签名失败");
+			}else{
+				String response_code = map.get("response_code");
+				if(CodeConst.SUCCESS.equals(response_code)){
+					String account_amount = map.get("account_amount")==null?"":map.get("account_amount").toString();
+					String frozen_amount = map.get("frozen_amount")==null?"":map.get("frozen_amount").toString();
+					long accountAmount = Long.parseLong("".equals(account_amount)?"0":account_amount);
+					long frozenAmount = Long.parseLong("".equals(frozen_amount)?"0":frozen_amount);
+					double jdbalance = accountAmount-frozenAmount;
+					return jdbalance/100;
+				}else{
+					log.errLog("京东代付", "查询账户余额失败 描述："+response_code+" "+map.get("response_message"));
+				}
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return 0.0;
+	}
+	
+	/**
+	 * 请求京东代付接口
+	 * @param paramMap
+	 */
+	private  boolean defrayPay(Map<String,String> paramMap){
+		RequestUtil demoUtil = new RequestUtil();
+		String responseText = "";
+		boolean flag = false;
+		try {
+			responseText = demoUtil.tradeRequestSSL(paramMap,"https://mapi.jdpay.com/npp10/defray_pay",Contants.encryptType_RSA);
+			Map<String,String> map = demoUtil.verifySingReturnData(responseText);
+			String orderId = paramMap.get("out_trade_no");//外部交易号;
+			PaymentDefrayPay paymentDefrayPay = paymentDefrayPayService.get(orderId);
+			PaymentWithdrawRecord record = paymentWithdrawRecordService.read(orderId, orderId, "JDpay");
+			if(record==null||paymentDefrayPay==null){
+				log.errLog("京东代付", "未找到流水记录："+orderId);
+				return flag;
+			}
+			if(map==null){
+				paymentDefrayPay.setStatus("fail");
+				paymentDefrayPay.setMsg("验证签名不成功");
+			}else{
+				String responseCode = map.get("response_code");
+				if(CodeConst.SUCCESS.equals(responseCode)||"OUT_TRADE_NO_EXIST".equals(responseCode)){
+					String trade_status = map.get("trade_status");
+					paymentDefrayPay.setMoney(Integer.parseInt(map.get("trade_amount"))/100);
+					if(CodeConst.TRADE_FINI.equals(trade_status)){//交易成功
+						flag = true;
+						record.setIsDefrayPay("success");
+						paymentDefrayPay.setStatus("success");
+						String respInfo = confirmYeepay(map.get("out_trade_no"));
+						// 响应信息
+						if(StringUtils.isNotBlank(respInfo)){
+							Map<String, String> resultMap = Dom4jUtil.xmltoMap(respInfo);
+							String code = resultMap.get("code");
+							if (StringUtils.equals("1", code)) {
+								record.setStatus("confirm");
+							} else {
+								record.setIsDefrayPay("fail");
+							}
+						}
+						record.setConfirmResponseData(respInfo);
+						record.setConfirmResponseTime(new Date());
+						paymentDefrayPay.setMsg("交易成功");
+					}else if(CodeConst.TRADE_CLOS.equals(trade_status)){
+						paymentDefrayPay.setStatus("fail");
+						record.setIsDefrayPay("fail");
+						paymentDefrayPay.setMsg("交易关闭，交易失败");
+					}else if(CodeConst.TRADE_WPAR.equals(trade_status)||CodeConst.TRADE_BUID.equals(trade_status)||CodeConst.TRADE_ACSU.equals(trade_status)){
+						paymentDefrayPay.setStatus(trade_status);
+						paymentDefrayPay.setMsg("等待支付结果，处理中");
+						flag = true;
+					}
+				}else{
+					if("ILLEGAL_ARGUMENT".equals(responseCode)){
+						paymentDefrayPay.setStatus("fail");
+						record.setIsDefrayPay("fail");
+						paymentDefrayPay.setMsg("提交的参数有误");
+					}else if("SYSTEM_ERROR".equals(responseCode)){
+						paymentDefrayPay.setMsg("系统错误（非失败，不能按失败处理）");
+					}
+				}
+				
+			}
+			paymentDefrayPay.setResponseTime(new Date());
+			paymentDefrayPayService.update(paymentDefrayPay);//修改京东代付表
+			paymentWithdrawRecordService.update(record);//修改流水表
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.errLog("京东代付", "请求京东代付接口失败"+e);
+		}
+		return flag;
+	}
+
+	@Override
+	public String transferCancle(String requestNo) throws Exception {
+		String request = "error";
+		//单笔业务查询
+		Map<String,String> map = tradeQuery(requestNo);
+		PaymentDefrayPay paymentDefrayPay = paymentDefrayPayService.get(requestNo);
+		if(paymentDefrayPay != null){
+			paymentDefrayPay.setResponseTime(new Date());
+			if(map!=null){
+				String response_code = map.get("response_code");
+				paymentDefrayPay.setResponseData(map.toString());
+				if(CodeConst.SUCCESS.equals(response_code)){//如果response_code返回0000，表示请求逻辑正常，进一步判断订单状态
+					String trade_status = map.get("trade_status");
+					paymentDefrayPay.setStatus(trade_status);
+					if(CodeConst.TRADE_FINI.equals(trade_status)){
+						log.errLog("京东代付", "取消易宝金额"+requestNo+"京东代付已成功，请勿取消");			
+						paymentDefrayPay.setMsg("京东代付已成功，请勿取消");
+						request =  "代付已成功，不能退款!";
+					}else if(CodeConst.TRADE_CLOS.equals(trade_status)){
+						request = paymentWithdrawRecordService.transferCancle(requestNo);
+					}else if(CodeConst.TRADE_WPAR.equals(trade_status)||CodeConst.TRADE_BUID.equals(trade_status)||CodeConst.TRADE_ACSU.equals(trade_status)){
+						log.errLog("京东代付", "流水号："+requestNo+"等待支付结果，处理中，请勿取消");
+						paymentDefrayPay.setMsg("京东代付已成功，请勿取消");
+						request =  "代付中，不能退款!";
+					}
+				}else if("NO_RESULT".equals(response_code)){
+					request =  paymentWithdrawRecordService.transferCancle(requestNo);
+				}
+			}else{
+				log.errLog("京东代付", "查询京东代付失败："+requestNo+"请勿取消");
+				paymentDefrayPay.setResponseData("查询京东代付失败");
+				request =  "代付查询失败失败，请重新操作！";
+			}
+			paymentDefrayPayService.update(paymentDefrayPay);		
+		}else{
+			request =  paymentWithdrawRecordService.transferCancle(requestNo);
+		}
+		
+		return request;
+	}
+
+	@Override
+	public String transferConfirm(String requestNo) throws Exception {
+		String request = "error";
+		Map<String,String> map = tradeQuery(requestNo);
+		PaymentDefrayPay paymentDefrayPay = paymentDefrayPayService.get(requestNo);
+		if(paymentDefrayPay != null){
+			paymentDefrayPay.setResponseTime(new Date());
+			if(map!=null){
+				String response_code = map.get("response_code");	
+				paymentDefrayPay.setResponseData(map.toString());
+				if(CodeConst.SUCCESS.equals(response_code)){//如果response_code返回0000，表示请求逻辑正常，进一步判断订单状态
+					String trade_status = map.get("trade_status");
+					paymentDefrayPay.setStatus(trade_status);
+					if(CodeConst.TRADE_FINI.equals(trade_status)){
+						paymentDefrayPay.setMsg("京东代付已成功");
+						request = paymentWithdrawRecordService.transferConfirm(requestNo);
+					}else if(CodeConst.TRADE_CLOS.equals(trade_status)){
+						paymentDefrayPay.setMsg("交易关闭，交易失败");
+						log.errLog("京东代付", "流水号："+requestNo+"交易关闭，交易失败");
+						request =  "代付失败，不能确认！";
+					}else if(CodeConst.TRADE_WPAR.equals(trade_status)||CodeConst.TRADE_BUID.equals(trade_status)||CodeConst.TRADE_ACSU.equals(trade_status)){
+						paymentDefrayPay.setMsg("等待支付结果，处理中，请勿取消");
+						log.errLog("京东代付", "流水号："+requestNo+"等待支付结果，处理中，请勿取消");
+						request =  "代付中，不能确认!";
+					}else{
+						request =  map.get("response_message");
+					}
+				}else if("NO_RESULT".equals(response_code)){
+					log.errLog("京东代付", "流水号："+requestNo+"等待支付结果，处理中，请勿取消");
+					request =  "代付账单不存在!";
+				}
+			}else{
+				paymentDefrayPay.setMsg("查询京东代付失败，请勿取消");
+				log.errLog("京东代付", "查询京东代付失败："+requestNo+"请勿取消");
+				request =  "代付查询失败失败，请重新操作！";
+			}
+			paymentDefrayPayService.update(paymentDefrayPay);
+			
+		}else{
+			request =  "代付记录不存在！";
+		}	
+		return request;	
+	}
+
+	@Override
+	public Map<String, String> tradeFuiouQuery(String orderId) {
+			StringBuffer buf = new StringBuffer();
+			String MchntCd="0001000F0305906";
+			String sign=MD5.MD5Encode(MchntCd+"|"+orderId+"|miub2yxlb0vkphrbqji9s9iqi2s7o8sh");
+			buf.append("<FM>");
+			buf.append("<MchntCd>"+MchntCd+"</MchntCd>");
+			buf.append("<OrderId>"+orderId+"</OrderId>");
+			buf.append("<Sign>"+sign+"</Sign>");
+			buf.append("</FM>");
+			List<NameValuePair>postMethod=new ArrayList<>();
+			postMethod.add(new BasicNameValuePair("FM", buf.toString()));
+			String	responseBody=null;
+			Map<String, String> resultMap=null;
+			
+			try {
+				responseBody = DRHTTPSClient.sendHTTPRequestPostToString("https://mpay.fuiou.com:16128/findPay/queryOrderId.pay", new BasicHeader[0], postMethod);
+				if(responseBody != null && responseBody.trim().length()>0){		
+					 resultMap = Dom4jUtil.xmltoMap(responseBody);		
+					 String Rcd=resultMap.get("Rcd");
+					 String RDesc=resultMap.get("RDesc");
+					 /*String sign=resultMap.get("Sign");*/
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			return resultMap;
+		}
+
+}

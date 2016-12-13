@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.ruralfinance.mapper.AgricultureLoaninfoMapper">
+	 <!-- 基本信息 -->
+	<resultMap type="com.duanrong.business.ruralfinance.model.AgricultureLoaninfo" id="loanerinfoRM">	    
+		<id property="id" column="id"  />
+		<result property="contractId" column="contract_id" />
+		<result property="name" column="name" />
+		<result property="sex" column="sex" />
+		<result property="age" column="age" />
+		<result property="idCard" column="id_card" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="money" column="money" />
+		<result property="loanMoney" column="loan_money" />
+		<result property="serviceMoney" column="service_money" />
+		<result property="loanTerm" column="loan_term" />
+		<result property="rate" column="rate" />
+		<result property="repayType" column="repay_type" />
+		<result property="bankcard" column="bankcard" />
+		<result property="bank" column="bank" />
+		<result property="branchname" column="branchname" />		
+		<result property="maritalStatus" column="marital_status" />
+		<result property="province" column="province" />
+		<result property="city" column="city" />
+		<result property="area" column="area" />
+		<result property="address" column="address" />
+		<result property="annualIncome" column="annual_income" />
+		<result property="createTime" javaType="date" column="create_time" />
+	    <result property="operateTime" javaType="date" column="operate_time" />
+	    <result property="giveMoneyTime" javaType="date" column="givemoneytime" />
+	    <result property="userId" column="userid" />
+	    <result property="status" column="status" />
+	    <result property="forkStatus" column="fork_status" />
+	    <result property="remark" column="remark" />
+	    <result property="remark1" column="remark1" />
+	    <result property="remark2" column="remark2" />
+	    <result property="parentMoney" column="parentMoney" />
+	    <result property="parentLoanTerm" column="parentLoanTerm" />
+	    <result property="loanApplication" column="loan_application" />
+	    <result property="repaymentSource" column="repayment_source" />
+	    <result property="compositeInteresRate" column="composite_interestRate" />
+	    <result property="accountingDepartment" column="accounting_department" />	    	    
+	    <result property="typeOfId" column="id_type" />
+	    <result property="customerType" column="customer_type" />
+	    <result property="bigArea" column="region" />
+	    <result property="businessOffic" column="sales_department" />
+	    <result property="customManger" column="account_manager" />
+	    <result property="countryApprover" column="county_approver" />
+	    <result property="allApprover" column="headquarters_approver" />
+	    <result property="flag" column="flag" />
+	    <result property="whetherEarlyRepayment" column="whether_early_repayment" />
+	    <result property="actualLoanTerm" column="actual_loan_term" />
+	    <result property="actualEndTime" column="actual_end_time" />
+	    <result property="packingStatus" column="packing_status" />
+	    <result property="agriculturalType" column="agricultural_type" />
+	
+	    
+	</resultMap>
+	<resultMap type="com.duanrong.business.ruralfinance.model.UploadUser" id="uploadUser">
+		<id property="id" column="id"  />
+		<result property="uploadUser" column="upload_user" />
+		<result property="createTime" column="create_time" />
+		<result property="uploadAddress" column="upload_address" />
+		<result property="status" column="status" />
+	
+	</resultMap>
+	<resultMap type="com.duanrong.business.ruralfinance.model.UploadZhongjinUser" id="uploadZhongjinUser">
+		<id property="id" column="id"  />
+		<result property="uploadUser" column="upload_user" />
+		<result property="createTime" column="create_time" />
+		<result property="uploadAddress" column="upload_address" />
+		<result property="status" column="status" />	
+	</resultMap>
+	<resultMap type="com.duanrong.business.ruralfinance.model.UploadPrepaymentUser" id="uploadPrepaymentUser">
+		<id property="id" column="id"  />
+		<result property="uploadUser" column="upload_user" />
+		<result property="createTime" column="create_time" />
+		<result property="uploadAddress" column="upload_address" />
+		<result property="status" column="status" />	
+	</resultMap>		
+	<!-- 子标列表 -->
+	<resultMap type="com.duanrong.business.ruralfinance.model.AgricultureForkLoans" id="ForkLoansRM">
+			<id property="id" column="id"  />
+			<result property="parentId" column="parent_id" />
+			<result property="childContractid" column="child_contractid" />
+			<result property="loanId" column="loan_id" />
+			<result property="money" column="money" />
+			<result property="loanTerm" column="loan_term" />
+			<result property="packing" column="packing" />
+			<result property="createTime" column="create_time" />			
+		    <result property="remark" column="remark" />
+		    <result property="flag" column="flag" />
+	</resultMap>
+	<!-- 还款计划 -->
+	<resultMap type="com.duanrong.business.ruralfinance.model.AgricultureRepaymentPlan" id="RepaymentPlanRM">
+		<id property="id" column="id"  />
+		<result property="loanDataId" column="loandata_id" />
+		<result property="repayDate" column="repay_date" />
+		<result property="operationTime" column="operation_time" />
+		<result property="monthMoney" column="month_money" />
+		<result property="realrepayMoney" column="realrepay_money" />
+		<result property="corpus" column="corpus" />
+		<result property="intereat" column="intereat" />
+		<result property="latePenalty" column="late_penalty" />
+		<result property="period" column="period" />
+		<result property="repayStatus" column="repay_status" />
+		<result property="remark" column="remark" />
+	</resultMap>
+
+  	<!-- 保存借款人的信息-->
+  	<insert id="saveAgricultureLoaninfo" parameterType="map">
+  		INSERT INTO agriculture_loaninfo
+		(id,contract_id,name,sex,age,id_type,id_card,mobile_number,money,loan_money,
+		service_money,loan_term,rate,repay_type,bankcard,bank,branchname,marital_status,province,
+		city,area,address,annual_income,create_time,operate_time,givemoneytime,userid,status,
+		fork_status,remark,remark1,remark2,region,sales_department,account_manager,county_approver,headquarters_approver,
+		loan_application,repayment_source,composite_interestRate,accounting_department,whether_early_repayment,
+		packing_status,agricultural_type)
+		VALUES(#{id},#{contractId},#{name},#{sex},#{age},#{typeOfId},#{idCard},#{mobileNumber},
+		#{money},#{loanMoney},#{serviceMoney},#{loanTerm},#{rate},#{repayType},
+		#{bankcard},#{bank},#{branchname},#{maritalStatus},#{province},#{city},#{area},
+		#{address},#{annualIncome},#{createTime},#{operateTime},#{giveMoneyTime},
+		#{userId},#{status},#{forkStatus},#{remark},#{remark1},#{remark2},#{bigArea},
+		#{businessOffic},#{customManger},#{countryApprover},#{allApprover},#{loanApplication},
+		#{repaymentSource},#{compositeInteresRate},#{accountingDepartment},0,#{packingStatus},#{agriculturalType})
+  	</insert>
+  	
+  		<!--通用条件查询  自己传类型 -->
+	<select id="findByCondition" resultMap="loanerinfoRM" parameterType="map">
+			SELECT * FROM agriculture_loaninfo
+			
+			<if test="byType != null and byType == 1 ">
+			where 	contract_id= #{contractId}
+			</if>
+			<if test="byType != null and byType ==3 ">
+			where 	contract_id= #{contractId}
+			</if>
+			
+			
+	</select>
+	<!--查询所有  -->
+	<select id="getAllContractId" resultType="java.lang.String" >
+			SELECT contract_Id  FROM agriculture_loaninfo
+			
+	</select>
+  	
+  	<!-- 查询所有 -->
+	<select id="readAgricultureLoaninfoPageInfo" resultMap="loanerinfoRM">
+		select * from agriculture_loaninfo where status!='delete'
+		<if test="id !=null and id != ''">
+			AND contract_Id=#{id}
+		</if>
+		<if test="status != null and status != ''">
+			and status=#{status} 
+		</if>
+		<if test="forkStatus != null and forkStatus != ''">
+			and fork_status=#{forkStatus} 
+		</if>
+		<if test="start != null and start != ''">
+			and create_time &gt;=#{start} 
+		</if>
+		<if test="end != null and end != ''">
+			and create_time &lt;=#{end} 
+		</if>
+		<if test="loanTerm != null and loanTerm != ''">
+			and loan_term=#{loanTerm} 
+		</if>
+	</select>
+	
+	<!--查询子标信息 -->
+	<select id="readAgricultureForkLoansPageInfo" parameterType="map"  resultMap="ForkLoansRM">
+		select * from agriculture_fork_loans 
+		<where>
+		<if test="forkStatus != null and forkStatus != ''">
+			and packing=#{forkStatus} 
+		</if>
+		<if test="start != null and start != ''">
+			and create_time &gt;=#{start} 
+		</if>
+		<if test="end != null and end != ''">
+			and create_time &lt;=#{end} 
+		</if>
+		<if test="loanTerm != null and loanTerm != ''">
+			and loan_term=#{loanTerm} 
+		</if>
+		</where>
+	</select>
+	
+	<!-- 根据id查询借款基本信息 -->
+	<select id="readAgricultureLoaninfoById" parameterType="String" resultMap="loanerinfoRM">
+		select * from agriculture_loaninfo where fork_status=0 and id=#{id}
+	</select>
+	
+	<!-- 查询上传excle的表 -->
+	<select id="findUploadUser" parameterType="map" resultMap="uploadUser">
+		select * from agriculture_upload_excel  order by create_time desc  
+	</select>
+	
+		<insert id="saveExcle" parameterType="map"> 
+  		INSERT INTO agriculture_upload_excel
+		(id,upload_user,create_time,upload_address,status)
+		VALUES(#{id},#{uploadUser},#{createTime},#{uploadAddress},#{status})
+  		</insert>
+		<!-- 查询中金放款结果上传excle的表 -->
+	<select id="finduploadZJUser" parameterType="map" resultMap="uploadZhongjinUser">
+		select * from agriculture_zjupload_excel order by create_time desc  
+	</select>
+ 	<!-- 查询提前还款项目上传excle的表 -->
+	<select id="findUploadPrepaymentUser" parameterType="map" resultMap="uploadPrepaymentUser">
+		select * from agriculture_prepayment_upload_excel order by create_time desc  
+	</select>
+</mapper>

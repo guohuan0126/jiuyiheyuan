@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.paymentInstitution.mapper.PaymentDefrayPayMapper">
+	<resultMap type="PaymentDefrayPay" id="PaymentDefrayPayRM">
+		<id property="id" column="id" />
+		<result property="requestNo" column="request_no" />
+		<result property="paymentNo" column="payment_no" />
+		<result property="money" column="money" />
+		<result property="userId" column="user_id" />
+		<result property="status" column="status" />
+		<result property="msg" column="msg" />
+		<result property="paymentId" column="payment_id" />
+		<result property="requestData" column="request_data" />
+		<result property="requestTime" column="request_time" />
+		<result property="requestUrl" column="request_url" />
+		<result property="responseData" column="response_data" />
+		<result property="responseTime" column="response_time" />
+	</resultMap>
+
+	<insert id="insert" parameterType="PaymentDefrayPay">
+		INSERT INTO payment_defraypay
+		(id,request_no,payment_no,money,user_id,status,payment_id,request_data,request_time,request_url)
+		VALUES
+		(#{id},#{requestNo},#{paymentNo},#{money},#{userId},#{status},#{paymentId},#{requestData},#{requestTime},#{requestUrl})
+	</insert>
+
+	<select id="pageLite" resultMap="PaymentDefrayPayRM" parameterType="PaymentDefrayPay">
+		select * from payment_defraypay
+		<where>
+			<if test="id != null and id != '' ">
+				and id=#{id}
+			</if>
+		</where>
+		order by request_time desc
+	</select>
+	
+	<select id="get" resultMap="PaymentDefrayPayRM" parameterType="String">
+		select * from payment_defraypay where payment_no = #{id}
+	</select>
+	
+	<update id="update"  parameterType="PaymentDefrayPay">
+		update payment_defraypay
+		<set>
+			<if test="money!=0">money=#{money},</if>
+			<if test="responseData!=null">response_data=#{responseData},</if>
+			<if test="responseTime!=null">response_time=#{responseTime},</if>
+			<if test="status!=null">status=#{status},</if>
+			<if test="msg!=null">msg=#{msg},</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	
+	
+	
+	<select id="queryPaymentDefrayPayByMarkId" parameterType="String" resultMap="PaymentDefrayPayRM">
+		select * from
+		 payment_defraypay where
+		 request_no=#{markId}
+	</select>
+	
+</mapper>

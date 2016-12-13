@@ -1,0 +1,27 @@
+package com.duanrong.business.account.dao;
+
+import java.util.List;
+
+import com.duanrong.business.account.model.PaymentAccount;
+import com.duanrong.business.account.model.PaymentBill;
+import com.duanrong.business.account.model.PaymentChannel;
+
+import base.dao.BaseDao;
+import base.pagehelper.PageInfo;
+
+public interface PaymentAccountDao extends BaseDao<PaymentAccount> {
+
+	public List<PaymentAccount> getPaymentAccount();
+
+	public PaymentAccount getPaymentAccountByPaymentId(String pamenyId);
+
+	public void update(PaymentAccount paymentAccount);
+
+	public void insert(PaymentBill paymentBill);
+
+	public PaymentChannel getChannelByCode(String code);
+
+	public PageInfo<PaymentBill> pageLite(int pageNo, int pageSize,
+			PaymentBill paymentBill);
+
+}

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.ruralfinance.mapper.AgricultureRepaymentPlanMapper">
+	<resultMap type="com.duanrong.business.ruralfinance.model.AgricultureRepaymentPlan" id="RepaymentPlanRM">
+		<id property="id" column="id"  />
+		<result property="loanDataId" column="loandata_id" />
+		<result property="repayDate" column="repay_date" />
+		<result property="operationTime" column="operation_time" />
+		<result property="monthMoney" column="month_money" />
+		<result property="realrepayMoney" column="realrepay_money" />
+		<result property="corpus" column="corpus" />
+		<result property="intereat" column="intereat" />
+		<result property="latePenalty" column="late_penalty" />
+		<result property="period" column="period" />
+		<result property="repayStatus" column="repay_status" />
+		<result property="remark" column="remark" />
+		<result property="detailsNumber" column="details_number" />
+	</resultMap>
+	<!-- 批量添加 -->
+
+  <insert id="batchAgricultureRepaymentPlan" parameterType="java.util.List" >
+    INSERT INTO agriculture_repaymentplan
+		(id,loandata_id,repay_date,operation_time,month_money,realrepay_money,
+		corpus,intereat,late_penalty,period,repay_status)
+    values
+    <foreach collection="list" item="item" index="index" separator="," >
+        (#{item.id},#{item.loanDataId},#{item.repayDate},#{item.operationTime},#{item.monthMoney},#{item.realrepayMoney},
+        #{item.corpus},#{item.intereat},#{item.latePenalty},#{item.period},#{item.repayStatus})
+    </foreach> 	
+  </insert>
+  	 <!-- 修改项目状态 -->
+	<update id="updateRepaymentplan" parameterType="map">
+		UPDATE agriculture_repaymentplan
+		set details_number=#{detailsNumber}
+		WHERE id = #{id}
+	</update>
+	 <!-- 自动匹配更新还款计划状态 -->
+	<update id="updateMatchRepaymentplan" parameterType="map">
+		update agriculture_repaymentplan a,agriculture_zhongjindebit_records zj
+		<set>
+		a.operation_time=zj.transaction_time,
+		<if test="byType != null and byType == 1 ">
+		a.realrepay_money=zj.money,
+		</if>
+		a.repay_status=#{repayStatus}
+		</set>
+		<where>
+		a.details_number=zj.details_number and zj.flag='0' and zj.status=#{status}
+		<if test="uploadExcelId != null and uploadExcelId != ''">
+		AND zj.upload_excelId= #{uploadExcelId}
+		</if>
+	  </where> 
+	</update>
+	<update id="updateDebitRecordsStatus" parameterType="String">
+		update agriculture_repaymentplan a,agriculture_zhongjindebit_records zj
+		<set>
+		zj.flag=1
+		</set>
+		WHERE
+		 a.details_number=zj.details_number and zj.flag=0
+		 and zj.upload_excelId= #{uploadExcelId}
+	</update>
+	
+	<update id="updateTimlyRepaymentplan" parameterType="com.duanrong.business.ruralfinance.model.AgricultureRepaymentPlan">
+		UPDATE agriculture_repaymentplan
+		<set>
+			<if test="operationTime != null">operation_time=#{operationTime},</if>
+			<if test="monthMoney != null">month_money=#{monthMoney},</if>
+			<if test="realrepayMoney != null">realrepay_money=#{realrepayMoney},</if>
+			<if test="corpus != null">corpus=#{corpus},</if>
+			<if test="intereat != null">intereat=#{intereat},</if>
+			<if test="latePenalty != null">late_penalty=#{latePenalty},</if>
+			<if test="repayStatus != null">repay_status=#{repayStatus},</if>
+			<if test="remark != null and remark != ''">remark = #{remark}</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	<update id="updateRepaymentplanById" parameterType="map">
+		UPDATE agriculture_repaymentplan
+		<set>
+			<if test="operationTime != null">operation_time=#{operationTime},</if>
+			<if test="realrepayMoney != null">realrepay_money=#{realrepayMoney},</if>
+			<if test="latePenalty != null">late_penalty=#{latePenalty},</if>
+			<if test="repayStatus != null">repay_status=#{repayStatus},</if>
+			<if test="remark != null and remark != ''">remark = #{remark}</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	
+</mapper>

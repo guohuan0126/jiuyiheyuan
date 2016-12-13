@@ -1,0 +1,11 @@
+.font th{
+  		text-align:center;
+ }
+.font td{
+  		text-align:center;
+}
+
+.add{
+	float:right;
+	
+}

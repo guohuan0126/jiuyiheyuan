@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.app.mapper.AppStartDiagram">
+	
+	<resultMap type="AppStartDiagram" id="AppStartDiagramRM">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="picUrl" column="pic_url" />
+		<result property="createTime" column="create_time" />
+		<result property="status" column="status" />
+		<result property="updateTime" column="update_time" />
+		<result property="picName" column="pic_name" />
+		<result property="description" column="description" />
+	</resultMap>
+    
+    <!-- 插入 -->
+	<insert id="insert" parameterType="AppStartDiagram">
+		INSERT INTO app_start_diagram
+		(user_id, pic_url,create_time,status,update_time,description,pic_name,id)
+		VALUES
+		(#{userId}, #{picUrl},#{createTime},#{status},#{updateTime},#{description},#{picName},#{id})
+	</insert>
+	
+	<!-- 更新 -->
+	<update id="update" parameterType="AppStartDiagram">
+		UPDATE app_start_diagram
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(userId)">user_id = #{userId},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(picUrl)">pic_url = #{picUrl},</if>
+			<if test="@util.MyStringUtils@isNumericSpecifyLength(status,1)">status = #{status},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(description)">description = #{description},</if>
+			update_time = #{updateTime},
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(picName)">pic_name = #{picName},</if>
+		</set>
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 根据ID查询 -->
+	<select id="get" parameterType="string" resultMap="AppStartDiagramRM">
+		SELECT *
+		FROM app_start_diagram
+		WHERE id = #{id}
+	</select>
+	
+		<!-- 查询图片限制尺寸 -->
+	<select id="selectimgsize"  resultType="String">
+         SELECT value FROM config
+		WHERE id = 'imgsize'
+	</select>
+	
+	<delete id="delete" parameterType="string" >
+	   DELETE
+	   FROM app_start_diagram
+	   WHERE id = #{id}
+	</delete>
+	
+	<!-- 分页查询 -->
+	<select id="pageLite" parameterType="pageData" resultMap="AppStartDiagramRM" >
+	  	SELECT * FROM
+		app_start_diagram
+		<where>
+		<if test="status != null and status != '' ">
+			and app_start_diagram.status =#{status}
+		</if>
+		<if test="startTime != null and startTime != '' ">
+			and app_start_diagram.update_time &gt;=#{startTime}
+		</if>
+		<if test="endTime != null and endTime != '' ">
+			and app_start_diagram.update_time &lt;=#{endTime}
+		</if>
+		</where>
+		ORDER BY status DESC, update_time DESC
+	</select>
+	
+</mapper>

@@ -1,0 +1,808 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.loan.mapper.LoanMapper">
+	<resultMap type="loan" id="loanRM">
+		<id property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="pawn" column="pawn" />
+		<result property="type" column="type" />
+		<result property="description" column="description" />
+		<result property="lightspot" column="fund_description" />
+		<result property="riskControlMeasures" column="risk_description" />
+		<result property="contract" column="risk_instruction" />
+		<result property="totalmoney" column="money" />
+		<result property="totalmoneyStr" column="money" />
+		<result property="investOriginMoney" column="min_invest_money" />
+		<result property="increaseMoney" column="asc_invest_money" />
+		<result property="borrowMoneyUserID" column="user_id" />
+		<result property="borrowMoneyUserName" column="borrowMoneyUserName" />
+		<result property="rate" column="rate" />
+		<result property="awardMoneyRate" column="awardMoney_rate" />
+		<result property="awardLink" column="award_link" />
+		<result property="loanType" column="loan_type" />
+		<result property="loanGuranteeFee" column="loan_gurantee_fee" />
+		<result property="interestRule" column="interestRule" />
+		<result property="operationType" column="operation_type" />
+		<result property="repayType" column="repay_type" />
+		<result property="beforeRepay" column="before_repay" />
+		<result property="deadline" column="deadline" />
+		<result property="day" column="day" />
+		<result property="expectTime" column="expect_time" />
+		<result property="textItem" column="company_name" />
+		<result property="status" column="status" />
+		<result property="commitTime" column="commit_time" />
+		<result property="giveMoneyTime" column="give_money_time" />
+		<result property="contractName" column="loan_instruction" />
+		<result property="calculateMoneyNeedRaised" column="sum_money" />
+		<result property="calculateMoneyNeedRaised" column="calculateMoneyNeedRaised" />
+		<result property="maxInvestMoney" column="max_invest_money" />
+		<result property="autoInvestMoneyTotal" column="auto_invest_money_total" />
+		<result property="symbol" column="symbol" />
+		<result property="verifyUser" column="verify_user_id" />
+		<result property="verified" column="verified" />
+		<result property="deposit" column="deposit" />
+		<result property="emailSend" column="emailSend" />
+		<result property="newbieEnjoy" column="newbieEnjoy" />
+		<result property="organizationExclusive" column="organization_exclusive" />
+		<result property="repayTime" column="repay_time_organization" />
+		<result property="interestRule" column="interest_rule" />
+		<result property="loanAllowanceInterest" column="loan_allowance_interest" />
+		<result property="giveMoneyOperationTime" column="give_money_operation_time" />
+
+		<result property="itemAddress" column="item_address" />
+		<result property="itemRate" column="item_rate" />
+		<result property="customerManagerJobNumber" column="customer_manager_job_number" />
+		<result property="customerManagerName" column="customer_manager_name" />
+		<result property="borrowerName" column="borrower_name" />
+		<result property="yaCarAndGPS" column="yacar_and_gps" />
+		<result property="remark" column="remark" />
+		<result property="licensePlateNumber" column="license_plate_number" />
+		<result property="brand" column="brand" />
+		<result property="maxrepayday" column="Maxrepayday" />
+		<result property="maxinterest" column="Maxinterest" />
+		<result property="maxcorpus" column="Maxcorpus" />
+		<result property="maxreapymoney" column="Maxreapymoney" />
+		<result property="specialType" column="loan_special_type" />
+		<result property="pushTime" column="push_time"/>
+		<result property="companyno" column="companyno"/>
+		<result property="instructionNo" column="instruction_no"/>
+		<result property="isBeforeRepay" column="is_before_repay"/>
+		<result property="contractId" column="contract_id" />
+		<result property="sourceRemark" column="source_remark" />
+		<result property="accountingDepartment" column="accounting_department" />	
+		<result property="createTime" column="create_time" />	
+		<association property="borrowMoneyUser"
+			resultMap="com.duanrong.business.user.mapper.UserMapper.userRM"></association>
+		<association property="sponsorUser"
+			resultMap="com.duanrong.business.user.mapper.UserMapper.userRM"></association>
+	</resultMap>
+	
+	<resultMap type="com.duanrong.business.netloaneye.model.NetLoanModel" id="netLoan">
+		<result property="pushLoanNum" column="pushLoanNum"/>
+		<result property="pushLoanSumMoney" column="pushLoanSumMoney"/>
+		<result property="investNum" column="investNum"/>
+		<result property="regUserCount" column="regUserCount"/>
+	</resultMap>
+
+	<insert id="insert" parameterType="loan">
+		INSERT INTO `loan` (`id`, `money`, `user_id`, `risk_level`, `type`, `rate`, `commit_time`,
+		`status`, `verify_message`, `give_money_time`, `expect_time`,
+		`deadline`, `repayment_day`, `has_pawn`, `name`, `pawn`,
+		`verify_user_id`, `verified`, `loan_purpose`, `pawn_name`,
+		`repayment_period`, `repayment_type`, `expect_type`, `actual_rate`,
+		`description`, `picture`, `business_type`, `seq_num`, `overdue_info`,
+		`company_description`, `guarantee_company_description`,
+		`guarantee_company_name`, `guarantee_info_description`,
+		`loan_instruction`, `risk_instruction`, `verify_time`, `deposit`,
+		`guaranteed_rate`, `repay_day`, `repay_period`, `repay_type`,
+		`fund_description`, `policy_description`, `risk_description`,
+		`min_invest_money`, `companyno`, `self_definition_first`,
+		`loan_gurantee_fee`, `company_name`, `interest_begin_time`,
+		`asc_invest_money`, `contract_type`, `location`, `day`,
+		`operation_type`, `awardMoney_rate`, `loan_type`, `award_link`,
+		`before_repay`, `emailSend`, `max_invest_money`,
+		`auto_invest_money_total`, `symbol`, `item_address`, `remark`,
+		`customer_manager_name`, `customer_manager_job_number`, `item_rate`,
+		`yaCarAndGPS`, `borrower_name`,`newbieEnjoy`,`interest_rule`,`give_money_operation_time`,
+		`loan_allowance_interest`,`organization_exclusive`,`loan_special_type`,`repay_time_organization`, `instruction_no`,
+		`contract_id`,`source_remark`,`accounting_department`,`create_time`)
+		VALUES
+		(#{id},#{totalmoney},#{borrowMoneyUserID},NULL,#{type},#{rate},#{commitTime},
+		#{status},NULL,#{giveMoneyTime},#{expectTime},#{deadline},NULL,NULL,#{name},NULL,#{verifyUser},#{verified},NULL,NULL,NULL,NULL,NULL,
+		#{rate},#{description},NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,#{contractName},#{contract},NULL,#{deposit},NULL,NULL,NULL,#{repayType},
+		#{lightspot},NULL,#{riskControlMeasures},#{investOriginMoney},#{companyno},NULL,#{loanGuranteeFee},#{textItem},NULL,#{increaseMoney},NULL,NULL,
+		#{day},#{operationType},#{awardMoneyRate},#{loanType},#{awardLink},#{beforeRepay},#{emailSend},#{maxInvestMoney},#{autoInvestMoneyTotal},
+		#{symbol},#{itemAddress},#{remark},#{customerManagerName},#{customerManagerJobNumber},#{itemRate},#{yaCarAndGPS},#{borrowerName},#{newbieEnjoy},#{interestRule},
+		#{giveMoneyOperationTime},#{loanAllowanceInterest},#{organizationExclusive},#{specialType},#{repayTime}, #{instructionNo},
+		#{contractId},#{sourceRemark},#{accountingDepartment},#{createTime});
+	</insert>
+
+	<!-- id 固定的 findPaging parameterType 固定的 pageData params.entity固定写法，其中status为loan中的status，具体以传入的对象为准 -->
+	<select id="findPaging" parameterType="pageData" resultMap="loanRM">
+		SELECT (
+		select sum(money) from invest where invest.loan_id = T.id
+		and
+		invest.status in ('等待确认','投标成功','还款中','完成'))
+		as sum_money,
+		T.*
+		FROM (
+		select * from (select * from loan where `status`= '筹款中' ORDER BY
+		commit_time DESC) T1
+		UNION
+		select * from (select * from loan where
+		`status`= '贷前公告' ORDER BY commit_time
+		DESC) T2
+		UNION
+		select * from
+		(select
+		* from loan where `status` in('等待复核','还款中','完成') ORDER
+		BY
+		commit_time
+		DESC) T3
+		) T where company_name = '否' and isdeal=0
+		<if
+			test="@org.apache.commons.lang3.StringUtils@isNotBlank(params.entity.id)">
+			and id = #{params.entity.id}
+		</if>
+		<if
+			test="@org.apache.commons.lang3.StringUtils@isNotBlank(params.entity.loanType)">
+			and loan_type = #{params.entity.loanType}
+		</if>
+		<!-- <if test="params.entity.status == '!流标'"> and loan.status in ('筹款中','等待复核','还款中','完成', 
+			'贷前公告'); </if> -->
+	</select>
+
+	<!-- id 固定的 findPaging parameterType 固定的 pageData params.entity固定写法，其中status为loan中的status，具体以传入的对象为准 -->
+	<select id="findPaging4Personal" parameterType="pageData"
+		resultMap="loanRM">
+		SELECT * FROM loan
+		<where>
+				loan.isdeal=0
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(params.entity.borrowMoneyUserID)">
+				AND user_id = #{params.entity.borrowMoneyUserID}
+			</if>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(params.entity.status)">
+				AND status = #{params.entity.status}
+			</if>
+		</where>
+		ORDER BY commit_time DESC
+	</select>
+
+	<!-- 查询所有loan记录 -->
+	<select id="findAll" resultMap="loanRM">
+		SELECT loan.id, ( SELECT
+		sum(money) FROM invest WHERE invest.loan_id = loan.id and
+		invest.status in ('等待确认','投标成功','还款中','完成')) AS sum_money, loan.money,
+		loan.* FROM loan WHERE loan.company_name = '否' AND loan.isdeal=0;
+	</select>
+
+
+	<!-- 根据id查询loan记录 -->
+	<select id="get" resultMap="loanRM" parameterType="string">
+		SELECT
+		loan.id, ( SELECT sum(money) FROM invest WHERE invest.loan_id =
+		loan.id and invest.status in ('等待确认','投标成功','还款中','完成')) AS sum_money,
+		loan.money, loan.* FROM loan WHERE loan.id
+		= #{id} AND loan.isdeal=0;
+	</select>
+
+	<!-- 查询所有loan记录 -->
+	<select id="pageLite" resultMap="loanRM" parameterType="loan">
+		select DISTINCT t.id, t.*,round((t.Maxcorpus+t.Maxinterest),2) as
+		Maxreapymoney from ( SELECT loan.*, user.realname as
+		borrowMoneyUserName,loan_vehicle.brand as
+		brand,loan_vehicle.license_plate_number as license_plate_number,
+		(select operation_time from repay where loan_id=loan.id ORDER BY
+		repay_day desc limit 1) as Maxrepayday,
+		(select corpus from repay where loan_id=loan.id ORDER BY repay_day desc limit
+		1) as Maxcorpus,
+		(select interest from repay where loan_id=loan.id ORDER BY repay_day desc
+		limit 1) as Maxinterest
+		FROM loan left join user on loan.user_id=user.id left join loan_vehicle on
+		loan.id=loan_vehicle.loan_id
+		<where>
+			loan.isdeal=0
+			<if test="id != null and id != '' ">
+				and loan.id=#{id}
+			</if>
+			<if test="name != null and name != '' ">
+				and loan.name like '%${name}%'
+			</if>
+			<if test="loanType != null and loanType != '' ">
+				and loan.loan_type =#{loanType}
+			</if>
+
+			<if test="status != null and status != '' ">
+				and loan.status=#{status}
+			</if>
+			<if test="textItem != null and textItem != '' ">
+				and loan.company_name=#{textItem}
+			</if>
+			<if test="startTime != null and startTime != '' ">
+				and loan.commit_time &gt;=#{startTime}
+			</if>
+			<if test="endTime != null and endTime != '' ">
+				and loan.commit_time &lt;=#{endTime}
+			</if>
+			<if test="start != null and start != '' ">
+				and loan.give_money_operation_time &gt;=#{start}
+			</if>
+			<if test="end != null and end != '' ">
+				and loan.give_money_operation_time &lt;=#{end}
+			</if>
+			<if test="statusStr != null and statusStr =='statusStr' ">
+				and loan.status in('还款中','完成')
+			</if>
+		</where>
+		<choose>
+			<when test="statusStr != null and statusStr =='statusStr'">
+				ORDER BY t.give_money_operation_time DESC
+			</when>
+			<otherwise>
+
+				) t
+
+
+				ORDER BY t.commit_time DESC
+			</otherwise>
+		</choose>
+
+	</select>	
+	
+
+	<!-- 查询所有loan记录 -->
+	<select id="pageLite1" resultMap="loanRM" parameterType="loan">
+		SELECT loan.*, user.realname as borrowMoneyUserName
+		FROM loan left join user on loan.user_id=user.id
+		<where>
+			loan.isdeal=0	
+			<if test="id != null and id != '' ">
+				and loan.id=#{id}
+			</if>
+			<if test="name != null and name != '' ">
+				and loan.name like '%${name}%'
+			</if>
+			<if test="loanType != null and loanType != '' ">
+				and loan.loan_type =#{loanType}
+			</if>
+			<if test="status != null and status != '' ">
+				and loan.status=#{status}
+			</if>
+			<if test="textItem != null and textItem != '' ">
+				and loan.company_name=#{textItem}
+			</if>
+			<if test="startTime != null and startTime != '' ">
+				and loan.commit_time &gt;=#{startTime}
+			</if>
+			<if test="endTime != null and endTime != '' ">
+				and loan.commit_time &lt;=#{endTime}
+			</if>			
+			
+			<if test="newbieEnjoy != null and newbieEnjoy != '' ">
+				and loan.newbieEnjoy=#{newbieEnjoy}
+			</if>
+			<if test="deadline != null and deadline != '' and deadline != 0 ">
+				and loan.deadline=#{deadline}
+			</if>
+			<if test="minMoney != null and minMoney != '' ">
+				and loan.money &gt;=#{minMoney}
+			</if>
+			<if test="maxMoney != null and maxMoney != '' ">
+				and loan.money &lt;=#{maxMoney}
+			</if>			
+		</where>
+		ORDER BY loan.commit_time DESC
+	</select>
+
+
+	<!-- 根据常用loan表中字段进行组合条件查询 -->
+	<select id="getLoansByGroupCondition" resultMap="loanRM"
+		parameterType="loan">
+		SELECT * FROM
+		loan
+		<where>
+				isdeal=0
+			<if test="id != null and id != ''">
+				AND id =#{id}
+			</if>
+			<if test="status != null and status != ''">
+				AND status = #{status}
+			</if>
+			<if test="borrowMoneyUserID != null and borrowMoneyUserID != ''">
+				AND user_id =#{borrowMoneyUserID}
+			</if>
+			<if test="name != null and name != ''">
+				AND name =#{name}
+			</if>
+			<if test="rate != null and rate != ''">
+				AND rate =#{rate}
+			</if>
+			<if test="deadline != null and deadline != ''">
+				AND deadline =#{deadline}
+			</if>
+			<if test="day != null and day != ''">
+				AND day =#{day}
+			</if>
+			<if test="textItem != null and textItem != ''">
+				AND company_name =#{textItem}
+			</if>
+			<if test="operationType != null and operationType != ''">
+				AND operation_type =#{operationType}
+			</if>
+			<if test="beforeRepay != null and beforeRepay != ''">
+				AND before_repay =#{beforeRepay}
+			</if>
+			<if test="loanType != null and loanType != ''">
+				AND loan_type =#{loanType}
+			</if>
+		</where>
+	</select>
+
+	<resultMap type="loan" id="loanRM2">
+		<result property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="contract" column="risk_instruction" />
+		<result property="totalmoney" column="money" />
+		<result property="borrowMoneyUserID" column="user_id" />
+		<result property="borrowMoneyUserName" column="borrowMoneyUserName" />
+		<result property="rate" column="rate" />
+		<result property="loanType" column="loan_type" />
+		<result property="operationType" column="operation_type" />
+		<result property="repayType" column="repay_type" />
+		<result property="beforeRepay" column="before_repay" />
+		<result property="deadline" column="deadline" />
+		<result property="day" column="day" />
+		<result property="expectTime" column="expect_time" />
+		<result property="textItem" column="company_name" />
+		<result property="status" column="status" />
+		<result property="commitTime" column="commit_time" />
+		<result property="giveMoneyTime" column="give_money_time" />
+		<result property="contractName" column="loan_instruction" />
+		<result property="calculateMoneyNeedRaised" column="calculateMoneyNeedRaised" />
+		<result property="deposit" column="deposit" />
+		<result property="newbieEnjoy" column="newbieEnjoy" />
+		<result property="organizationExclusive" column="organization_exclusive" />
+		<result property="giveMoneyOperationTime" column="give_money_operation_time" />
+		<result property="itemAddress" column="item_address" />
+		<result property="borrowerName" column="borrower_name" />
+		<result property="yaCarAndGPS" column="yacar_and_gps" />
+		<result property="remark" column="remark" />
+		<result property="licensePlateNumber" column="license_plate_number" />
+		<result property="brand" column="brand" />
+		<result property="companyno" column="companyno"/>
+		<result property="instructionNo" column="instruction_no"/>
+		<result property="singleMoney" column="single_money"/>
+		<result property="borrowerIdCard" column="borrower_id_card"/>
+		<result property="accountingDepartment" column="accounting_department"/>
+	</resultMap>
+
+	<sql id="getLoansVehicle">
+		loan.id as id, loan.name as name, loan.commit_time as commit_time, loan_type as loan_type, loan.repay_type as repay_type,loan.organization_exclusive as organization_exclusive,loan.accounting_department as accounting_department, 
+		loan.company_name as company_name, loan_vehicle.brand as brand, loan_vehicle.license_plate_number as license_plate_number,
+		(select IFNULL(sum(money), 0) from invest where invest.loan_id = loan.id and invest.status != '流标') as calculateMoneyNeedRaised,
+		loan.money as money, loan.deadline as deadline, loan.day as day, loan.operation_type as operation_type, loan.rate as rate, 
+		loan_vehicle.yacar_and_gps as yacar_and_gps, loan_vehicle.borrower_name, loan_vehicle.remark as remark, 
+		loan_vehicle.item_address as item_address, loan_vehicle.money as single_money, loan_vehicle.borrower_id_card as borrower_id_card
+	</sql>
+	<sql id="getLoansHouse">
+		loan.id as id, loan.name as name, loan.commit_time as commit_time, loan_type as loan_type, loan.repay_type as repay_type,loan.organization_exclusive as organization_exclusive,loan.accounting_department as accounting_department, 
+		loan.company_name as company_name, loan_house.position as brand, 
+		(select IFNULL(sum(money), 0) from invest where invest.loan_id = loan.id and invest.status != '流标') as calculateMoneyNeedRaised,
+		loan.money as money, loan.deadline as deadline, loan.day as day, loan.operation_type as operation_type, loan.rate as rate, 
+		loan_house.borrower_name, loan_house.remark as remark, loan_house.item_address as item_address, loan_house.borrower_id_card as borrower_id_card
+	</sql>
+	<sql id="getLoansEnterprise">
+		loan.id as id, loan.name as name, loan.commit_time as commit_time, loan_type as loan_type, loan.repay_type as repay_type,loan.organization_exclusive as organization_exclusive,loan.accounting_department as accounting_department, 
+		loan.company_name as company_name, (select IFNULL(sum(money), 0) from invest where invest.loan_id = loan.id and invest.status != '流标') as calculateMoneyNeedRaised,
+		loan.money as money, loan.deadline as deadline, loan.day as day, loan.operation_type as operation_type, loan.rate as rate, 
+		loan_enterprise.borrower_name, loan_enterprise.remark as remark, loan_enterprise.item_address as item_address, loan_enterprise.borrower_id_card as borrower_id_card
+	</sql>
+	<sql id="getLoansSupplychain">
+		loan.id as id, loan.name as name, loan.commit_time as commit_time, loan_type as loan_type, loan.repay_type as repay_type,loan.organization_exclusive as organization_exclusive,loan.accounting_department as accounting_department, 
+		loan.company_name as company_name, (select IFNULL(sum(money), 0) from invest where invest.loan_id = loan.id and invest.status != '流标') as calculateMoneyNeedRaised,
+		loan.money as money, loan.deadline as deadline, loan.day as day, loan.operation_type as operation_type, loan.rate as rate, 
+		loan_supplychain.borrower_name, loan_supplychain.remark as remark, loan_supplychain.item_address as item_address, loan_supplychain.borrower_id_card as borrower_id_card
+	</sql>
+	
+	<select id="getLoansByGroupCondition1" resultMap="loanRM2"
+		parameterType="map">
+		SELECT 
+		<choose>
+			<when test="loanType == '车贷' "><include refid="getLoansVehicle"/></when>
+			<when test="loanType == '房贷' "><include refid="getLoansHouse"/></when>
+			<when test="loanType == '企业贷' "><include refid="getLoansEnterprise"/></when>
+			<when test="loanType == '供应宝' "><include refid="getLoansSupplychain"/></when>
+			<otherwise><include refid="getLoansVehicle"/></otherwise>
+		</choose>		
+		FROM loan
+		<choose>
+			<when test="loanType == '车贷' ">left join loan_vehicle on loan.id = loan_vehicle.loan_id</when>
+			<when test="loanType == '房贷' ">left join loan_house on loan.id = loan_house.loan_id</when>
+			<when test="loanType == '企业贷' ">left join loan_enterprise on loan.id = loan_enterprise.loan_id</when>
+			<when test="loanType == '供应宝' ">left join loan_supplychain on loan.id = loan_supplychain.loan_id</when>
+			<otherwise>left join loan_vehicle on loan.id = loan_vehicle.loan_id</otherwise>		
+		</choose>	
+		<where>
+				loan.isdeal=0
+			<if test="id != null and id != '' ">
+				AND loan.id = #{id}
+			</if>
+			<if test="name != null and name != '' ">
+				AND name = #{name}
+			</if>
+			<choose>
+				<when test="loanType == null or loanType == '' or loanType == '车贷' " >
+					and loan_type = '车贷' and loan_vehicle.status = 1
+				</when>
+				<otherwise>
+					AND loan_type = #{loanType}
+				</otherwise>
+			</choose>								
+			<if test="status != null and status != '' ">
+				AND status = #{status}
+			</if>			
+			<if test="textItem != null and textItem != '' ">
+				AND company_name = #{textItem}
+			</if>
+			<if test="newbieEnjoy != null and newbieEnjoy != '' ">
+				AND newbieEnjoy = #{newbieEnjoy}
+			</if>		
+			<if test="deadline != null and deadline != '' ">
+				AND operation_type = '月' AND deadline = #{deadline}
+			</if>
+			<if test="minMoney != null and minMoney != '' ">
+				AND money &gt;= #{minMoney}
+			</if>			
+			<if test="maxMoney != null and maxMoney != '' ">
+				AND money &lt;= #{maxMoney}
+			</if>
+			<choose>
+				<when test="start != null and start != '' ">
+					AND commit_time &gt;= #{start}
+				</when>
+				<when test="end != null and end != '' ">
+					AND commit_time &lt;= #{end}
+				</when>			
+				<otherwise>
+					AND date(commit_time) = curdate()
+				</otherwise>
+			</choose>
+		</where>
+	</select>
+	
+
+	<!-- 根据loanID查询对应借款人记录 -->
+	<select id="getUserByloanID" resultMap="loanRM" parameterType="string">
+		SELECT loan.*,user.*
+		FROM loan LEFT JOIN USER ON
+		loan.user_id =
+		user.user_id
+		WHERE loan.id = #{id} AND loan.isdeal=0;
+	</select>
+
+	<resultMap type="bannerPicture" id="bpRM">
+		<id property="id" column="id" />
+		<result property="title" column="title" />
+		<result property="url" column="url" />
+		<result property="seqNum" column="seq_num" />
+		<result property="isOutSite" column="is_out_site" />
+		<result property="picture" column="picture" />
+	</resultMap>
+
+	<update id="updateBannerPicture" parameterType="bannerPicture">
+		UPDATE banner_picture
+		<set>
+			<if test="title != null">title=#{title},</if>
+			<if test="url != null">url=#{url},</if>
+			<if test="seqNum != null">seq_num=#{seqNum},</if>
+			<if test="isOutSite != null">is_out_site=#{isOutSite},</if>
+			<if test="picture != null">picture=#{picture},</if>
+		</set>
+		WHERE id=#{id};
+	</update>
+	<!-- 批量修改项目图片的名称 -->
+	<update id="updateBatchPicTitle" parameterType="Map">
+		UPDATE banner_picture
+		<set>
+			<if test="title != null">title=#{title},</if>
+			<if test="url != null">url=#{url},</if>
+			<if test="seqNum != null">seq_num=#{seqNum},</if>
+			<if test="isOutSite != null">is_out_site=#{isOutSite},</if>
+			<if test="picture != null">picture=#{picture},</if>
+		</set>
+		where id in
+		<foreach collection="arr" index="index" item="item" open="("
+			separator="," close=")">
+			#{item}
+		</foreach>
+	</update>
+
+	<!-- 根据loanID,查询项目相关图片 -->
+	<select id="getBannerPictureById" resultMap="bpRM"
+		parameterType="string">
+		select * from banner_picture where id = #{picId};
+	</select>
+
+	<!-- 根据loanID,查询项目相关图片 -->
+	<select id="getLoanInfoPics" resultMap="bpRM" parameterType="string">
+		SELECT
+		lip.loan_id,
+		lip.pic_id,
+		bp.id,
+		bp.banner_id,
+		bp.is_out_site,
+		bp.picture,
+		bp.seq_num,
+		bp.title,
+		bp.url
+		FROM loan_info_pics lip
+		LEFT OUTER
+		JOIN banner_picture bp
+		ON lip.pic_id = bp.id
+		WHERE lip.loan_id =
+		#{loanID} AND bp.url is null ORDER BY seq_num asc;
+	</select>
+
+	<!-- 根据loanID,查询抵押物相关图片 -->
+	<select id="getLoanGuaranteePics" resultMap="bpRM"
+		parameterType="string">
+		SELECT
+		lgp.loan_id,
+		lgp.pic_id,
+		bp.id,
+		bp.banner_id,
+		bp.is_out_site,
+		bp.picture,
+		bp.seq_num,
+		bp.title,
+		bp.url
+		FROM
+		loan_guarantee_pics lgp
+		LEFT OUTER JOIN banner_picture bp
+		ON lgp.pic_id
+		= bp.id
+		WHERE lgp.loan_id = #{loanID};
+	</select>
+
+	<insert id="insertBannerPicture" parameterType="bannerPicture">
+		INSERT INTO
+		banner_picture (id, picture, is_out_site, seq_num,
+		banner_id, title,
+		url) VALUES
+		(#{id},#{picture}, #{isOutSite},
+		#{seqNum}, NULL,
+		#{title},#{url});
+	</insert>
+
+	<insert id="insertLoanInfoPics" parameterType="map">
+		INSERT INTO
+		`loan_info_pics` (`loan_id`, `pic_id`) VALUES (#{loanId}, #{bpId});
+	</insert>
+
+
+
+	<update id="update" parameterType="loan">
+		UPDATE loan
+		<set>
+			<if test="name!=null">name=#{name},</if>
+			<if test="pawn!=null">pawn=#{pawn},</if>
+			<if test="type!=null">type=#{type},</if>
+			<if test="description!=null">description=#{description},</if>
+			<if test="lightspot!=null">fund_description=#{lightspot},</if>
+			<if test="riskControlMeasures!=null">risk_description=#{riskControlMeasures},</if>
+			<if test="contract!=null">risk_instruction=#{contract},</if>
+			<if test="totalmoney!=null">money=#{totalmoney},</if>
+			<if test="maxInvestMoney!=null">max_invest_money=#{maxInvestMoney},</if>
+			<if test="investOriginMoney!=null">min_invest_money=#{investOriginMoney},</if>
+			<if test="increaseMoney!=null">asc_invest_money=#{increaseMoney},</if>
+			<if test="borrowMoneyUserID!=null">user_id=#{borrowMoneyUserID},</if>
+			<if test="rate!=null">rate=#{rate},</if>
+			<if test="awardMoneyRate!=null">awardMoney_rate=#{awardMoneyRate},</if>
+			<if test="awardLink!=null">award_link=#{awardLink},</if>
+			<if test="loanType!=null">loan_type=#{loanType},</if>
+			<if test="loanGuranteeFee!=null">loan_gurantee_fee=#{loanGuranteeFee},</if>
+			<if test="operationType!=null">operation_type=#{operationType},</if>
+			<if test="repayType!=null">repay_type=#{repayType},</if>
+			<if test="beforeRepay!=null">before_repay=#{beforeRepay},</if>
+			<if test="deadline!=null">deadline=#{deadline},</if>
+			<if test="day!=null">day=#{day},</if>
+			<if test="expectTime!=null">expect_time=#{expectTime},</if>
+			<if test="textItem!=null">company_name=#{textItem},</if>
+			<if test="status!=null">status=#{status},</if>
+			<if test="commitTime!=null">commit_time=#{commitTime},</if>
+			<if test="giveMoneyTime!=null">give_money_time=#{giveMoneyTime},</if>
+			<if test="contractName!=null">loan_instruction=#{contractName},</if>
+			<if test="autoInvestMoneyTotal!=null">auto_invest_money_total=#{autoInvestMoneyTotal},</if>
+			<if test="verifyUser">verify_user_id=#{verifyUser},</if>
+			<if test="verified">verified=#{verified},</if>
+			<if test="deposit">deposit=#{deposit},</if>
+			<if test="emailSend">emailSend=#{emailSend},</if>
+			<if test="symbol">symbol=#{symbol},</if>
+			<if test="newbieEnjoy!=null">newbieEnjoy=#{newbieEnjoy},</if>
+			<if test="organizationExclusive!=null">organization_exclusive=#{organizationExclusive},</if>
+			
+			<if test="interestRule!=null">interest_rule=#{interestRule},</if>
+			<if test="giveMoneyOperationTime!=null">give_money_operation_time=#{giveMoneyOperationTime},</if>
+			<if test="loanAllowanceInterest!=null">loan_allowance_interest=#{loanAllowanceInterest},</if>
+
+			<if test="itemRate != null">item_rate=#{itemRate},</if>
+			<if test="itemAddress != null">item_address=#{itemAddress},</if>
+			<if test="customerManagerJobNumber != null">customer_manager_job_number=#{customerManagerJobNumber},
+			</if>
+			<if test="customerManagerName != null">customer_manager_name=#{customerManagerName},</if>
+			<if test="borrowerName != null">borrower_name=#{borrowerName},</if>
+			<if test="remark != null">remark=#{remark},</if>
+			<if test="yaCarAndGPS != null">yaCarAndGPS=#{yaCarAndGPS},</if>	
+			<if test="specialType != null">loan_special_type=#{specialType},</if>	
+			<if test="isdeal != null">isdeal=#{isdeal},</if>	
+			<if test="finishTime != null">finish_time=#{finishTime},</if>
+			<if test="repayTime != null">repay_time_organization=#{repayTime},</if>
+			<if test="instructionNo != null">instruction_no=#{instructionNo},</if>
+			<if test="isBeforeRepay != null and isBeforeRepay != '' ">is_before_repay=#{isBeforeRepay},</if>
+		</set>
+		WHERE id=#{id};
+	</update>
+	<!-- 根据常用invest表中字段进行组合条件查询 -->
+	<select id="getInvestsByGroupCondition" resultMap="com.duanrong.business.invest.model.Invest.investRM"
+		parameterType="com.duanrong.business.invest.model.Invest">
+		SELECT * FROM
+		invest
+		<where>
+			<if test="id != null and id != ''">
+				AND id =#{id}
+			</if>
+			<if test="loanId != null and loanId != ''">
+				AND loan_id = #{loanId}
+			</if>
+
+			<if test="status eq '!流标'">
+				AND status IN('投标成功','还款中','完成','等待确认')
+			</if>
+		</where>
+		order by time desc
+	</select>
+
+
+	<select id="generateId" resultMap="loanRM" parameterType="string">
+		select
+		*
+		from loan where id = (select max(l.id) from loan as l where l.id like
+		CONCAT(#{str},'%')) for update
+	</select>
+
+
+	<resultMap type="fixedborrowers" id="fbRM">
+		<id property="userId" column="user_id" />
+		<id property="status" column="status" />
+		<result property="email" column="email" />
+		<association property="fixedUser"
+			resultMap="com.duanrong.business.user.mapper.UserMapper.userRM"></association>
+	</resultMap>
+
+	<select id="findAllFixedBorrowers" resultMap="fbRM">
+		SELECT
+		fb.*,
+		fixedUser.*
+		FROM
+		fixed_borrowers AS fb
+		INNER JOIN `user` AS fixedUser ON
+		fb.user_id = fixedUser.id where fb.status = 'open'
+	</select>
+
+	<insert id="insertFixedBorrower" parameterType="string">
+		INSERT INTO
+		fixed_borrowers (`user_id`, `status`, email) VALUES (#{userId}, 'open', #{email});
+	</insert>
+
+	<update id="alterFixedBorrowersStatus" parameterType="map">
+		UPDATE fixed_borrowers
+		<set>
+			<if test="status!=null">status=#{status},</if>
+			<if test="email!=null and email != '' ">email=#{email},</if>
+		</set>
+		WHERE user_id=#{borrower};
+	</update>
+	<select id="getTotalMoney" parameterType="map"
+		resultType="double">
+		select ROUND(SUM(money), 2) from loan
+		<where>
+			<if test="type != null and type != '' and type!='all'">
+				AND loan_type =#{type}
+			</if>
+			<if test="status eq '流标'">
+				AND status!='流标'
+			</if>
+			<if test="status eq '还款中'">
+				AND status='还款中'
+			</if>
+			<if test="1 eq 1">
+				and company_name!='是'
+			</if>
+		</where>
+	</select>
+	<select id="find" resultMap="loanRM" parameterType="loan">
+		select t.*,round((t.Maxcorpus+t.Maxinterest),2) as Maxreapymoney from (	SELECT loan.*, user.realname as borrowMoneyUserName,loan_vehicle.brand as brand,loan_vehicle.license_plate_number as license_plate_number,
+(select operation_time from repay where loan_id=loan.id ORDER BY repay_day desc  limit 1) as Maxrepayday,
+ (select  corpus from repay where loan_id=loan.id  ORDER BY repay_day desc  limit 1) as Maxcorpus,
+(select  interest from repay where loan_id=loan.id  ORDER BY repay_day desc  limit 1) as Maxinterest
+ FROM loan left join user on loan.user_id=user.id left join loan_vehicle on loan.id=loan_vehicle.loan_id) t
+		<where>
+			<if test="start != null and start != '' ">
+				and t.give_money_operation_time &gt;=#{start}
+			</if>
+			<if test="end != null and end != '' ">
+				and t.give_money_operation_time &lt;=#{end}
+			</if>
+			<if test="statusStr != null and statusStr =='statusStr' ">
+				and t.status in('还款中','完成')
+			</if>
+		</where>
+		ORDER BY t.give_money_operation_time DESC
+	</select>
+	
+	<select id="getWaitPushLoanList" parameterType="java.lang.Object" resultMap="loanRM">
+		select l.* from loan l 
+		 where not EXISTS (select 1 from push_loan p where p.loan_id=l.id and p.type='p2peye')
+		   and l.`status` in('筹款中','贷前公告')
+			and l.company_name='否'
+	</select>
+	
+	<select id="getPushRecords" parameterType="java.lang.Object" resultMap="loanRM">
+		select l.*,p.push_time from loan l 
+		 inner join push_loan p 
+		    on l.id=p.loan_id
+		<include refid="query_push_records"/>
+		order by p.push_time desc
+	</select>
+	
+	<select id="getP2pEyeLoanByLoanId" parameterType="java.lang.Object" resultMap="loanRM">
+		select l.id,l.`name`,l.money,l.rate,l.repay_type,l.operation_type,l.deadline,l.`day`,l.loan_type,l.`status`,l.commit_time,l.type from loan l
+			where l.id = #{id }
+	</select>
+	<select id="getNetLoanCount" parameterType="java.lang.Object" resultMap="netLoan">
+		select count(p.id) pushLoanNum,sum(l.money) pushLoanSumMoney
+		  from push_loan p INNER JOIN loan l on p.loan_id=l.id
+<!-- 		  <include refid="query_push_records"/> -->
+	</select>
+	<select id="getNetLoanSum" parameterType="java.lang.Object" resultMap="netLoan">
+		select count(DISTINCT iv.user_id) investNum, (select count(1) from platform_user_relation pt INNER JOIN user u on pt.userID=u.id
+		where pt.whether_new='0') regUserCount from invest iv inner join platform_user_relation pt on iv.user_id=pt.userID 
+	</select>
+	
+	<sql id="query_push_records">
+		<where>
+			p.type='p2peye'
+			<if test="id != null and id != '' ">
+				and l.id=#{id}
+			</if>
+			<if test="name != null and name != '' ">
+				and l.name like '%${name}%'
+			</if>
+			<if test="status != null and status != '' ">
+				and l.status=#{status}
+			</if>
+			<if test="start != null and start != '' ">
+				and l.give_money_operation_time &gt;=#{start}
+			</if>
+			<if test="end != null and end != '' ">
+				and l.give_money_operation_time &lt;=#{end}
+			</if>
+			<if test="pushTimeStart != null and pushTimeStart != '' ">
+				and p.push_time &gt;=#{pushTimeStart}
+			</if>
+			<if test="pushTimeEnd != null and pushTimeEnd != '' ">
+				and p.push_time &lt;=#{pushTimeEnd}
+			</if>
+			<if test="loanType != null and loanType != '' ">
+				and l.loan_type =#{loanType }
+			</if>
+		</where>
+	</sql>
+	<select id="getLoanName"  resultType="java.lang.String">
+		SELECT name from loan where isdeal=0 and loan_type='车贷' and name like '车押宝C%' order by create_time desc,name desc limit 0,1
+	</select>
+</mapper>

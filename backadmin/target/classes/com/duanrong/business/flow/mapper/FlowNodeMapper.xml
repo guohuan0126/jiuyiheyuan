@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.flow.mapper.FlowNodeMapper">
+	<resultMap type="flowNode" id="flowNodeRM">
+		<id property="nodeId" column="node_id" />
+		<result property="flowId" column="flow_id" />
+		<result property="nodeName" column="node_name" />
+		<result property="nodeOrder" column="node_order" />
+		<result property="status" column="node_status" />
+		<result property="description" column="description" />			
+	</resultMap>
+             
+    <resultMap type="role" id="roleRM">	
+    	<result property="id" column="id" />
+		<result property="name" column="name" />
+	</resultMap>
+	
+	<select id="selectNodeByFlowId" parameterType="int" resultType="java.util.List" resultMap="flowNodeRM">	
+		SELECT 
+		flow_node.*,
+		flow_node.`status` AS node_status
+		FROM flow_node WHERE flow_id=#{flowId}
+		ORDER BY node_order
+	</select>
+	
+	<select id="selectRoleByNodeId" parameterType="int" resultMap="roleRM">	
+		SELECT role.* FROM role JOIN flownode_role ON flownode_role.role_id=role.id 
+		WHERE flownode_role.node_id=#{nodeId}
+	</select>
+	
+	<!-- 添加流程节点  -->
+	<insert id="insert" parameterType="flowNode" useGeneratedKeys="true" keyProperty="nodeId">
+		INSERT INTO flow_node(<if test="nodeId != 0 ">node_id, </if>flow_id,
+		node_name, node_order, status, description) VALUES(<if test="nodeId != 0 ">#{nodeId}, </if>#{flowId},
+		#{nodeName}, #{nodeOrder}, #{status}, #{description})
+	</insert>
+
+	<!-- 删除流程节点  -->
+	<delete id="delete" parameterType="int">
+		DELETE FROM flow_node WHERE flow_id=#{id}
+	</delete>
+	
+	
+	<select id="selectNodeIdByFlowId" parameterType="int" resultType="java.util.List" resultMap="flowNodeRM">	
+		SELECT node_id FROM flow_node WHERE flow_id=#{flowId}
+	</select>
+	
+	
+	
+	<!-- 添加流程执行者 -->
+	<delete id="deleteFlowRole" parameterType="int"> 
+		DELETE FROM flownode_role WHERE node_id=#{nodeId}
+	</delete>
+	<!-- 添加流程执行者 -->
+	<insert id="insertFlowRole" parameterType="map"> 
+		INSERT INTO flownode_role(node_id, role_id) VALUES(#{nodeId}, #{roleId})
+	</insert>
+</mapper>

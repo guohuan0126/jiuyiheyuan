@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.duanrong.business.netloaneye.mapper.PushLoanMapper" >
+  <resultMap id="BaseResultMap" type="com.duanrong.business.netloaneye.model.PushLoan" >
+    <id column="id" property="id" jdbcType="VARCHAR" />
+    <result column="loan_id" property="loanId" jdbcType="VARCHAR" />
+    <result column="push_time" property="pushTime" jdbcType="DATE" />
+    <result column="push_userId" property="pushUserid" jdbcType="VARCHAR" />
+    <result column="status" property="status" jdbcType="VARCHAR" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    id, loan_id, push_time, push_userId
+  </sql>
+  
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.String" >
+    select 
+    <include refid="Base_Column_List" />
+    from push_loan
+    where id = #{id,jdbcType=VARCHAR}
+  </select>
+  
+  
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.String" >
+    delete from push_loan
+    where id = #{id,jdbcType=VARCHAR}
+  </delete>
+  
+  
+  <insert id="insert" parameterType="com.duanrong.business.netloaneye.model.PushLoan" >
+    insert into push_loan (id, loan_id, push_time, 
+      push_userId,status,type)
+    values (#{id,jdbcType=VARCHAR}, #{loanId,jdbcType=VARCHAR}, #{pushTime,jdbcType=DATE}, 
+      #{pushUserid,jdbcType=VARCHAR},#{status,jdbcType=VARCHAR},"p2peye")
+  </insert>
+  
+  
+  <insert id="insertSelective" parameterType="com.duanrong.business.netloaneye.model.PushLoan" >
+    insert into push_loan
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        id,
+      </if>
+      <if test="loanId != null" >
+        loan_id,
+      </if>
+      <if test="pushTime != null" >
+        push_time,
+      </if>
+      <if test="pushUserid != null" >
+        push_userId,
+      </if>
+      <if test="status != null" >
+        status,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        #{id,jdbcType=VARCHAR},
+      </if>
+      <if test="loanId != null" >
+        #{loanId,jdbcType=VARCHAR},
+      </if>
+      <if test="pushTime != null" >
+        #{pushTime,jdbcType=DATE},
+      </if>
+      <if test="pushUserid != null" >
+        #{pushUserid,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null" >
+        #{status,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  
+  
+  <update id="updateByPrimaryKeySelective" parameterType="com.duanrong.business.netloaneye.model.PushLoan" >
+    update push_loan
+    <set >
+      <if test="loanId != null" >
+        loan_id = #{loanId,jdbcType=VARCHAR},
+      </if>
+      <if test="pushTime != null" >
+        push_time = #{pushTime,jdbcType=DATE},
+      </if>
+      <if test="pushUserid != null" >
+        push_userId = #{pushUserid,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=VARCHAR}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.duanrong.business.netloaneye.model.PushLoan" >
+    update push_loan
+    set loan_id = #{loanId,jdbcType=VARCHAR},
+      push_time = #{pushTime,jdbcType=DATE},
+      push_userId = #{pushUserid,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=VARCHAR}
+  </update>
+  <!--根据loanid查询push_loan表  -->
+   <select id="selectByLoanId" resultMap="BaseResultMap" parameterType="java.lang.String" >
+    select 
+    id, loan_id, push_time, push_userId
+    from push_loan
+    where loan_id = #{loanId,jdbcType=VARCHAR} and type='p2peye' limit 1
+  </select>
+</mapper>

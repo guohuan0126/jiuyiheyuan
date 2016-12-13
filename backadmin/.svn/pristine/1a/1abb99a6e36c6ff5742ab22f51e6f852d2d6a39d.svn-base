@@ -1,0 +1,51 @@
+package base.schedule.job;
+
+import javax.annotation.Resource;
+
+import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.springframework.stereotype.Component;
+
+import util.Log;
+
+import com.duanrong.business.invest.service.InvestService;
+import com.duanrong.business.user.service.AllUserBillService;
+import com.duanrong.business.user.service.UserService;
+
+/**
+ * 用户账户平衡调度
+ * 
+ * @author Lin Zhiming
+ * @version Mar 2, 2015 9:55:33 AM
+ */
+@Component
+public class AccountChecking implements Job {
+
+	@Resource
+	Log log;
+
+	@Resource
+	AllUserBillService allUserBillService;
+
+	@Resource
+	InvestService investService;
+	@Resource
+	UserService userService;
+
+	@Override
+	public void execute(JobExecutionContext context)
+			throws JobExecutionException {
+		try {			
+			allUserBillService.accountChecking();					
+		} catch (Exception e) {
+			log.errLog("用户平衡调度 allUserBillService.accountChecking()", e);
+		}
+		
+		try {		
+			userService.updateUsers();
+		} catch (Exception e) {
+			log.errLog("用户平衡调度 userService.updateUsers()", e);
+		}
+	}
+}

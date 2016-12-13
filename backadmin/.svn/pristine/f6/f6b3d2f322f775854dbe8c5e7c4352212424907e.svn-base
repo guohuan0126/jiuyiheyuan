@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.ruralfinance.mapper.AgricultureForkLoansMapper">
+
+	<resultMap type="com.duanrong.business.ruralfinance.model.AgricultureForkLoans" id="ForkLoansRM">
+			<id property="id" column="id"  />
+			<result property="parentId" column="parent_id" />
+			<result property="childContractid" column="child_contractid" />
+			<result property="loanId" column="loan_id" />
+			<result property="money" column="money" />
+			<result property="loanTerm" column="loan_term" />
+			<result property="packing" column="packing" />
+			<result property="createTime" column="create_time" />			
+		    <result property="remark" column="remark" />
+		    <result property="flag" column="flag" />
+	<association property="loaninfo" column="parent_id"
+			resultMap="com.duanrong.business.ruralfinance.mapper.AgricultureLoaninfoMapper.loanerinfoRM" />
+	
+	</resultMap>
+	<!-- 批量添加 -->
+
+  <insert id="batchAgricultureForkLoans" parameterType="java.util.List" >
+    INSERT INTO agriculture_fork_loans
+		(id,parent_id,child_contractid,money,loan_term,packing,
+		create_time)
+    values
+    <foreach collection="list" item="item" index="index" separator="," >
+        (#{item.id},#{item.parentId},#{item.childContractid},#{item.money},
+        #{item.loanTerm},#{item.packing},#{item.createTime})
+    </foreach>   
+  </insert>
+  
+  <!-- 修改项目状态 -->
+	<update id="updateAgricultureForkLoans" parameterType="map">
+		UPDATE agriculture_fork_loans
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(loanId)">loan_id=#{loanId},</if>
+			<if test="packing != null and packing != ''">packing=#{packing},</if>
+		</set>
+		WHERE id = #{id}
+	</update>
+	<!-- 已经放款但未打包的借款项目 -->
+	<select id="PackAgricultureForkLoans" parameterType="map" resultMap="ForkLoansRM">
+	SELECT r2.id,r2.parent_id,r2.child_contractid,r2.loan_id,r2.money,r2.loan_term,r2.packing,r2.create_time,r2.remark,r2.flag as fork_flag,r1.name,r1.mobile_number,r1.id_card,r1.contract_id,r1.money as parentMoney,r1.loan_money,r1.service_money,r1.rate,r1.loan_term as parentLoanTerm,r1.repay_type,r1.givemoneytime 
+	from agriculture_fork_loans r2 LEFT JOIN agriculture_loaninfo r1 on r2.parent_id=r1.id
+		<where>
+		     r1.givemoneytime &lt;= NOW()
+		  <if test="loanId != null and loanId != ''">
+				AND r2.loan_id= #{loanId}
+			</if>		  	
+			<if test="id != null and id != ''">
+				AND r2.id= #{id}
+			</if>
+			<if test="loanTerm != null and loanTerm != ''">
+				AND r2.loan_term= #{loanTerm}
+			</if>	
+			<if test="packing != null and packing != ''">
+				AND r2.packing= #{packing}
+			</if>
+			<if test="flag != null and flag != ''">
+				AND r2.flag != #{flag}
+			</if>						   
+		</where>
+		ORDER BY r1.contract_id desc
+	</select>
+<!-- 批量添加打包项目id和打包状态 -->
+<update id="updateBatch" parameterType="Map">    
+        update agriculture_fork_loans set     
+            loan_id= #{loanId},    
+            packing= #{packing},
+            flag='agriculture'   
+        where id in     
+        <foreach collection="arr" index="index" item="item" open="(" separator="," close=")" >    
+            #{item}    
+        </foreach>  
+
+</update> 
+<!-- 修改打包项目id和打包状态 -->
+<update id="updateForkLoanstatus" parameterType="Map">    
+        update agriculture_fork_loans set     
+            loan_id ='',    
+            packing = #{packing},
+        	flag=''
+        WHERE loan_id = #{loanId}  
+</update> 
+	<!-- 根据子标id查询父标的借款人信息 -->
+	<select id="selectByForkId" parameterType="String" resultMap="ForkLoansRM">
+  SELECT r2.id,r2.money,r2.loan_term,r1.name,r1.mobile_number,r1.id_card,r2.child_contractid,r1.contract_id,r1.money as parentMoney,r1.loan_money,r1.service_money,r1.rate,r1.loan_term as parentLoanTerm,r1.repay_type,r1.givemoneytime,
+    r1.marital_status,r1.address,r1.loan_application,r1.repayment_source,r1.province,r1.city from agriculture_fork_loans r2 LEFT JOIN agriculture_loaninfo r1 on r2.parent_id=r1.id
+		<where>		  	
+			<if test="_parameter != null and _parameter != ''">
+				AND r2.id= #{_parameter}
+			</if>				   
+		</where>
+	</select>
+	<!-- 批量修改天天赚打包状态 -->
+<update id="updatePackStatus" parameterType="Map">    
+        update agriculture_fork_loans set       
+            packing= #{packing},
+            flag=#{flag}   
+        where id in     
+        <foreach collection="arr" index="index" item="item" open="(" separator="," close=")" >    
+            #{item}    
+        </foreach>  
+
+</update> 
+</mapper>

@@ -1,0 +1,1261 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.invest.model.Invest">
+	<resultMap type="invest" id="investRM">
+		<id property="id" column="id" />
+		<result property="time" column="time" />
+		<result property="isAutoInvest" column="is_auto_invest" />
+		<result property="status" column="status" />
+		<result property="rate" column="rate" />
+		<result property="type" column="type" />
+		<result property="money" column="money" />
+		<result property="sumMoney" column="sum_money" />
+		<result property="paidMoney" column="paid_money" />
+		<result property="paidInterest" column="paid_interest" />
+		<result property="interest" column="interest" />
+		<result property="returnPondMoney" column="maxInvestMoney" />
+		<result property="minInvestMoney" column="minInvestMoney" />
+		<result property="returnPond" column="return_pond" />
+		<result property="loanId" column="loan_id" />
+		<result property="loanStatus" column="loan_status" />
+		<result property="email" column="email"/>
+		<result property="loanName" column="loan_name" />
+		<result property="loanType" column="loan_type2" />
+		<result property="transferMoney" column="transfermoney" />
+		<result property="userSource" column="userSource" />
+		<result property="registerTime" column="register_time" />
+		<result property="investAllowanceInterest" column="invest_allowance_interest" />
+		<result property="remarkNum" column="remarkNum" /><!-- add by wangjing -->
+		<result property="redpacketId" column="redpacket_id" />
+		<result property="userId" column="user_id"/>
+		<result property="managementExpense" column="management_expense"/>
+		<!-- 导出excelyong -->
+		<result property="startDate" column="start_date" />
+		<result property="duration" column="duration" />
+		<result property="investUserID" column="user_id" />
+		<result property="investUserName" column="realname" />
+		<result property="userIdCard" column="id_card" />
+		<result property="userHomeAddress" column="post_address" />
+		<result property="userCity" column="city" />
+		<result property="userProvince" column="province" />		
+		<result property="userMobileNumber" column="mobile_number" />
+		<result property="investTotal" column="invest_total" />
+		<result property="ispush" column="push_status" />
+		<association property="user" resultMap="com.duanrong.business.user.mapper.UserMapper.userRM"></association>
+
+		<association property="loan" javaType="loan">
+			<id property="id" column="loan_id2" />
+			<result property="name" column="name" />
+			<result property="pawn" column="pawn" />
+			<result property="type" column="loan_type" />
+			<result property="description" column="description" />
+			<result property="lightspot" column="fund_description" />
+			<result property="riskControlMeasures" column="risk_description" />
+			<result property="contract" column="risk_instruction" />
+			<result property="totalmoney" column="loan_money" />
+			<result property="investOriginMoney" column="min_invest_money" />
+			<result property="increaseMoney" column="asc_invest_money" />
+			<result property="borrowMoneyUserID" column="user_id2" />
+			<result property="rate" column="rate" />
+			<result property="awardMoneyRate" column="awardMoney_rate" />
+			<result property="awardLink" column="award_link" />
+			<result property="loanType" column="loan_type" />
+			<result property="loanGuranteeFee" column="loan_gurantee_fee" />
+			<result property="operationType" column="operation_type" />
+			<result property="repayType" column="repay_type" />
+			<result property="beforeRepay" column="before_repay" />
+			<result property="deadline" column="deadline" />
+			<result property="day" column="day" />
+			<result property="expectTime" column="expect_time" />
+			<result property="textItem" column="company_name" />			
+			<result property="interestRule" column="interest_rule" />
+			<result property="loanAllowanceInterest" column="loan_allowance_interest" />
+			<result property="giveMoneyOperationTime" column="give_money_operation_time" />
+			<result property="status" column="status2" />
+			<result property="commitTime" column="commit_time" />
+			<result property="giveMoneyTime" column="give_money_time" />
+			<result property="contractName" column="loan_instruction" />
+			<result property="calculateMoneyNeedRaised" column="sum_money" />
+			<result property="symbol" column="symbol" />
+			<result property="newbieEnjoy" column="newbieEnjoy"/>
+		</association>
+	</resultMap>
+	
+	<resultMap type="invest" id="investRM1">
+		<result property="time" column="time" />
+		<result property="num" column="num" />
+		<result property="money" column="money" />
+	</resultMap>
+
+
+	<resultMap type="com.duanrong.business.invest.model.InvestRedpacket" id="investRedpacketRM">
+		<id property="id" column="id" />
+		<result property="loanName" column="loan_name" />
+		<result property="realname" column="realname" />
+		<result property="idCard" column="id_card" />
+		<result property="investAllowanceInterest" column="invest_allowance_interest" />
+		<result property="rewardMoney" column="reward_money" />
+		<result property="investId" column="invest_id" />
+		<result property="userId" column="user_id" />
+		<result property="sendAllowanceStatus" column="send_allowance_status" />
+		<result property="sendAllowanceTime" column="send_allowance_time" />
+		<result property="sendAllowanceResult" column="send_allowance_result" />
+		<result property="sendRedpacketStatus" column="send_redpacket_status" />
+		<result property="sendRedpacketTime" column="send_redpacket_time" />
+		<result property="allowanceOrder" column="allowance_order" />
+		<result property="repackedOrder" column="repacked_order" />
+		<result property="sendRedpacketResult" column="send_redpacket_result" />
+		<result property="loanId" column="loan_id" />
+		<result property="loanName" column="loan_name" />
+		<result property="repackedId" column="repacked_id" />
+		<result property="createTime" column="create_time" />
+	</resultMap>
+
+	<resultMap type="com.duanrong.business.repay.model.repayMent" id="repayMentRM">
+		<result property="userSource" column="user_source" />
+		<result property="redpacketMoney" column="redpacketMoney" />
+		<result property="redpacketRate" column="redpacketRate" />
+		<result property="registerTime" column="registerTime" />
+		
+		<result property="userId" column="id" />
+		<result property="interest" column="interest" />
+		<result property="loanId" column="loanId" />
+		<result property="realName" column="realname" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="loanName" column="name" />
+		<result property="investTime" column="time" />
+		<result property="operationType" column="operation_type" />
+		<result property="deadline" column="deadline" />
+		<result property="day" column="day" />
+		<result property="investMoney" column="money" />
+		<result property="loanStatus" column="status" />
+		<result property="loanFinishTime" column="finish_time" />
+		<result property="repayData" column="repay_day" />
+		<result property="reate" column="rate" />
+		<result property="repayType" column="repay_type" />
+		<result property="repayItem" column="period" />
+	</resultMap>
+
+
+	<insert id="insertInvestRedpacket" parameterType="com.duanrong.business.invest.model.InvestRedpacket">
+		INSERT INTO
+		invest_redpacket(id, invest_allowance_interest, reward_money,
+		invest_id, loan_id, user_id,
+		allowance_order, send_allowance_status,
+		send_allowance_time, send_allowance_result,
+		repacked_order,
+		send_redpacket_status, send_redpacket_time, send_redpacket_result,
+		repacked_id, create_time
+		)
+		VALUES(#{id}, #{investAllowanceInterest},
+		#{rewardMoney}, #{investId}, #{loanId},
+		#{userId}, #{allowanceOrder},
+		0, #{sendAllowanceTime}, #{sendAllowanceResult}, #{repackedOrder},
+		0,
+		#{sendRedpacketTime}, #{sendRedpacketResult}, #{repackedId}, NOW());
+	</insert>
+	
+	<select id="pageLiteInvestRedpackt" parameterType="com.duanrong.business.invest.model.InvestRedpacket"
+		resultMap="investRedpacketRM">
+		SELECT ir.* from
+		invest_redpacket ir
+		<where>
+			<if test="loanId != null and loanId != '' ">
+				and loan_id = #{loanId}			
+			</if>
+			<if test="investId != null and investId != '' ">
+				and invest_id = #{investId}		
+			</if>
+			<if test="userId != null and userId != '' ">
+				and user_id = #{userId} and			
+			</if>
+			<if test="sendAllowanceStatus != -2 ">
+				and send_allowance_status = #{sendAllowanceStatus}			
+			</if>
+			<if test="sendRedpacketStatus != -2 ">
+				and send_redpacket_status = #{sendRedpacketStatus}			
+			</if>
+		</where>
+		order by create_time desc
+	</select>
+	
+
+	<!-- 根据loanID查询相关投资记录 (状态不等于流标,排序ASC)-->
+	<select id="getInvestByLoanSortAsc" parameterType="string" resultMap="investRM">
+		SELECT * FROM invest
+		WHERE loan_id = #{loanId} AND status != '流标' order by time ASC
+	</select>
+
+<!-- 根据loanID查询相关投资记录 (状态不等于流标,排序ASC)-->
+	<select id="getInvestSortAsc" parameterType="invest" resultMap="investRM">
+		SELECT * FROM invest
+		WHERE loan_id = #{loanId} and is_auto_invest=#{isAutoInvest} AND status != '流标' order by time ASC
+	</select>
+
+	<!-- 根据loanID查询相关投资记录 (状态不等于流标,排序ASC)-->
+	<select id="getInvestSortDesc" parameterType="invest" resultMap="investRM">
+		SELECT * FROM invest
+		WHERE loan_id = #{loanId} and is_auto_invest=#{isAutoInvest} AND status != '流标' order by time DESC
+	</select>
+
+	<!-- 获得项目投标满额的时间 -->
+	<select id="getInvestDateLastOne" parameterType="string"
+		resultType="date">
+		SELECT invest.time
+		FROM invest
+		LEFT JOIN loan
+		ON
+		loan.id=invest.loan_id
+		WHERE invest.loan_id = #{loanId}
+		AND
+		invest.`status` != '流标'
+		AND loan.`status` IN
+		('等待复核','还款中','完成')
+		ORDER
+		BY
+		invest.time DESC
+		LIMIT 1
+	</select>
+
+	<!-- 获取用户平均年化收益率 -->
+	<select id="getAvgRate" parameterType="string" resultType="double">
+		SELECT IFNULL(AVG(loan.rate), 0)
+		FROM invest
+		LEFT JOIN loan
+		ON
+		invest.loan_id = loan.id
+		WHERE invest.user_id = #{userId}
+	</select>
+
+	<resultMap type="invest" id="investRM2">
+		<id property="id" column="id" />
+		<result property="time" column="time" />
+		<result property="investUserID" column="user_id" />
+		<result property="loanName" column="loanName" />
+		<result property="loanId" column="loan_id" />
+	</resultMap>
+	<resultMap type="invest" id="investRM4">
+		<id property="id" column="id" />
+		<result property="investUserID" column="user_id" />
+		<result property="paidInterest" column="paid_interest" />
+		<result property="loanName" column="loanName" />
+		<result property="loanId" column="loan_id" />
+		<result property="investUserName" column="realname" />
+		<result property="money" column="money" />
+		<result property="status" column="status" />
+		<result property="redpacketId" column="redpacket_id" />
+		<result property="investAllowanceInterest" column="invest_allowance_interest" />
+		<result property="redpacketForVisitor" column="redpacket_for_visitor"/>
+		<result property="time" column="loan_time" />
+		<result property="isAutoInvest" column="is_auto_invest" />
+	</resultMap>
+
+	<!-- 获取用户当前投资金额 -->
+	<select id="getCurrentInvestMoney" parameterType="string"
+		resultType="double">
+		SELECT IFNULL(SUM(money), 0)
+		FROM invest
+		WHERE
+		user_id=#{userId} AND `status` in('还款中','投标成功')
+	</select>
+	
+	<!-- 获取用户项目的投资金额 -->
+	<select id="getLoanInvestMoneyByUser" parameterType="map"
+		resultType="double">
+		SELECT IFNULL(SUM(money), 0)
+		FROM invest
+		WHERE 
+		`status` in('还款中','投标成功')  AND loan_id=#{loanId} AND user_id=#{userId}
+	</select>
+
+	<!-- 查询投资动态 -->
+	<select id="getInvestDynamic" parameterType="long" resultMap="investRM2">
+		SELECT invest.user_id,
+		invest.loan_id, invest.money,
+		invest.time,
+		loan.`name` AS loanName
+		FROM
+		invest
+		LEFT JOIN  
+		
+		loan
+		ON
+		invest.loan_id =
+		loan.id
+		WHERE
+		loan.`status` != '流标'
+		AND
+		loan.company_name = '否'
+		AND
+		invest.`status` != '流标'
+		ORDER BY
+		invest.time
+		DESC
+		LIMIT #{recordNumber}
+	</select>
+
+	<!-- 查询个人单个项目的投资总金额 -->
+	<select id="getPersonalInvestCeiling" parameterType="map"
+		resultType="double">
+		SELECT IFNULL(SUM(money), 0)
+		FROM invest
+		WHERE user_id =
+		#{userId} AND loan_id = #{loanId} AND status != '流标'
+	</select>
+
+	<select id="updateInvestByLoanId" parameterType="invest">
+		update invest set money = #{money} where loan_id = #{loanId}
+	</select>
+
+	<!-- id 固定的 findPaging parameterType 固定的 pageData params.entity固定写法，其中status为loan中的status，具体以传入的对象为准 -->
+	<select id="findPaging" parameterType="pageData" resultMap="investRM">
+		SELECT invest.*, loan.*, loan.id AS loan_id2, loan.user_id AS user_id2
+		,loan.status AS status2, loan.money AS loan_money, loan.type AS
+		loan_type
+		FROM invest
+		LEFT JOIN
+		loan
+		ON invest.loan_id =
+		loan.id
+		<where>
+			<if test="params.entity.id != null and params.entity.id != ''">
+				AND invest.id = #{params.entity.id}
+			</if>
+			<if
+				test="params.entity.investUserID != null and params.entity.investUserID != ''">
+				AND invest.user_id = #{params.entity.investUserID}
+			</if>
+			<if test="params.entity.loanId != null and params.entity.loanId != ''">
+				AND invest.loan_id = #{params.entity.loanId}
+			</if>
+			<if test="params.entity.status == '还款中,完成'">
+				AND invest.status IN ('还款中','完成')
+			</if>
+			<if test="params.entity.status == '还款中,投标成功'">
+				AND invest.status IN ('还款中','投标成功')
+			</if>
+			<if test="params.entity.status == '等待确认,投标成功'">
+				AND invest.status IN ('等待确认','投标成功')
+			</if>
+			<if test="params.entity.status == '还款中'">
+				AND invest.status = '还款中'
+			</if>
+			<if test="params.entity.status == '完成'">
+				AND invest.status = '完成'
+			</if>
+			<if test="params.entity.status == '!流标'">
+				AND invest.status != '流标'
+			</if>
+			<if
+				test="params.entity.paidInterest != null and params.entity.paidInterest != ''">
+				AND invest.paid_interest > 0
+			</if>
+		</where>
+		ORDER BY invest.time DESC
+	</select>
+
+	<!-- 根据条件查询用户投资的项目 -->
+	<select id="getInvestLoan" parameterType="invest" resultMap="investRM">
+		SELECT invest.*, loan.*, loan.id AS loan_id2, loan.user_id AS user_id2
+		,loan.status AS status2, loan.money AS loan_money, loan.type AS
+		loan_type
+		FROM
+		invest
+		LEFT JOIN loan
+		ON invest.loan_id = loan.id
+		<where>
+			<if test="id != null and id != ''">
+				AND invest.id = #{id}
+			</if>
+			<if test="investUserID != null and investUserID != ''">
+				AND invest.user_id = #{investUserID}
+			</if>
+			<if test="status != null and status != ''">
+				<choose>
+					<when test="status == '还款中,投标成功'">
+						AND invest.status IN ('还款中','投标成功')
+					</when>
+					<when test="status == '等待确认,投标成功'">
+						AND invest.status IN ('等待确认','投标成功')
+					</when>
+					<when test="status == '还款中,完成'">
+						AND invest.status IN ('还款中','完成')
+					</when>
+					<when test="status == '!流标'">
+						AND invest.status != '流标'
+					</when>
+					<otherwise>AND invest.status = #{status}</otherwise>
+				</choose>
+			</if>
+			<if test="loanId != null and loanId != ''">
+				AND invest.loan_id = #{loanId}
+			</if>
+		</where>
+		ORDER BY time DESC
+	</select>
+
+	<!-- 根据条件查询用户投资项目总额 -->
+	<select id="getInvestLoanTotalMoney" parameterType="invest"
+		resultType="double">
+		SELECT IFNULL(SUM(invest.money), 0)
+		FROM invest
+		LEFT JOIN loan
+		ON
+		invest.loan_id =
+		loan.id
+		WHERE invest.user_id =
+		#{investUserID}
+		<if test="status != null and status != ''">
+			AND invest.status = #{status}
+		</if>
+	</select>
+
+	<!-- 根据条件查询用户投资项目预计收益 -->
+	<select id="getInvestLoanTotalInterest" parameterType="invest"
+		resultType="double">
+		SELECT IFNULL(SUM(invest.interest), 0)
+		FROM invest
+		LEFT JOIN loan
+		ON
+		invest.loan_id
+		= loan.id
+		WHERE invest.user_id =
+		#{investUserID}
+		<if test="status != null and status != ''">
+			<choose>
+				<when test="status == '等待确认,投标成功'">
+					AND invest.status IN ('等待确认','投标成功')
+				</when>
+				<otherwise>
+					AND invest.status = #{status}
+				</otherwise>
+			</choose>
+		</if>
+	</select>
+
+	<!-- 根据条件查询用户投资项目总收益 -->
+	<select id="getInvestLoanTotalPaidInterest" parameterType="invest"
+		resultType="double">
+		SELECT IFNULL(SUM(invest.paid_interest), 0)
+		FROM invest
+		LEFT JOIN loan
+		ON
+		invest.loan_id = loan.id
+		WHERE invest.user_id =
+		#{investUserID}
+		<if test="status != null and status != ''">
+			AND invest.status = #{status}
+		</if>
+	</select>
+
+	<!-- 投资总额 -->
+	<select id="getInvestTotalMoneyByUserId" parameterType="string"
+		resultType="double">
+		SELECT IFNULL(SUM(money), 0)
+		FROM invest
+		WHERE user_id =
+		#{userId} AND
+		status IN ('投标成功', '还款中', '完成')
+	</select>
+
+	<!-- 个人中心已实现收益 -->
+	<select id="getInvestsTotalInterest" parameterType="string"
+		resultType="double">
+		SELECT IFNULL(SUM(paid_interest), 0)
+		FROM invest
+		WHERE
+		user_id =
+		#{userId} AND status IN ('完成', '还款中')
+	</select>
+
+	<!-- 获取用户投资详情 -->
+	<select id="getInvestDetail" parameterType="string" resultMap="investRM">
+		SELECT * FROM invest
+		WHERE user_id = #{userId} AND status in ('完成',
+		'还款中')
+		ORDER BY time DESC
+	</select>
+
+	<!-- 查询所有invest记录 -->
+	<select id="findAll" resultMap="investRM">
+		SELECT * FROM invest
+	</select>
+
+	<!-- 根据id查询invest记录 -->
+	<select id="get" resultMap="investRM" parameterType="string">
+		SELECT
+		invest.*, loan.*, loan.id AS loan_id2, loan.user_id AS user_id2
+		,loan.status AS status2, loan.money AS loan_money, loan.type AS
+		loan_type
+		FROM invest
+		LEFT JOIN loan
+		ON invest.loan_id = loan.id
+		WHERE
+		invest.id = #{id}
+	</select>
+
+
+
+	<!-- 添加 -->
+	<insert id="insert" parameterType="invest">
+		INSERT INTO invest
+		(id,
+		interest, money, paid_interest, paid_money, rate, status, time, type,
+		is_auto_invest, maxInvestMoney, minInvestMoney, return_pond, user_id,
+		loan_id, user_source,invest_allowance_interest, management_expense)
+		VALUES
+		(#{id},#{interest},#{money},#{paidInterest},#{paidMoney},#{rate},#{status},#{time},#{type},#{isAutoInvest},#{returnPondMoney},#{minInvestMoney},#{returnPond},
+		#{investUserID}, #{loanId}, #{userSource},#{investAllowanceInterest}, #{managementExpense})
+	</insert>
+
+	<!-- 根据investID查询对应投资人记录 -->
+	<select id="getUserByloanID" resultMap="investRM" parameterType="string">
+		SELECT invest.*,user.*
+		FROM invest
+		LEFT JOIN user
+		ON invest.user_id =
+		user.user_id
+		WHERE invest.id = #{id}
+	</select>
+
+	<!-- 根据loanID查询相关投资记录 -->
+	<select id="getInvestByLoan" parameterType="map" resultMap="investRM">
+		SELECT invest1.money as sum_money, invest1.*, loan.id as loan_id2, loan.name as loan_name,
+		loan.status as loan_status,
+		loan.type as loan_type2,
+		`user`.realname as realname,
+		`user`.id_card as
+		id_card, `user`.post_address as post_address,
+		`user`.mobile_number as
+		mobile_number, `user`.email as email,
+		`user`.phone_no_attribution as province, `user`.phone_no_city as city,
+		(select count(*) from invest where user_id=
+		invest1.user_id and status != '流标') as
+		invest_total,
+		(select count(*) from user_visit_info where userid = invest1.user_id)  as remarkNum
+		FROM invest as invest1
+		join loan join `user` on
+		invest1.loan_id=loan.id and
+		invest1.user_id=`user`.id
+		<where>		
+			<if test="loanId != null and loanId !='' ">
+				and invest1.loan_id=#{loanId}
+			</if>
+			<if test="investUserID != null and investUserID != '' ">
+				and invest1.user_id=#{investUserID}
+			</if>
+			<if test="investUserName != null and investUserName != '' ">
+				and `user`.realname like '%${investUserName}%'
+			</if>
+			<if test="startTime != null and startTime != '' ">
+				and invest1.time &gt;= #{startTime}
+			</if>
+			<if test="endTime != null and endTime != '' ">
+				and invest1.time &lt;= #{endTime}
+			</if>
+			<if test="minMoney != null and  minMoney!= '' ">
+				and invest1.money &gt;= #{minMoney}
+			</if>
+			<if test="maxMoney != null and maxMoney != '' ">
+				and invest1.money &lt;= #{maxMoney}
+			</if>
+			<if test="status != null and status != '' ">
+				and invest1.status = #{status}
+			</if>
+		</where>
+		order by invest1.time desc
+	</select>
+	<!-- 根据loanID查询相关投资记录 (合并投资人)-->
+	<select id="getInvestByLoanGroup" parameterType="map" resultMap="investRM">
+		SELECT SUM(invest1.money) as sum_money, invest1.*, loan.id as loan_id2, loan.name as loan_name,
+		loan.status as loan_status,
+		loan.type as loan_type2,
+		`user`.realname as realname,
+		`user`.id_card as
+		id_card, `user`.post_address as post_address,
+		`user`.mobile_number as
+		mobile_number, `user`.email as email,
+		(select count(*) from invest where user_id=
+		invest1.user_id and status != '流标') as
+		invest_total,
+		(select count(*) from user_visit_info where userid = invest1.user_id)  as remarkNum
+		FROM invest as invest1
+		join loan join `user` on
+		invest1.loan_id=loan.id and
+		invest1.user_id=`user`.id
+		<where>		
+			<if test="loanId != null and loanId !='' ">
+				and invest1.loan_id=#{loanId}
+			</if>
+			<if test="investUserID != null and investUserID != '' ">
+				and invest1.user_id=#{investUserID}
+			</if>
+			<if test="investUserName != null and investUserName != '' ">
+				and `user`.realname like '%${investUserName}%'
+			</if>
+			<if test="startTime != null and startTime != '' ">
+				and invest1.time &gt;= #{startTime}
+			</if>
+			<if test="endTime != null and endTime != '' ">
+				and invest1.time &lt;= #{endTime}
+			</if>
+			<if test="minMoney != null and  minMoney!= '' ">
+				and invest1.money &gt;= #{minMoney}
+			</if>
+			<if test="maxMoney != null and maxMoney != '' ">
+				and invest1.money &lt;= #{maxMoney}
+			</if>
+			<if test="status != null and status != '' ">
+				and invest1.status = #{status}
+			</if>
+		</where>
+		GROUP BY user_id		
+		order by invest1.time DESC
+		
+	</select>
+	
+	<!-- 项目自动投标记录数 -->
+	<select id="getAutoInvestByLoan" parameterType="string" resultType="int">
+		SELECT count(*)
+		FROM invest WHERE
+		status IN ('投标成功', '还款中', '完成')	 AND is_auto_invest=1 AND loan_id=#{loanId}
+	</select>
+
+	<!-- 根据userID查询相关投资记录 -->
+	<select id="getInvestByUser" parameterType="string" resultMap="investRM">
+		SELECT invest1.*,loan.*, loan.id as loan_id2, loan.type as
+		loan_type,
+		loan.status as loan_status,
+		`user`.id AS user_id2, `user`.realname as realname,
+		`user`.id_card as id_card, `user`.post_address as post_address,
+		`user`.mobile_number as mobile_number
+		FROM invest as invest1
+		join loan
+		join `user` on invest1.loan_id=loan.id and
+		invest1.user_id=`user`.id
+		WHERE invest1.status != '流标' and
+		invest1.user_id = #{userId} order by invest1.time desc
+	</select>
+
+	<!--得到某个项目标的的有效募集金额 getValidInvestSumByLoan -->
+	<select id="getValidInvestSumByLoan" parameterType="string"
+		resultType="double">
+		SELECT IFNULL(SUM(money),0)
+		FROM invest
+		WHERE loan_id =
+		#{loanId} and status !='流标'
+	</select>
+
+	<select id="getInvestByDate" parameterType="java.util.Date" resultMap="investRM">		
+		select * from invest where status in('投标成功', '还款中', '完成')
+		and time &lt; #{date} and redpacket_for_visitor = 0	
+	</select>
+
+
+	<update id="update" parameterType="invest">
+		UPDATE invest
+		<set>
+			<if test="time!=null">time=#{time},</if>
+			<if test="isAutoInvest!=null">is_auto_invest=#{isAutoInvest},</if>
+			<if test="status!=null">status=#{status},</if>
+			<if test="rate!=null">rate=#{rate},</if>
+			<if test="type!=null">type=#{type},</if>
+			<if test="money!=null">money=#{money},</if>
+			<if test="paidMoney!=null">paid_money=#{paidMoney},</if>
+			<if test="paidInterest!=null">paid_interest=#{paidInterest},</if>
+			<if test="interest!=null">interest=#{interest},</if>
+			<if test="returnPondMoney!=null">maxInvestMoney=#{returnPondMoney},</if>
+			<if test="minInvestMoney!=null">minInvestMoney=#{minInvestMoney},</if>
+			<if test="returnPond!=null">return_pond=#{returnPond},</if>
+			<if test="loanId!=null">loan_id=#{loanId},</if>
+			<if test="investAllowanceInterest!=null">invest_allowance_interest=#{investAllowanceInterest},</if>
+			<if test="redpacketForVisitor != 0 ">redpacket_for_visitor = #{redpacketForVisitor},</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+
+	<!-- 根据条件获得用户投资金额 -->
+	<select id="getInvestMoney" parameterType="invest" resultType="double">
+		SELECT IFNULL(SUM(money), 0)
+		FROM invest
+		WHERE user_id = #{investUserID}
+		<if test="status != null and status != ''">
+			<choose>
+				<when test="status == '!流标'">
+					AND status != '流标'
+				</when>
+				<otherwise>
+					AND status IN
+					<foreach collection="conditions" item="condition" open="("
+						separator="," close=")">
+						#{condition}
+					</foreach>
+				</otherwise>
+			</choose>
+		</if>
+	</select>
+
+	<select id="getCountInvestByRedpacketForVisitor" parameterType="string" resultType="int">
+		select count(*) from invest where redpacket_for_visitor!=0 and user_id=#{userId}
+	</select>
+
+	<!--根据项目ID对指定投资状态进行更新 -->
+	<update id="updateInvestStatusByLoanId" parameterType="map">
+		UPDATE
+		invest SET `status` = #{toStatus}
+		WHERE loan_id = #{loanId} AND
+		`status` = #{originalStatus}
+	</update>
+
+	<resultMap type="invest2" id="investRM3">
+		<result property="investUserId" column="user_id" />
+		<result property="investUserName" column="real_name" />
+		<result property="totalMoney" column="total_money" />
+		<result property="rate" column="rate" />
+		<result property="deadLine" column="dead_line" />
+		<result property="loanName" column="loan_name" />
+		<result property="loanId" column="loan_id" />
+		<result property="giveMoneyTime" column="give_money_time" />
+		<result property="email" column="email" />
+	</resultMap>
+
+	<!-- 查询投资确认函信息 -->
+	<select id="getInvestConfimation" resultMap="investRM3"
+		parameterType="string">
+		SELECT invest.user_id AS user_id, loan.rate AS rate,
+		loan.deadline AS dead_line,loan.name as loan_name,loan.id as loan_id,
+		loan.give_money_time as give_money_time, user.realname AS real_name,
+		sum(invest.money) as total_money, user.email as email
+		FROM invest JOIN
+		user JOIN loan ON invest.loan_id=loan.id AND invest.user_id=user.id
+		WHERE invest.status != '流标' AND loan_id=#{loanId}
+		GROUP BY
+		invest.user_id
+	</select>
+
+	<!-- -->
+	<select id="getInvestByLoanAndUser" resultMap="investRM"
+		parameterType="map">
+		SELECT * FROM invest WHERE invest.status ='还款中' AND
+		loan_id=#{loanId} AND user_id=#{userId}
+	</select>
+
+	<!-- 获得投资成功的记录数 -->
+	<select id="getSuccessInvestRecordNumber" resultType="long">
+		SELECT
+		COUNT(*) FROM invest WHERE `status` != '流标'
+	</select>
+
+	<!--更新config表的成交笔数 -->
+	<update id="updateInvestRecord4ConfigTable" parameterType="long">
+		UPDATE
+		config SET value = #{investRecord}
+		WHERE id = 'invest_num'
+	</update>
+
+	<select id="getInvest" resultMap="investRM4" parameterType="string">
+	SELECT
+	r.id as id,r.paid_interest as paid_interest, r.loan_id as loan_id, 
+	r.user_id as user_id, m.name AS loanName
+	,r.status AS status, r.money AS money, u.realname AS realname,
+	r.redpacket_id as redpacket_id, r.invest_allowance_interest as invest_allowance_interest, 
+	m.commit_time as loan_time, r.is_auto_invest
+	FROM invest r
+	LEFT JOIN loan m
+	ON r.loan_id = m.id
+	left join user u
+	on r.user_id=u.id
+	WHERE
+	r.id = #{id}
+	</select>
+	<select id="getLoanStatus" resultType="String" parameterType="string">
+		SELECT m.status
+		FROM invest r
+		LEFT JOIN loan m
+		ON r.loan_id = m.id
+		WHERE
+		r.id = #{id}
+	</select>
+	
+	<select id="getCountByNewbieEnjoy" resultMap="investRM" parameterType="com.duanrong.business.invest.model.Invest">
+		SELECT * FROM invest WHERE user_id = #{investUserID} AND `status` != '流标' ORDER BY time ASC LIMIT 1
+	</select>
+	
+	
+	
+	<select id="getInvestNum" parameterType="map" resultMap="investRM1">
+		SELECT time,count(*) as num,sum(money) as money
+		FROM invest 
+		<where>
+	    <if test="type != null and type != '' and type=='today'">
+			AND DATE(time)=CURDATE()
+		</if>
+		<if test="type != null and type != '' and type=='yesterday'">
+			AND DATE_SUB(CURDATE(), INTERVAL 1 DAY) &lt;= date(time)
+		</if>
+		<if test="type != null and type != '' and type=='week'">
+			AND DATE_SUB(CURDATE(), INTERVAL 1 WEEK) &lt;= date(time)
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+			AND time &gt;= #{start}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+			AND time &lt;= #{end}
+		</if>
+	 </where>
+	 GROUP BY date(time)
+	</select>
+	<select id="pageInfo" parameterType="map" resultMap="investRM">
+	SELECT r.*,r.user_id as investUserName,u.realname as realname,u2.user_source as userSource,u.register_time,l.name as loan_name,l.status as loan_status,u.mobile_number as mobile_number,l.give_money_time as start_date,
+		l.deadline AS duration,
+		l.deadline,
+		l.day,
+		l.operation_type
+		FROM invest r left JOIN user u ON r.user_id = u.id
+		left join loan  l on r.loan_id=l.id
+		left join user_other_info u2 on u.id=u2.id
+		<where>
+			<if test="userSource != null and userSource != ''">
+				AND u2.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u2.user_source is null 
+			</if>
+			<if test="loanId != null and loanId != ''">
+				AND r.loan_id= #{loanId}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND r.user_id= #{userId}
+			</if>
+			<if test="loanName != null and loanName != ''">
+				AND l.name LIKE '%${loanName}%'
+			</if>
+			<if test="mobile != null and mobile != ''">
+				AND u.mobile_number= #{mobile}
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status= #{status}
+			</if>
+			<if test="realname != null and realname != ''">
+				AND u.realname LIKE '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+		</where>
+		ORDER BY r.time DESC
+	</select>
+	<select id="getTotalMoney" parameterType="map" resultType="double">
+		SELECT ROUND(SUM(r.money), 2) FROM invest r 
+		left JOIN user u ON r.user_id = u.id
+		left join loan  l on r.loan_id=l.id
+		LEFT JOIN user_other_info u1 on u.id=u1.id 		
+		<where>
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="loanId != null and loanId != ''">
+				AND r.loan_id= #{loanId}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND r.user_id= #{userId}
+			</if>
+			<if test="loanName != null and loanName != ''">
+				AND l.name LIKE '%${loanName}%'
+			</if>
+			<if test="mobile != null and mobile != ''">
+				AND u.mobile_number= #{mobile}
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status= #{status}
+			</if>
+			<if test="realname != null and realname != ''">
+				AND u.realname LIKE '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+		</where>
+	</select>
+	<!-- 获取投资人数 -->
+	<select id="getInvestNums" 
+		resultType="Long">
+		SELECT count(DISTINCT user_id )
+		FROM invest
+		WHERE
+		status!='流标' and status!='等待确认'
+	</select>
+	
+	<!-- 获取用户第一次有效投资时间 -->
+	<select id="getFirstAvilidInvestTimeByUserId" parameterType="string" resultType="java.util.Date">
+		select time from invest where status in('投标成功', '还款中', '完成') and user_id = #{userId} order by time ASC limit 1
+	</select>
+	
+	<!-- 获取项目自动投标金额 -->
+	<select id="getAutoInvestMoney" parameterType="string" resultType="double">
+		select IFNULL(sum(money), 0) from invest where status != '流标' and loan_id=#{loanId}
+	</select>
+	
+	<!-- 根据项目id获取投资信息 -->
+	<select id="getInvestById" parameterType="java.lang.String" resultMap="investRM">
+		select iv.*,lo.newbieEnjoy  from invest iv left join loan lo on iv.loan_id=lo.id 
+		 where iv.id=#{investId } limit 1
+	</select>
+	
+	<!-- 更改加息券使用 -->
+	<update id="updateForPacketUse" parameterType="java.lang.Object">
+		update invest t set t.redpacket_id = #{redpacketId } where t.id = #{id }
+	</update>
+	
+	<select id="getInvestRecordsNetLoanEye" parameterType="java.lang.Object" resultMap="investRM">
+			SELECT
+				r.*, r.user_id AS investUserName,
+				u.realname AS realname,
+				l. NAME AS loan_name,
+				u.mobile_number AS mobile_number,
+				l.give_money_time AS start_date,
+				l.deadline AS duration,
+				l.deadline,
+				l.day,
+				l.operation_type
+			
+			FROM
+				invest r
+			INNER JOIN USER u ON r.user_id = u.id
+			INNER JOIN loan l ON r.loan_id = l.id 
+			INNER join platform_user_relation pr ON pr.userID = r.user_id
+			AND pr.whether_binding = '1' 
+			AND pr.type ='p2peye'
+		<include refid="query_condition_netLoan"/>
+		ORDER BY r.time DESC
+	</select>
+	
+	<select id="getTotalMoneyForNetLoanEye" parameterType="java.lang.Object"  resultType="java.math.BigDecimal">
+		SELECT
+				IFNULL(SUM(r.money),0)
+			FROM
+				invest r
+			INNER JOIN USER u ON r.user_id = u.id
+			INNER JOIN loan l ON r.loan_id = l.id 
+			INNER join platform_user_relation pr ON pr.userID = r.user_id
+			AND pr.whether_binding = '1'
+			AND pr.type ='p2peye'
+		<include refid="query_condition_netLoan"/>
+	</select>
+	
+	<select id="getTotalNumForNetLoanEye" parameterType="java.lang.Object" resultType="java.lang.Integer">
+		SELECT
+				count(distinct r.user_id)
+			FROM
+				invest r
+			INNER JOIN USER u ON r.user_id = u.id
+			INNER JOIN loan l ON r.loan_id = l.id 
+			INNER join platform_user_relation pr ON pr.userID = r.user_id
+			AND pr.whether_binding = '1'
+			AND pr.type ='p2peye'
+		<include refid="query_condition_netLoan"/>
+	</select>
+	
+	<sql id="query_condition_netLoan">
+		<where>
+			<if test="whetherNew != null and whetherNew != ''">
+				AND pr.whether_new= #{whetherNew }
+			</if>
+			<if test="loanId != null and loanId != ''">
+				AND r.loan_id= #{loanId}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND r.user_id= #{userId}
+			</if>
+			<if test="loanName != null and loanName != ''">
+				AND l.name LIKE '%${loanName}%'
+			</if>
+			<if test="mobile != null and mobile != ''">
+				AND u.mobile_number= #{mobile}
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status= #{status}
+			</if>
+			<if test="realname != null and realname != ''">
+				AND u.realname LIKE '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(regStart)">
+				AND u.register_time &gt;= #{regStart }
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(regEnd)">
+				AND u.register_time &lt;= #{regEnd }
+			</if>
+		</where>
+	</sql>
+	
+	<select id="getExportInvestInfo" parameterType="java.lang.Object" resultMap="investRM">
+			SELECT
+				r.*, r.user_id AS investUserName,
+				u.realname AS realname,
+				l. NAME AS loan_name,
+				l.give_money_time AS start_date,
+				l.deadline AS duration,
+				l.deadline,
+				l.day,
+				l.operation_type
+			FROM
+				invest r
+			INNER JOIN USER u ON r.user_id = u.id
+			INNER JOIN loan l ON r.loan_id = l.id 
+			INNER join platform_user_relation pr ON pr.userID = r.user_id
+			AND pr.whether_binding = '1'
+			AND pr.type ='p2peye'
+		<include refid="query_condition_netLoan"/>
+		ORDER BY r.time DESC
+	</select>
+	
+	<!-- 查询投资成功的数量 -->
+	<select id="getInvestSeccessByLoanId" parameterType="string"
+		resultType="int">
+		select count(*) from invest where loan_id = #{loanId} and status = '投标成功'
+	</select>
+	
+	<!-- 查询投资成功的借款管理费 -->
+	<select id="getInvestSeccessFeeByLoanId" parameterType="string"
+		resultType="double">
+		select IFNULL(sum(management_expense), 0) from invest where loan_id = #{loanId} and status != '流标'
+	</select>
+	<!-- 根据userID查询相关投资记录 -->
+	<select id="getUserInvest" parameterType="map" resultMap="investRM">
+		SELECT invest1.*,loan.*, loan.id as loan_id2, loan.type as
+		loan_type,
+		loan.status as loan_status,
+		`user`.id AS user_id2, `user`.realname as realname,
+		`user`.id_card as id_card, `user`.post_address as post_address,
+		`user`.mobile_number as mobile_number
+		FROM invest as invest1
+		join loan
+		join `user` on invest1.loan_id=loan.id and
+		invest1.user_id=`user`.id
+		<where>
+		  invest1.status != '流标' and
+		  invest1.user_id = #{userId}
+		<if test="loanName != null and loanName != ''">
+				AND loan.name LIKE '${loanName}%'
+		</if>
+		<if test="status != null and status != ''">
+				AND invest1.status= #{status}
+		</if>		
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND invest1.time &gt;= #{start}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND invest1.time &lt;= #{end}
+		</if>
+		</where>		 
+		 order by invest1.time desc
+	</select>
+	
+	<select id="getTotalPeople" parameterType="map" resultType="int">
+			SELECT DISTINCT COUNT(r.user_id) FROM invest r 
+			left JOIN user u ON r.user_id = u.id
+			left join loan  l on r.loan_id=l.id
+			LEFT JOIN user_other_info u1 on u.id=u1.id 		
+		<where> 
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="loanId != null and loanId != ''">
+				AND r.loan_id= #{loanId}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND r.user_id= #{userId}
+			</if>
+			<if test="loanName != null and loanName != ''">
+				AND l.name LIKE '%${loanName}%'
+			</if>
+			<if test="mobile != null and mobile != ''">
+				AND u.mobile_number= #{mobile}
+			</if>
+			<if test="status != null and status != ''">
+				AND r.status= #{status}
+			</if>
+			<if test="realname != null and realname != ''">
+				AND u.realname LIKE '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+		</where>
+	</select>
+	
+	
+	<select id="getFirstInvestMoney" parameterType="map" resultType="java.math.BigDecimal">
+		SELECT SUM(i.money) firstmoney FROM invest i
+		INNER JOIN (SELECT user_id,MIN(TIME) AS TIME 
+		FROM invest WHERE STATUS!='流标' GROUP BY user_id) t 
+		ON i.user_id=t.user_id AND i.time=t.time
+		INNER JOIN user u on u.id=i.user_id
+		INNER JOIN user_other_info u1 on u.id=u1.id 
+		INNER JOIN loan l on l.id=i.loan_id
+		<where> 
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="loanId != null and loanId != ''">
+				AND i.loan_id= #{loanId}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND i.user_id= #{userId}
+			</if>
+			<if test="loanName != null and loanName != ''">
+				AND l.name LIKE '%${loanName}%'
+			</if>
+			<if test="mobile != null and mobile != ''">
+				AND u.mobile_number= #{mobile}
+			</if>
+			<if test="status != null and status != ''">
+				AND i.status= #{status}
+			</if>
+			<if test="realname != null and realname != ''">
+				AND u.realname LIKE '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND i.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND i.time &lt;= #{end}
+			</if>
+		</where>
+	</select>
+	
+	<select id="getFirstInvestPeople" parameterType="map" resultType="int">
+ 		SELECT DISTINCT COUNT(t.user_id) firstnum FROM invest i
+		INNER JOIN (SELECT user_id,MIN(TIME) AS TIME 
+		FROM invest WHERE STATUS!='流标' GROUP BY user_id) t 
+		ON i.user_id=t.user_id AND i.time=t.time
+		INNER JOIN user u on u.id=i.user_id
+		INNER JOIN user_other_info u1 on u.id=u1.id 
+		INNER JOIN loan l on l.id=i.loan_id
+ 		<where>
+		<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="loanId != null and loanId != ''">
+				AND i.loan_id= #{loanId}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND i.user_id= #{userId}
+			</if>
+			<if test="loanName != null and loanName != ''">
+				AND l.name LIKE '%${loanName}%'
+			</if>
+			<if test="mobile != null and mobile != ''">
+				AND u.mobile_number= #{mobile}
+			</if>
+			<if test="status != null and status != ''">
+				AND i.status= #{status}
+			</if>
+			<if test="realname != null and realname != ''">
+				AND u.realname LIKE '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND i.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND i.time &lt;= #{end}
+			</if>
+		</where>
+	</select>
+	<select id="getCheckFirstInvest" parameterType="map" resultType="int">
+		SELECT COUNT(*) FROM invest WHERE user_id=#{userId} AND time  &lt; #{time} and status!='流标'
+	</select>
+	
+	<select id="getRepayMentRecords" parameterType="map" resultMap="repayMentRM">
+			SELECT r1.money AS redpacketMoney,r1.rate AS redpacketRate,u1.user_source,u.register_time as registerTime,r.repay_day,r.period,u.id,u.realname,u.mobile_number,l.id AS loanId,l.`name`,l.rate,l.repay_type,
+			l.operation_type ,l.`day`,l.deadline,l.`status`as loanStatus,l.finish_time,i.time,i.money,i.interest  
+			from
+		 	user u LEFT JOIN invest i ON u.id=i.user_id
+		 	LEFT JOIN user_other_info u1 ON u1.id=u.id
+		 	LEFT JOIN loan l ON  i.loan_id=l.id   
+		 	LEFT JOIN repay r ON l.id=r.loan_id
+		 	LEFT JOIN red_packet_detail r1 ON i.redpacket_id=r1.id			
+			where i.status!='流标'
+			<if test="userId != null and userId != ''">
+				AND u.id= #{userId}
+			</if>
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.repay_day &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.repay_day  &lt;= #{end}
+			</if>
+		order BY r.repay_day desc
+	</select>
+	
+	<select id="getRepayMentRecordsList" parameterType="map" resultMap="repayMentRM">
+			SELECT r1.money AS redpacketMoney,r1.rate AS redpacketRate,u1.user_source,u.register_time as registerTime,r.repay_day,r.period,u.id,u.realname,u.mobile_number,l.id AS loanId,l.`name`,l.rate,l.repay_type,
+			l.operation_type ,l.`day`,l.deadline,l.`status`as loanStatus,l.finish_time,i.time,i.money,i.interest  
+			from
+		 	user u LEFT JOIN invest i ON u.id=i.user_id
+		 	LEFT JOIN user_other_info u1 ON u1.id=u.id
+		 	LEFT JOIN loan l ON  i.loan_id=l.id   
+		 	LEFT JOIN repay r ON l.id=r.loan_id
+		 	LEFT JOIN red_packet_detail r1 ON i.redpacket_id=r1.id			
+			where i.status!='流标'
+			<if test="userId != null and userId != ''">
+				AND u.id= #{userId}
+			</if>
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.repay_day &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.repay_day  &lt;= #{end}
+			</if>
+		order BY r.repay_day desc
+	</select>
+	
+	<select id="getInvestCountByUserId" parameterType="String" resultType="int" >
+		select count(id) from invest where status!='流标' and user_id=#{userId}
+	</select>
+	
+	<select id="getRedpacketUableMoeny" parameterType="String" resultType="double" >
+		select IFNULL(sum(money),0) from red_packet_detail where send_status!='unused' and type='money' and user_id=#{userId}
+	</select>
+	
+	
+	<select id="getRedpacketUableRate" parameterType="String" resultType="double" >
+		select IFNULL(sum(rate),0) from red_packet_detail where send_status!='unused' and type='rate' and user_id=#{userId}
+	</select>
+	
+</mapper>

@@ -1,0 +1,20 @@
+package com.duanrong.business.account.dao;
+
+import com.duanrong.business.account.model.PlatformAccount;
+import com.duanrong.business.account.model.PlatformBill;
+
+import base.dao.BaseDao;
+import base.pagehelper.PageInfo;
+
+public interface PlatformAccountDao extends BaseDao<PlatformAccount> {
+
+	public PlatformAccount getPlatformAccount();
+
+	public void update(PlatformAccount platformAccount);
+
+	public void insert(PlatformBill platformBill);
+
+	public PageInfo<PlatformBill> pageLite(int pageNo, int pageSize,
+			PlatformBill platformBill);
+
+}

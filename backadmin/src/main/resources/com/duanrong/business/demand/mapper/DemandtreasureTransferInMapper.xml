@@ -1,0 +1,387 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.demand.mapper.DemandtreasureTransferInMapper">
+	<resultMap type="DemandtreasureTransferIn" id="DemandtreasureTransferInRM">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="userSource" column="user_source" />
+		<result property="registerTime" column="register_time" />
+		<result property="money" column="money" />
+		<result property="sendedTime" column="sended_time" />
+		<result property="freezeTime" column="freeze_time" />
+		<result property="confirmTime" column="confirm_time" />
+		<result property="transferWay" column="transfer_way" />
+		<result property="status" column="status" />
+		<result property="fork" column="fork" />
+		<association property="user" column="user_id"
+			resultMap="com.duanrong.business.user.mapper.UserMapper.userRM"/>
+	</resultMap>
+	<resultMap type="DemandtreasureTransferIn" id="DemandtreasureTransferInRM1">
+		<result property="summoney" column="summoney" />
+		<result property="total" column="total" />
+	</resultMap>
+	
+	<select id="gettotal"
+		resultMap="DemandtreasureTransferInRM1">
+		select  count(*) as total,ROUND(SUM(money),2) as summoney from demand_treasure_transferIn where status='freeze'
+	</select>
+	
+   <select id="find" resultMap="DemandtreasureTransferInRM" parameterType="DemandtreasureTransferIn">
+		SELECT *
+		FROM demand_treasure_transferIn where status=#{status}
+	</select>
+	 <select id="findStatus" resultMap="DemandtreasureTransferInRM" parameterType="DemandtreasureTransferIn">
+		SELECT *
+		FROM demand_treasure_transferIn where status ='freeze'
+	</select>
+	 <select id="findTran" resultMap="DemandtreasureTransferInRM" parameterType="DemandtreasureTransferIn">
+		SELECT *
+		FROM demand_treasure_transferIn where status=#{status} and sended_time &lt;=date_sub(now(),interval 3 minute)
+	</select>
+	
+	
+	<select id="pageInfo"  resultMap="DemandtreasureTransferInRM">
+		select r.*,u.realname,u.mobile_number from demand_treasure_transferIn r left join user u on r.user_id=u.id
+		where r.status='freeze'
+		ORDER BY r.sended_time 
+	</select>
+	
+	<update id="update" parameterType="DemandtreasureTransferIn">
+		UPDATE demand_treasure_transferIn 
+		<set>
+			<if test="userId != null">
+				user_id=#{userId},
+			</if>
+			<if test="money != null">
+				money=#{money},
+			</if>
+			<if test="sendedTime != null">
+				sended_time =#{sendedTime},
+			</if>
+			<if test="freezeTime != null">
+				freeze_time =#{freezeTime},
+			</if>
+			<if test="confirmTime != null">
+				confirm_time =#{confirmTime},
+			</if>
+			<if test="transferWay != null">
+				transfer_way =#{transferWay},
+			</if>
+			<if test="status != null">
+				status =#{status},
+			</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	<select id="get" parameterType="string" resultMap="DemandtreasureTransferInRM">
+		SELECT * FROM demand_treasure_transferIn where id=#{id}
+	</select>
+	<!-- 安状态获取用户转入总额 -->
+	<select id="getInMoneySumByStatus" parameterType="map" resultType="double">
+		SELECT SUM(money) FROM demand_treasure_transferin
+		WHERE (status = 'sended' or status = 'freeze')  AND user_id = #{userId}
+	</select>
+	
+	<!-- 获取用户转入总额 -->
+	<select id="getInSumMoney" parameterType="string" resultType="double">
+		SELECT SUM(money) from demand_treasure_transferin  where `status`='confirm' and user_id=#{userId}
+	</select>
+	
+	<!-- 获取用户转入总额 -->
+	<select id="GetTransferInTop" parameterType="map" resultMap="DemandtreasureTransferInRM">
+		SELECT * from demand_treasure_transferin WHERE user_id= #{userId} and status='confirm' ORDER BY  money desc LIMIT #{limit};
+	</select>
+	
+	<!-- 转入查询 -->
+	<select id="getListForTranferIn" parameterType="DemandtreasureTransferIn" resultMap="DemandtreasureTransferInRM">
+		SELECT
+			t.id,
+			t.user_id,
+			u.realname,
+			u.mobile_number,
+			t.money,
+			t.sended_time,
+			t.freeze_time,
+			t.confirm_time,
+			t.transfer_way,
+			t.STATUS,
+			t.fork,
+			u.register_time,
+			u1.user_source
+		FROM
+			demand_treasure_transferin t
+		LEFT JOIN USER u ON t.user_id = u.id
+		left join user_other_info u1 on u.id=u1.id
+		<include refid="transferInCondition"/>
+		order by t.sended_time DESC
+	</select>
+	
+	<select id="getSumMoneyTransferIn" parameterType="DemandtreasureTransferIn" resultType="java.math.BigDecimal">
+		SELECT
+			SUM(t.money) summoney
+		FROM
+			demand_treasure_transferin t
+		LEFT JOIN USER u ON t.user_id = u.id
+		LEFT JOIN user_other_info u1 on u.id=u1.id 		
+		where t.status='confirm'
+		<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+		<if test="user != null and user.mobileNumber != null "> 
+				and u.mobile_number = #{user.mobileNumber } 
+ 			</if>
+ 			<if test="fork != null and fork != '' "> 
+				and t.fork = #{fork} 
+ 			</if>
+			<if test="status != null and status != '' ">
+				and t.status = #{status }
+			</if>
+			<if test="sendedTimeBeg != null and sendedTimeBeg != ''">
+				and UNIX_TIMESTAMP(t.sended_time) >= UNIX_TIMESTAMP(#{sendedTimeBeg })
+			</if>
+			<if test="sendedTimeEnd != null and sendedTimeEnd != '' ">
+				<![CDATA[
+					and UNIX_TIMESTAMP(t.sended_time) <= UNIX_TIMESTAMP(#{sendedTimeEnd })
+				]]>
+			</if>
+			<if test="user != null and user.realname != null and user.realname != '' ">
+				and u.realname like '%${user.realname }%'
+			</if>
+			<if test="user != null and user.username != null and user.username != '' ">
+				and u.username like '%${user.username }%'
+			</if>
+			<if test="transferWay != null and transferWay != '' ">
+				<![CDATA[
+				and t.transfer_way like '%${transferWay }%'
+				]]>
+			</if>
+			<if test="confirmTimeBeg != null and confirmTimeBeg != '' ">
+				and UNIX_TIMESTAMP(t.confirm_time) >= UNIX_TIMESTAMP(#{confirmTimeBeg })
+			</if>
+			<if test="confirmTimeEnd != null and confirmTimeEnd != '' ">
+				<![CDATA[
+					and UNIX_TIMESTAMP(t.confirm_time) <= UNIX_TIMESTAMP(#{confirmTimeEnd })
+				]]>
+			</if>
+	</select>
+	
+	<select id="getSumPeopleTransferIn" parameterType="DemandtreasureTransferIn" resultType="int">
+		SELECT
+			DISTINCT count(t.user_id)
+		FROM
+			demand_treasure_transferin t
+		LEFT JOIN USER u ON t.user_id = u.id 
+		LEFT JOIN user_other_info u1 on u.id=u1.id 		
+		where t.status='confirm'
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="user != null and user.mobileNumber != null "> 
+				and u.mobile_number = #{user.mobileNumber } 
+ 			</if>
+ 			<if test="fork != null and fork != '' "> 
+				and t.fork = #{fork} 
+ 			</if>
+			<if test="status != null and status != '' ">
+				and t.status = #{status }
+			</if>
+			<if test="sendedTimeBeg != null and sendedTimeBeg != ''">
+				and UNIX_TIMESTAMP(t.sended_time) >= UNIX_TIMESTAMP(#{sendedTimeBeg })
+			</if>
+			<if test="sendedTimeEnd != null and sendedTimeEnd != '' ">
+				<![CDATA[
+					and UNIX_TIMESTAMP(t.sended_time) <= UNIX_TIMESTAMP(#{sendedTimeEnd })
+				]]>
+			</if>
+			<if test="user != null and user.realname != null and user.realname != '' ">
+				and u.realname like '%${user.realname }%'
+			</if>
+			<if test="user != null and user.username != null and user.username != '' ">
+				and u.username like '%${user.username }%'
+			</if>
+			<if test="transferWay != null and transferWay != '' ">
+				<![CDATA[
+				and t.transfer_way like '%${transferWay }%'
+				]]>
+			</if>
+			<if test="confirmTimeBeg != null and confirmTimeBeg != '' ">
+				and UNIX_TIMESTAMP(t.confirm_time) >= UNIX_TIMESTAMP(#{confirmTimeBeg })
+			</if>
+			<if test="confirmTimeEnd != null and confirmTimeEnd != '' ">
+				<![CDATA[
+					and UNIX_TIMESTAMP(t.confirm_time) <= UNIX_TIMESTAMP(#{confirmTimeEnd })
+				]]>
+			</if>
+	</select>
+	
+	<!-- 失败 -->
+	
+	<select id="getSumMoneyTransferInFail" parameterType="DemandtreasureTransferIn" resultType="java.math.BigDecimal">
+		SELECT
+			SUM(t.money) summoney
+		FROM
+			demand_treasure_transferin t
+		LEFT JOIN USER u ON t.user_id = u.id
+		LEFT JOIN user_other_info u1 on u.id=u1.id 		
+		where t.status='fail'
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="user != null and user.mobileNumber != null "> 
+				and u.mobile_number = #{user.mobileNumber } 
+ 			</if>
+ 			<if test="fork != null and fork != '' "> 
+				and t.fork = #{fork} 
+ 			</if>
+			<if test="status != null and status != '' ">
+				and t.status = #{status }
+			</if>
+			<if test="sendedTimeBeg != null and sendedTimeBeg != ''">
+				and UNIX_TIMESTAMP(t.sended_time) >= UNIX_TIMESTAMP(#{sendedTimeBeg })
+			</if>
+			<if test="sendedTimeEnd != null and sendedTimeEnd != '' ">
+				<![CDATA[
+					and UNIX_TIMESTAMP(t.sended_time) <= UNIX_TIMESTAMP(#{sendedTimeEnd })
+				]]>
+			</if>
+			<if test="user != null and user.realname != null and user.realname != '' ">
+				and u.realname like '%${user.realname }%'
+			</if>
+			<if test="user != null and user.username != null and user.username != '' ">
+				and u.username like '%${user.username }%'
+			</if>
+			<if test="transferWay != null and transferWay != '' ">
+				<![CDATA[
+				and t.transfer_way like '%${transferWay }%'
+				]]>
+			</if>
+			<if test="confirmTimeBeg != null and confirmTimeBeg != '' ">
+				and UNIX_TIMESTAMP(t.confirm_time) >= UNIX_TIMESTAMP(#{confirmTimeBeg })
+			</if>
+			<if test="confirmTimeEnd != null and confirmTimeEnd != '' ">
+				<![CDATA[
+					and UNIX_TIMESTAMP(t.confirm_time) <= UNIX_TIMESTAMP(#{confirmTimeEnd })
+				]]>
+			</if>
+	</select>
+	
+	<select id="getSumPeopleTransferInFail" parameterType="DemandtreasureTransferIn" resultType="int">
+		SELECT
+			DISTINCT count(t.user_id)
+		FROM
+			demand_treasure_transferin t
+		LEFT JOIN USER u ON t.user_id = u.id 
+		LEFT JOIN user_other_info u1 on u.id=u1.id 		
+		where t.status='fail'
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="user != null and user.mobileNumber != null "> 
+				and u.mobile_number = #{user.mobileNumber } 
+ 			</if>
+ 			<if test="fork != null and fork != '' "> 
+				and t.fork = #{fork} 
+ 			</if>
+			<if test="status != null and status != '' ">
+				and t.status = #{status }
+			</if>
+			<if test="sendedTimeBeg != null and sendedTimeBeg != ''">
+				and UNIX_TIMESTAMP(t.sended_time) >= UNIX_TIMESTAMP(#{sendedTimeBeg })
+			</if>
+			<if test="sendedTimeEnd != null and sendedTimeEnd != '' ">
+				<![CDATA[
+					and UNIX_TIMESTAMP(t.sended_time) <= UNIX_TIMESTAMP(#{sendedTimeEnd })
+				]]>
+			</if>
+			<if test="user != null and user.realname != null and user.realname != '' ">
+				and u.realname like '%${user.realname }%'
+			</if>
+			<if test="user != null and user.username != null and user.username != '' ">
+				and u.username like '%${user.username }%'
+			</if>
+			<if test="transferWay != null and transferWay != '' ">
+				<![CDATA[
+				and t.transfer_way like '%${transferWay }%'
+				]]>
+			</if>
+			<if test="confirmTimeBeg != null and confirmTimeBeg != '' ">
+				and UNIX_TIMESTAMP(t.confirm_time) >= UNIX_TIMESTAMP(#{confirmTimeBeg })
+			</if>
+			<if test="confirmTimeEnd != null and confirmTimeEnd != '' ">
+				<![CDATA[
+					and UNIX_TIMESTAMP(t.confirm_time) <= UNIX_TIMESTAMP(#{confirmTimeEnd })
+				]]>
+			</if>
+	</select>
+	
+	<sql id="transferInCondition">
+		<where>
+			<if test="userSource != null and userSource != ''">
+				AND u1.user_source like '%${userSource}%'
+			</if>
+			<if test="userSourceIsNull != null and userSourceIsNull != ''">
+				AND u1.user_source is null 
+			</if>
+			<if test="user != null and user.mobileNumber != null "> 
+				and u.mobile_number = #{user.mobileNumber } 
+ 			</if>
+ 			<if test="fork != null and fork != '' "> 
+				and t.fork = #{fork} 
+ 			</if>
+			<if test="status != null and status != '' ">
+				and t.status = #{status }
+			</if>
+			<if test="sendedTimeBeg != null and sendedTimeBeg != ''">
+				and UNIX_TIMESTAMP(t.sended_time) >= UNIX_TIMESTAMP(#{sendedTimeBeg })
+			</if>
+			<if test="sendedTimeEnd != null and sendedTimeEnd != '' ">
+				<![CDATA[
+					and UNIX_TIMESTAMP(t.sended_time) <= UNIX_TIMESTAMP(#{sendedTimeEnd })
+				]]>
+			</if>
+			<if test="user != null and user.realname != null and user.realname != '' ">
+				and u.realname like '%${user.realname }%'
+			</if>
+			<if test="user != null and user.username != null and user.username != '' ">
+				and u.username like '%${user.username }%'
+			</if>
+			<if test="transferWay != null and transferWay != '' ">
+				<![CDATA[
+				and t.transfer_way like '%${transferWay }%'
+				]]>
+			</if>
+			<if test="confirmTimeBeg != null and confirmTimeBeg != '' ">
+				and UNIX_TIMESTAMP(t.confirm_time) >= UNIX_TIMESTAMP(#{confirmTimeBeg })
+			</if>
+			<if test="confirmTimeEnd != null and confirmTimeEnd != '' ">
+				<![CDATA[
+					and UNIX_TIMESTAMP(t.confirm_time) <= UNIX_TIMESTAMP(#{confirmTimeEnd })
+				]]>
+			</if>
+		</where>
+	</sql>
+	<!-- 查询某个阶段活期宝派息金额 -->
+	<select id="getDemandInterest" parameterType="String" resultType="double">
+			SELECT IFNULL(ROUND(SUM(money),2) ,0) FROM demand_treasure_bill WHERE type='outinterest' 
+			<if test="start != null and start != '' "> 
+				AND create_time &gt;= #{start}
+			</if>
+			<if test="end != null and end != '' ">
+			    AND create_time &lt;#{end}
+			</if>
+	</select>
+</mapper>

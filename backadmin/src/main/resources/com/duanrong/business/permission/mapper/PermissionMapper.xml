@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.permission.mapper.PermissionMapper">
+	<!-- 开启二级缓存 -->
+	<!-- <cache type="org.mybatis.caches.ehcache.EhcacheCache"/> -->
+	
+	<resultMap type="com.duanrong.business.permission.model.Permission" id="permissionRM">
+		<id property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="description" column="description" />
+		<result property="type" column="type"/>
+	</resultMap>
+	<resultMap type="black" id="blackRM">
+		<id property="id" column="id" />
+		<result property="content" column="content" />
+	</resultMap>
+	<!-- 查询用户权限  -->
+	<select id="getPermissionByUserId" resultType="java.util.List"
+		resultMap="permissionRM" parameterType="string">
+		SELECT DISTINCT permission.* FROM permission
+		JOIN role_permission JOIN role
+		JOIN user_role ON permission.id=role_permission.permission_id AND
+		role_permission.role_id=role.id AND role.id=user_role.role_id 
+		WHERE `user_role`.user_id=#{userId} AND permission.systype_id='68d19920e5c711e58e7402004c4f4f50'  ORDER BY permission.`type`, permission.`name`
+	</select>
+	
+	<!-- 根据Id获取用户具备的操作 -->
+	<select id="getActiveByUserIdAndId" resultType="string"  parameterType="string">
+		SELECT DISTINCT permission.id FROM permission JOIN role_permission JOIN role
+		JOIN user_role ON permission.id=role_permission.permission_id AND
+		role_permission.role_id=role.id AND role.id=user_role.role_id
+		WHERE `user_role`.user_id=#{userId}  AND permission.systype_id='68d19920e5c711e58e7402004c4f4f50' 
+	</select>
+	
+	<!-- 查询菜单权限  -->
+	<select id="getPermissionByMenuId" resultType="java.util.List"
+		resultMap="permissionRM" parameterType="int">
+		SELECT DISTINCT permission.* FROM permission
+		JOIN newmenu_permission 
+		ON permission.id=newmenu_permission.permission_id  
+		WHERE newmenu_permission.newmenu_id=#{newmenuId} AND permission.systype_id='68d19920e5c711e58e7402004c4f4f50'
+	</select>
+	
+	
+	<!-- 权限分页查询 -->
+	<select id="pageLite" parameterType="permission" resultMap="permissionRM">
+		SELECT * FROM permission  where permission.systype_id='68d19920e5c711e58e7402004c4f4f50'
+			
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(id)">
+				AND id LIKE '%${id}%'
+			</if>
+
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(name)">
+				AND name LIKE '%${name}%'
+			</if>
+			
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(type)">
+				AND type = #{type}
+			</if>		
+		
+		ORDER BY `type`, `name`	
+	</select>
+
+	<!-- 添加权限 -->
+	<insert id="insert" parameterType="permission">
+		INSERT INTO permission(id, name, description, type, systype_id) VALUES(#{id}, #{name}, #{description}, #{type}, '68d19920e5c711e58e7402004c4f4f50')
+	</insert>
+	
+	<!-- 根据Id修改权限 -->
+	<update id="update" parameterType="permission">
+		UPDATE permission 
+		<set>
+			<if test="name != null">
+				name=#{name},
+			</if>
+			<if test="description != null">
+				description=#{description},
+			</if>
+			<if test="type != null">
+				type =#{type},
+			</if>
+		</set>
+		WHERE id=#{id} and permission.systype_id='68d19920e5c711e58e7402004c4f4f50';
+	</update>
+	
+	<!-- 根据ID查询权限 -->
+	<select id="get" resultMap="permissionRM" parameterType="string">
+		SELECT * FROM permission WHERE id = #{id}
+	</select>
+	
+	<!-- 查询角色权限  -->
+	<select id="getPermissionByRoleId" resultType="java.util.List"
+		resultMap="permissionRM" parameterType="string">
+		SELECT permission.* FROM permission
+		JOIN role_permission 
+		ON permission.id=role_permission.permission_id 
+		WHERE role_permission.role_id=#{roleId} and permission.systype_id='68d19920e5c711e58e7402004c4f4f50' 
+		ORDER BY permission.type, permission.`name`
+	</select>
+	
+	<!-- 删除角色权限  -->
+	<delete id="deletePermissionByRoleId" parameterType="string">
+		DELETE FROM role_permission WHERE role_id=#{roleId}
+	</delete>
+	
+	<!-- 角色授权  -->
+	<insert id="grantRolePermission" parameterType="map">
+		INSERT INTO role_permission(role_id, permission_id) VALUES(#{roleId}, #{permissionId})	
+	</insert>
+	
+	<!-- 删除菜单权限 -->
+	<delete id="deletePermissionByMenuId" parameterType="int">
+		DELETE FROM newmenu_permission WHERE newmenu_id=#{newmenuId}
+	</delete>
+	
+	<!-- 菜单授权 -->
+	<insert id="grantMenuPermission" parameterType="map">
+		INSERT INTO newmenu_permission(newmenu_id, permission_id) VALUES(#{newMenuId}, #{permissionId})
+	</insert>
+	
+	<!-- 删除用户角色信息 -->
+	<delete id="deleteRoleByUserId" parameterType="string">
+		DELETE FROM user_role WHERE user_id=#{userId}
+	</delete>
+	<!-- 删除用户角色信息 -->
+	<delete id="deleteRoleByRoldId" parameterType="map">
+		DELETE FROM user_role WHERE role_id=#{roleId} and user_id=#{userId} 
+	</delete>
+	<!-- 给用户授角色 -->
+	<insert id="grantUserRole" parameterType="map">
+		INSERT INTO user_role(user_id, role_id) VALUES(#{userId}, #{roleId})
+	</insert>
+	
+	<!-- 查询ip白名单  -->
+	<select id="getAllIp" resultType='string'>
+		SELECT value FROM config WHERE id='ip_check'
+	</select>
+	
+	<!-- 追加ip -->
+	<update id="updateIps" parameterType='string' >
+		update config set value=#{ips} WHERE id='ip_check'
+	</update>
+	
+	
+	<select id="getSuper" resultType='string'>
+		SELECT value FROM config WHERE name=#{name}
+	</select>
+	<select id="blackPageInfo" parameterType='map' resultMap="blackRM">
+		SELECT *
+		FROM blacklist
+		<where>
+			<if test="type != null and type != '' ">
+				AND type=#{type}
+			</if>
+			<if test="phone != null and phone != '' ">
+				AND content=#{phone}
+			</if>
+		</where>
+	</select>
+	
+	<select id="findBlackByType" parameterType='string' resultMap="blackRM">
+		SELECT * FROM blacklist where type=#{type}
+	</select>
+	<insert id="addblack" parameterType="list">
+	insert into blacklist (content,type)  
+    values  
+    <foreach collection="list" item="item" index="index" separator="," >  
+        (#{item.content},#{item.type})  
+    </foreach>  
+	</insert>
+	
+	<delete id="delete" parameterType="int">
+    	delete from blacklist WHERE id=#{id}   	
+    </delete>
+    <delete id="deleteIpMob" parameterType='string'>
+        delete from blacklist where content=#{content}
+    </delete>
+</mapper>

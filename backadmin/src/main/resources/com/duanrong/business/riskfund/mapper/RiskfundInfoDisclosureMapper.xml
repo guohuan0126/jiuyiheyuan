@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.riskfund.mapper.RiskfundInfoDisclosureMapper">
+	<resultMap type="com.duanrong.business.riskfund.model.RiskfundInfoDisclosure" id="InfoDisclosure">
+		<id property="id" column="id" />
+		<result property="currentTotalOverdue" column="current_total_overdue" />
+		<result property="historyTotalOverdue" column="history_total_overdue" />
+		<result property="badDebtOverdue" column="bad_debt_overdue" />
+		<result property="createTime" column="create_time" />
+		<result property="operationUserid" column="operation_userid" />
+	</resultMap>
+	
+    <select id="findList"  resultMap="InfoDisclosure">
+		SELECT * from riskfund_info_disclosure
+		<where>
+		<if test="start != null and start != ''">
+			and create_time &gt;=#{start} 
+		</if>
+		<if test="end != null and end != ''">
+			and create_time &lt;=#{end} 
+		</if>
+		</where>
+		ORDER BY create_time DESC
+	</select>
+	<!-- 添加 -->
+	<insert id="insert" parameterType="com.duanrong.business.riskfund.model.RiskfundInfoDisclosure">
+		INSERT INTO riskfund_info_disclosure
+		(id,current_total_overdue,history_total_overdue,bad_debt_overdue,create_time,operation_userid)
+		VALUES(#{id},#{currentTotalOverdue},#{historyTotalOverdue},#{badDebtOverdue},#{createTime},#{operationUserid})
+	</insert>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.String" >
+    delete from riskfund_info_disclosure
+    where id = #{id,jdbcType=VARCHAR}
+  </delete>
+</mapper>

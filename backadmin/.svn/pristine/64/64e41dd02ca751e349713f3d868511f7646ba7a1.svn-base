@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.app.mapper.AppBanner">
+	
+	<resultMap type="AppBanner" id="AppBannerRM">
+		<id property="picID" column="pic_id" />
+		<result property="picName" column="pic_name" />
+		<result property="picPosition" column="pic_position" />
+		<result property="picUrl" column="pic_url" />
+		<result property="seqNum" column="seq_num" />
+		<result property="picStatus" column="pic_status" />
+		<result property="description" column="description" />
+		<result property="time" column="time" />
+		<result property="shareImgUrl" column="share_img_url" />
+	</resultMap>
+    
+    <!-- 插入 -->
+	<insert id="insert" parameterType="AppBanner">
+		INSERT INTO app_banner
+		(pic_name, pic_position,pic_url,seq_num,pic_status,description,time,share_img_url)
+		VALUES
+		(#{picName}, #{picPosition},#{picUrl},#{seqNum},#{picStatus},#{description},#{time},#{shareImgUrl})
+	</insert>
+	
+	<!-- 更新 -->
+	<update id="update" parameterType="AppBanner">
+		UPDATE app_banner
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(picName)">pic_name = #{picName},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(picPosition)">pic_position = #{picPosition},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(picUrl)">pic_url = #{picUrl},</if>
+			<if test="@util.MyStringUtils@isNumericSpecifyLength(seqNum,1)">seq_num = #{seqNum},</if>
+			<if test="@util.MyStringUtils@isNumericSpecifyLength(picStatus,1)">pic_status = #{picStatus},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(description)">description = #{description},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(time)">time = #{time},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(shareImgUrl)">share_img_url = #{shareImgUrl},</if>
+		</set>
+		WHERE pic_id = #{picID}
+	</update>
+	
+	<!-- 根据ID查询 -->
+	<select id="get" parameterType="string" resultMap="AppBannerRM">
+		SELECT *
+		FROM app_banner
+		WHERE pic_id = #{picID}
+	</select>
+	
+	<delete id="delete" parameterType="string" >
+	   DELETE
+	   FROM app_banner
+	   WHERE pic_id = #{picID}
+	</delete>
+	
+	<!-- 分页查询 -->
+	<select id="pageLite" parameterType="pageData" resultMap="AppBannerRM" >
+	  	SELECT * FROM
+		app_banner
+		<where>
+		<if test="picStatus != null and picStatus != '' ">
+			and app_banner.pic_status =#{picStatus}
+		</if>
+		<if test="startTime != null and startTime != '' ">
+			and app_banner.time &gt;=#{startTime}
+		</if>
+		<if test="endTime != null and endTime != '' ">
+			and app_banner.time &lt;=#{endTime}
+		</if>
+		</where>
+		ORDER BY pic_status DESC,seq_num ASC,time DESC
+	</select>
+	
+</mapper>

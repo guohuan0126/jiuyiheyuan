@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.user.mapper.UserOtherInfoMapper">
+	<resultMap type="userOtherInfo" id="userOtherInfoRM">
+		<id property="id" column="userOtherInfo_id" />
+		<result property="postAddress" column="post_address" />
+		<result property="postCode" column="post_code" />
+		<result property="userIP" column="user_ip" />
+		<result property="userSource" column="user_source" />
+		<result property="visitSource" column="user_visit_source" />
+		<result property="hasP2p" column="user_has_p2p" />
+		<result property="notice" column="vist_visit_newloan_notice" />
+	</resultMap>
+
+	<select id="get" parameterType="string" resultMap="userOtherInfoRM">
+		SELECT *, id
+		AS userOtherInfo_id
+		FROM user_other_info
+		WHERE id = #{id}
+	</select>
+
+	<insert id="insert" parameterType="userOtherInfo">
+		INSERT INTO user_other_info
+		(id, post_address, post_code, user_ip, user_source)
+		VALUES
+		(#{id},
+		#{postAddress}, #{postCode}, #{userIP}, #{userSource})
+	</insert>
+
+	<update id="update" parameterType="userOtherInfo">
+		UPDATE user_other_info
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(postAddress)">post_address = #{postAddress},</if>
+			<if test="@util.MyStringUtils@isNumericSpecifyLength(postCode, 6)">post_code = #{postCode},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(userIP)">user_ip = #{userIP},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(userSource)">user_source = #{userSource},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(visitSource)">user_visit_source = #{visitSource},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(hasP2p)">user_has_p2p = #{hasP2p},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(notice)">vist_visit_newloan_notice = #{notice},</if>
+		</set>
+		WHERE id = #{id}
+	</update>
+
+</mapper>

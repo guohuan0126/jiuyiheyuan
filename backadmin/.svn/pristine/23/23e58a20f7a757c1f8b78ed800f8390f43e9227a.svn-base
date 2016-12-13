@@ -1,0 +1,379 @@
+package com.duanrong.newadmin.controller;
+
+import java.text.SimpleDateFormat;
+import java.util.List;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import base.exception.InsufficientBalance;
+import base.pagehelper.PageInfo;
+
+import com.duanrong.business.account.BusinessEnum;
+import com.duanrong.business.account.PaymentEnum;
+import com.duanrong.business.account.model.PaymentAccount;
+import com.duanrong.business.account.model.PaymentBill;
+import com.duanrong.business.account.model.PaymentChannel;
+import com.duanrong.business.account.model.PlatformBill;
+import com.duanrong.business.account.model.UserAccount;
+import com.duanrong.business.account.model.UserBill;
+import com.duanrong.business.account.service.PaymentAccountService;
+import com.duanrong.business.account.model.PlatformAccount;
+import com.duanrong.business.account.service.PlatformAccountService;
+import com.duanrong.business.account.service.UserAccountService;
+import com.duanrong.util.ArithUtil;
+
+import util.Log;
+import util.MyStringUtils;
+
+@Controller
+public class AccountManagerController extends BaseController {
+
+	@Resource
+	Log log;
+	@Resource
+	UserAccountService userAccountService;
+	@Resource
+	PlatformAccountService platformAccountService;
+	@Resource
+	PaymentAccountService paymentAccountService;
+
+	@RequestMapping(value = "/account/userAccountList")
+	public String userAccountList(HttpServletRequest request,
+			HttpServletResponse response, Model model) {
+		try {
+			UserBill userBill = new UserBill();
+			String str = "";
+			String id = request.getParameter("userId");
+			String userId = getUserId(id);
+			if (StringUtils.isNotBlank(userId)) {
+				userBill.setUserId(userId);
+				str += "&userId=" + userId;
+			}
+			String pageNo = request.getParameter("pageNo");
+			if (MyStringUtils.isAnyBlank(pageNo)) {
+				pageNo = "1";
+			}
+			PageInfo<UserAccount> pageInfo = userAccountService
+					.getUserAccounts(Integer.parseInt(pageNo), 30, userId);
+			model.addAttribute("pageInfo", pageInfo);
+			model.addAttribute("userId", userId);
+			model.addAttribute("str", str);
+			return "account/userAccountList";
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.errLog(
+					"com.duanrong.newadmin.controller.AccountManagerController.userAccountList()",
+					e);
+		}
+		return null;
+	}
+
+	@RequestMapping(value = "/account/platformAccountList")
+	public String platformAccountList(HttpServletRequest request,
+			HttpServletResponse response, Model model) {
+		try {
+			PlatformAccount platformAccount = platformAccountService
+					.getPlatformAccount();
+			model.addAttribute("platformAccount", platformAccount);
+			PlatformBill platformBill = new PlatformBill();
+			String pageNo = request.getParameter("pageNo");
+			if (MyStringUtils.isAnyBlank(pageNo)) {
+				pageNo = "1";
+			}
+			String str = "";
+			String id = request.getParameter("id");
+			String start = request.getParameter("start");
+			String end = request.getParameter("end");
+			String requestNo = request.getParameter("requestNo");
+			if (StringUtils.isNotBlank(id)) {
+				platformBill.setId(Integer.parseInt(id));
+				str += "&id=" + id;
+			}
+			if (StringUtils.isNotBlank(requestNo)) {
+				platformBill.setRequestNo(requestNo);
+				str += "&requestNo=" + requestNo;
+			}
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+			if (StringUtils.isNotBlank(start)) {
+				platformBill.setBeginTime(sdf.parse(start));
+				str += "&start=" + start;
+			}
+			if (StringUtils.isNotBlank(end)) {
+				platformBill.setEndTime(sdf.parse(end));
+				str += "&end=" + end;
+			}
+			PageInfo<PlatformBill> pageInfo = platformAccountService.pageLite(
+					Integer.parseInt(pageNo), 30, platformBill);
+			model.addAttribute("pageInfo", pageInfo);
+			model.addAttribute("start", start);
+			model.addAttribute("end", end);
+			model.addAttribute("id", id);
+			model.addAttribute("requestNo", requestNo);
+			model.addAttribute("str", str);
+			return "account/platformAccount";
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.errLog(
+					"com.duanrong.newadmin.controller.AccountManagerController.platformAccountList()",
+					e);
+		}
+		return null;
+	}
+
+	@RequestMapping(value = "/platformAccount/platformAccountIn")
+	public String addPlatformAccount(HttpServletRequest request,
+			HttpServletResponse response) {
+		return "account/platformAccountIn";
+	}
+
+	@RequestMapping(value = "/platformAccount/platformAccountOut")
+	public String addPlatformAccountOut(HttpServletRequest request,
+			HttpServletResponse response) {
+		return "account/platformAccountOut";
+	}
+
+	@RequestMapping(value = "/account/platformAccountIn")
+	public void platformAccountIn(HttpServletRequest request,
+			HttpServletResponse response) {
+		try {
+			Double money = Double.valueOf(request.getParameter("money"));
+			BusinessEnum businessType = BusinessEnum.recharge;
+			String typeInfo = request.getParameter("typeInfo");
+			String requestNo = request.getParameter("requestNo");
+			String rechargeType = request.getParameter("rechargeType");
+			double rate = 0.0;
+			PaymentChannel channel = paymentAccountService
+					.getChannelByCode(PaymentEnum.Yeepay.toString());
+			if (MyStringUtils.equalsIgnoreCaseAnyString(rechargeType, "quick",
+					null)) {
+				rate = channel.getRateQuick();
+			} else {
+				rate = channel.getRateGateway();
+			}
+			double fee = ArithUtil.round(money * rate, 2);
+			PlatformAccount platformAccount = platformAccountService
+					.getPlatformAccount();
+			if (ArithUtil.add(money, platformAccount.getAvailableBalance()) < fee) {
+				throw new InsufficientBalance("充值金额与账户余额之和小于充值手续费！");
+			}
+			platformAccountService.transferOut(fee, businessType, "平台账户充值手续费",
+					requestNo);
+			platformAccountService.transferIn(money, businessType, typeInfo,
+					requestNo);
+			response.getWriter().write("success");
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.errLog(
+					"com.duanrong.newadmin.controller.AccountManagerController.platformAccountIn()",
+					e);
+		}
+	}
+
+	@RequestMapping(value = "/account/platformAccountOut")
+	public void platformAccountOut(HttpServletRequest request,
+			HttpServletResponse response) {
+		try {
+			Double money = Double.valueOf(request.getParameter("money"));
+			BusinessEnum businessType = BusinessEnum.withdraw_cash;
+			String typeInfo = request.getParameter("typeInfo");
+			String requestNo = request.getParameter("requestNo");
+			String rechargeType = request.getParameter("rechargeType");
+			double rate = 0.0;
+			PaymentChannel channel = paymentAccountService
+					.getChannelByCode(PaymentEnum.Yeepay.toString());
+			if (MyStringUtils.equalsIgnoreCaseAnyString(rechargeType, "quick",
+					null)) {
+				rate = channel.getRateQuick();
+			} else {
+				rate = channel.getRateGateway();
+			}
+			double fee = ArithUtil.round(money * rate, 2);
+			PlatformAccount platformAccount = platformAccountService
+					.getPlatformAccount();
+			if (ArithUtil.add(money, fee) > platformAccount
+					.getAvailableBalance()) {
+				throw new InsufficientBalance("取现金额与手续费之和大于账户可用余额！");
+			}
+			platformAccountService.transferOut(fee, businessType, "平台账户取现手续费",
+					requestNo);
+			platformAccountService.transferOut(money, businessType, typeInfo,
+					requestNo);
+			response.getWriter().write("success");
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.errLog(
+					"com.duanrong.newadmin.controller.AccountManagerController.platformAccountOut()",
+					e);
+		}
+	}
+
+	@RequestMapping(value = "/account/paymentAccountList")
+	public String paymentAccountList(HttpServletRequest request,
+			HttpServletResponse response, Model model) {
+		try {
+			List<PaymentAccount> list = paymentAccountService
+					.getPaymentAccount();
+			model.addAttribute("list", list);
+			PaymentBill paymentBill = new PaymentBill();
+			String pageNo = request.getParameter("pageNo");
+			if (MyStringUtils.isAnyBlank(pageNo)) {
+				pageNo = "1";
+			}
+			String str = "";
+			String channel = request.getParameter("channel");
+			String start = request.getParameter("start");
+			String end = request.getParameter("end");
+			String requestNo = request.getParameter("requestNo");
+			if (StringUtils.isNotBlank(channel)) {
+				paymentBill.setChannel(channel);
+				str += "&channel=" + channel;
+			}
+			if (StringUtils.isNotBlank(requestNo)) {
+				paymentBill.setRequestNo(requestNo);
+				str += "&requestNo=" + requestNo;
+			}
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+			if (StringUtils.isNotBlank(start)) {
+				paymentBill.setBeginTime(sdf.parse(start));
+				str += "&start=" + start;
+			}
+			if (StringUtils.isNotBlank(end)) {
+				paymentBill.setEndTime(sdf.parse(end));
+				str += "&end=" + end;
+			}
+			PageInfo<PaymentBill> pageInfo = paymentAccountService.pageLite(
+					Integer.parseInt(pageNo), 30, paymentBill);
+			model.addAttribute("pageInfo", pageInfo);
+			model.addAttribute("start", start);
+			model.addAttribute("end", end);
+			model.addAttribute("channel", channel);
+			model.addAttribute("requestNo", requestNo);
+			model.addAttribute("str", str);
+			return "account/paymentAccount";
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.errLog(
+					"com.duanrong.newadmin.controller.AccountManagerController.paymentAccountList()",
+					e);
+		}
+		return null;
+	}
+
+	@RequestMapping(value = "/account/paymentAccountIn")
+	public void paymentAccountIn(HttpServletRequest request,
+			HttpServletResponse response) {
+		try {
+			PaymentEnum paymentId = PaymentEnum.valueOf(request
+					.getParameter("channel"));
+			Double money = Double.valueOf(request.getParameter("money"));
+			BusinessEnum businessType = BusinessEnum.recharge_line;
+			String typeInfo = request.getParameter("typeInfo");
+			String requestNo = request.getParameter("requestNo");
+			String rechargeType = request.getParameter("rechargeType");
+			double rate = 0.0;
+			PaymentChannel channel = paymentAccountService
+					.getChannelByCode(paymentId.toString());
+			if (MyStringUtils.equalsIgnoreCaseAnyString(rechargeType, "quick",
+					null)) {
+				rate = channel.getRateQuick();
+			} else {
+				rate = channel.getRateGateway();
+			}
+			double fee = ArithUtil.round(money * rate, 2);
+			PaymentAccount paymentAccount = paymentAccountService
+					.getPaymentAccountByPaymentId(paymentId.toString());
+			PlatformAccount platformAccount = platformAccountService
+					.getPlatformAccount();
+			if (ArithUtil.add(money, paymentAccount.getAvailableBalance()) < fee) {
+				throw new InsufficientBalance("充值金额与可用金额之和小于手续费！");
+			}
+			if (fee > platformAccount.getAvailableBalance()) {
+				throw new InsufficientBalance("充值手续费大于可用余额！");
+			}
+			System.out.println(paymentAccount.toString());
+			System.out.println(platformAccount.toString());
+			paymentAccountService.transferOut(paymentId, fee, businessType,
+					"充值手续费", requestNo);
+			platformAccountService.transferOut(fee, businessType, "支付账户充值手续费",
+					requestNo);
+			paymentAccountService.transferIn(paymentId, money, businessType,
+					typeInfo, requestNo);
+			response.getWriter().write("success");
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.errLog(
+					"com.duanrong.newadmin.controller.AccountManagerController.paymentAccountIn()",
+					e);
+		}
+	}
+
+	@RequestMapping(value = "/account/paymentAccountOut")
+	public void paymentAccountOut(HttpServletRequest request,
+			HttpServletResponse response) {
+		try {
+			PaymentEnum paymentId = PaymentEnum.valueOf(request
+					.getParameter("channel"));
+			Double money = Double.valueOf(request.getParameter("money"));
+			BusinessEnum businessType = BusinessEnum.withdraw_cash;
+			String typeInfo = request.getParameter("typeInfo");
+			String requestNo = request.getParameter("requestNo");
+			String rechargeType = request.getParameter("rechargeType");
+			double rate = 0.0;
+			PaymentChannel channel = paymentAccountService
+					.getChannelByCode(paymentId.toString());
+			if (MyStringUtils.equalsIgnoreCaseAnyString(rechargeType, "quick",
+					null)) {
+				rate = channel.getRateQuick();
+			} else {
+				rate = channel.getRateGateway();
+			}
+			double fee = ArithUtil.round(money * rate, 2);
+			PaymentAccount account = paymentAccountService
+					.getPaymentAccountByPaymentId(paymentId.toString());
+			if (ArithUtil.add(money, fee) > account.getAvailableBalance()) {
+				throw new InsufficientBalance("取现金额与手续费大于账户可用余额！");
+			}
+			PlatformAccount platformAccount = platformAccountService
+					.getPlatformAccount();
+			if (fee > platformAccount.getAvailableBalance()) {
+				throw new InsufficientBalance("取现手续费大于账户可用余额！");
+			}
+			paymentAccountService.transferOut(paymentId, fee, businessType,
+					"充值手续费", requestNo);
+			platformAccountService.transferOut(fee, businessType, "支付账户取现手续费",
+					requestNo);
+			paymentAccountService.transferOut(paymentId, money, businessType,
+					typeInfo, requestNo);
+			response.getWriter().write("success");
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.errLog(
+					"com.duanrong.newadmin.controller.AccountManagerController.paymentAccountOut()",
+					e);
+		}
+	}
+
+	@RequestMapping(value = "/paymentAccount/paymentAccountIn")
+	public String addPaymentAccount(HttpServletRequest request,
+			HttpServletResponse response, Model model) {
+		String channel = request.getParameter("channel");
+		model.addAttribute("channel", channel);
+		return "account/addPaymentAccountIn";
+	}
+
+	@RequestMapping(value = "/paymentAccount/paymentAccountOut")
+	public String addPaymentAccountOut(HttpServletRequest request,
+			HttpServletResponse response, Model model) {
+		String channel = request.getParameter("channel");
+		model.addAttribute("channel", channel);
+		return "account/addPaymentAccountOut";
+	}
+
+}

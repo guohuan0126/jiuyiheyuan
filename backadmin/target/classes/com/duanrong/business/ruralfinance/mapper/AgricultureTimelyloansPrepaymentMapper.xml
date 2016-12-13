@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.ruralfinance.mapper.AgricultureTimelyloansPrepaymentMapper">
+	 <!-- 基本信息 -->
+	<resultMap type="com.duanrong.business.ruralfinance.model.AgricultureTimelyloansPrepayment" id="TimelyloansPrepaymentRM">
+		<id property="id" column="id"  />
+		<result property="name" column="name" />		
+		<result property="typeOfId" column="id_type" />
+		<result property="idCard" column="id_card" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="customerType" column="customer_type" />
+		<result property="bankcard" column="bankcard" />
+		<result property="bank" column="bank" />
+		<result property="branchname" column="branchname" />		
+		<result property="province" column="province" />
+		<result property="city" column="city" />
+		<result property="contractId" column="contract_id" />		
+		<result property="repayType" column="repay_type" />		
+		<result property="loanTerm" column="loan_term" />
+		<result property="giveMoneyTime" javaType="date" column="givemoneytime" />	   
+		<result property="money" column="money" />
+		<result property="loanMoney" column="loan_money" />
+		<result property="serviceMoney" column="service_money" />
+		<result property="accountingDepartment" column="accounting_department" />	    	    
+	    <result property="whetherEarlyRepayment" column="whether_early_repayment" />
+	    <result property="actualLoanTerm" column="actual_loan_term" />
+	    <result property="actualEndTime" column="actual_end_time" />
+	    <result property="whetherSettlement" column="whether_settlement" /> 
+	    <result property="flag" column="flag" />
+	    <result property="uploadExcelId" column="upload_excelId" />   
+	</resultMap>	
+	<resultMap type="com.duanrong.business.ruralfinance.model.UploadPrepaymentUser" id="uploadPrepaymentUser">
+		<id property="id" column="id"  />
+		<result property="uploadUser" column="upload_user" />
+		<result property="createTime" column="create_time" />
+		<result property="uploadAddress" column="upload_address" />
+		<result property="status" column="status" />
+	
+	</resultMap>
+				<!--通用条件查询  自己传类型 -->
+	<select id="findByCondition" resultMap="TimelyloansPrepaymentRM" parameterType="map">
+			SELECT * FROM agriculture_timelyloans_prepayment
+			
+			<if test="byType != null and byType == 1 ">
+			where 	contract_id= #{contractId}
+			</if>
+			<if test="byType != null and byType ==3 ">
+			where 	contract_id= #{contractId}
+			</if>
+			
+			
+	</select>
+  	<!-- 保存借款人的信息-->
+  	<insert id="savetimelyloans" parameterType="map">		
+  		INSERT INTO agriculture_timelyloans_prepayment
+		(id,name,id_type,id_card,mobile_number,customer_type,bankcard,bank,branchname,province,city,
+		contract_id,repay_type,loan_term,givemoneytime,money,loan_money,service_money,accounting_department,
+		whether_early_repayment,actual_loan_term,actual_end_time,whether_settlement,flag,upload_excelId)
+		
+		VALUES(#{id},#{name},#{typeOfId},#{idCard},#{mobileNumber},#{customerType},#{bankcard},#{bank},
+		#{branchname},#{province},#{city},#{contractId},#{repayType},#{loanTerm},#{giveMoneyTime},#{money},
+		#{loanMoney},#{serviceMoney},#{accountingDepartment},#{whetherEarlyRepayment},#{actualLoanTerm},
+		#{actualEndTime},#{whetherSettlement},#{flag},#{uploadExcelId})
+  	</insert>   
+  		
+		<insert id="saveExcle" parameterType="map"> 
+  		INSERT INTO agriculture_prepayment_upload_excel
+		(id,upload_user,create_time,upload_address,status)
+		VALUES(#{id},#{uploadUser},#{createTime},#{uploadAddress},#{status})
+  		</insert>
+  		<!-- 查询所有 -->
+	<select id="readAgricultureTimelyPrepayment" resultMap="TimelyloansPrepaymentRM">
+		select * from agriculture_timelyloans_prepayment 
+		<where>
+		<if test="id !=null and id != ''">
+			AND contract_id=#{id}
+		</if>
+		<if test="start != null and start != ''">
+			and givemoneytime &gt;=#{start} 
+		</if>
+		<if test="end != null and end != ''">
+			and givemoneytime &lt;=#{end} 
+		</if>		
+		<if test="flag != null and flag != ''">
+			and flag=#{flag} 
+		</if>
+		<if test="uploadExcelId !=null and uploadExcelId != ''">
+			AND upload_excelId=#{uploadExcelId}
+		</if>
+		</where>
+		order by givemoneytime DESC
+	</select>
+	<select id="readTimelyPrepaymentbyupload" resultMap="TimelyloansPrepaymentRM">
+		select * from agriculture_timelyloans_prepayment 
+		<where>
+		<if test="id !=null and id != ''">
+			AND contract_id=#{id}
+		</if>
+		<if test="flag != null and flag != ''">
+			and flag=#{flag} 
+		</if>
+		<if test="uploadExcelId !=null and uploadExcelId != ''">
+			AND upload_excelId=#{uploadExcelId}
+		</if>
+		</where>
+		order by givemoneytime DESC
+	</select>
+	<update id="updateTimelyloanPrepaymentStatus" parameterType="String">
+		update agriculture_timelyloans_prepayment
+		set flag=1 WHERE id=#{id}		 
+	</update>
+</mapper>

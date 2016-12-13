@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.lostcustomer.mapper.LostCustomerMapper">
+	<resultMap type="com.duanrong.business.lostcustomer.model.LostCustomer" id="LostCustomerRM">
+		<result property="userId" column="user_id" />
+		<result property="realname" column="realname" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="idCard" column="id_card" />
+		<result property="email" column="email" />
+		<result property="referrer" column="referrer" />
+		<result property="oreferrer" column="offline_referrer" />
+		<result property="userType" column="user_type" />
+		<result property="balance" column="balance" />
+		<result property="currMoney" column="currMoney" />
+		<result property="historyTotalMoney1" column="history_total_money1" />
+		<result property="historyTotalMoney2" column="history_total_money2" />
+		<result property="lostStatus" column="status" />
+		<result property="lostDays" column="lost_days" />
+		<result property="registerTime" column="register_time" />
+		<result property="postAddress" column="post_address" />
+		<result property="activationTime" column="activation_time" />
+		<result property="customerService" column="customer_service" />
+		<result property="returnInvestTime" column="return_invest_time1" />
+		<result property="returnDemandTime" column="return_demand_time1"/>
+		<result property="returnTotalInvest" column="return_total_invest1"/>
+		<result property="returnTotalDemand" column="return_total_demand1" />
+		<result property="evaluation" column="evaluation" />
+		<result property="investNum" column="investNum" />
+		<result property="phoneNoAttribution" column="phone_no_attribution" />
+		<result property="phoneNoCity" column="phone_no_city" />
+		<result property="qq" column="QQ" />
+		<result property="weixin" column="weiXin" />
+		<result property="userSource" column="user_source" />
+		<result property="remarkNum" column="remarkNum" />
+		<result property="currMoney" column="currMoney" />
+		<result property="remark" column="remark"/>
+		<association property="userOtherInfo" javaType="userOtherInfo">
+			<id property="id" column="userOtherInfo_id" />
+			<result property="postAddress" column="o_post_address" />
+			<result property="postCode" column="o_post_code" />
+			<result property="userIP" column="o_user_ip" />
+			<result property="userSource" column="o_user_source" />
+		</association>
+
+		<association property="userLoginLog" column="id"
+			resultMap="com.duanrong.business.user.mapper.UserLoginLogMapper.userLoginLogRM" />
+
+	</resultMap>
+	<resultMap type="com.duanrong.business.lostcustomer.model.LostCustomer" id="LostCustomerRM2">
+		<!-- <result property="totalInvest" column="total_invest" /> -->
+		<result property="totalInvest1" column="total_invest1" />
+		<result property="totaldemand1" column="total_demand1" />
+	</resultMap>
+	<select id="pageInfo" parameterType="map" resultMap="LostCustomerRM">
+		SELECT 
+		l.*,r.realname,r.mobile_number,r.id_card,r.email,r.referrer,r.offline_referrer,r.user_type,r.balance,r.register_time,
+		r.phone_no_attribution,r.phone_no_city ,o.id as userOtherInfo_id ,o.post_address as o_post_address,
+		o.post_code as o_post_code,o.user_ip as o_user_ip,o.user_source as o_user_source,o.user_source as user_source,
+		(select count(*) from Invest where user_id=l.user_id and status !='流标' ) as investNum, 
+		(select sum(money) from invest where user_id=l.user_id and status in('还款中','投标成功')) as currMoney,
+		(select sum(money) from invest where user_id=l.user_id and status ='完成') as history_total_Money1,
+		(select sum(money) from demand_treasure_bill where user_id = l.user_id and type ='in') as history_total_Money2,
+		(SELECT DATEDIFF(NOW(),MAX(time)) FROM invest WHERE user_id= l.user_id) as lost_days,
+		(select group_concat(remark) from user_visit_info v where v.userid=l.user_id) as remark,
+		(select time from invest where user_id = l.user_id and time > l.activation_time order by time DESC LIMIT 1) as return_invest_time1,
+		(select create_time from demand_treasure_bill where user_id = l.user_id and type='in' and create_time > l.activation_time  order by create_time DESC LIMIT 1) as return_demand_time1,
+		(select sum(money) from invest where user_id = l.user_id and time > l.activation_time) as return_total_invest1,
+		(select sum(money) from demand_treasure_bill where user_id = l.user_id and type ='in' and create_time > l.activation_time) as return_total_demand1
+		FROM
+			lost_customer l
+		LEFT JOIN
+			user r
+		ON l.user_id = r.id
+		LEFT JOIN 
+			user_other_info o ON l.user_id = o.id
+		<where>
+			<if test="realname != null and realname != ''">
+				AND r.realname = #{realname}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND l.user_id = #{userId}
+			</if>
+			<if test="mobileNumber != null and mobileNumber != ''">
+				AND r.mobile_number=#{mobileNumber}
+			</if>
+			<if test="evaluation != null and evaluation != ''">
+				AND l.evaluation = #{evaluation}
+			</if>
+			<if test="usertype != null and usertype != ''">
+				AND r.user_type = #{usertype}
+			</if>
+			<if test="lostStatus != null and lostStatus != ''">
+				AND l.status = #{lostStatus}
+			</if>
+			<if test="oreferrerStatus != null and oreferrerStatus != ''">
+				AND l.oreferrer_status = #{oreferrerStatus}		
+			</if>
+			<if test="referrer != null and referrer != ''">
+				AND r.referrer = #{referrer}
+			</if>
+			<if test="customerService != null and customerService != ''">
+				AND l.customer_service = #{customerService}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND l.return_invest_time &gt;= #{minTime}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND l.return_invest_time &lt;= #{maxTime}
+			</if>
+
+			<if test="minLostDay != null and minLostDay != ''">
+				AND (SELECT DATEDIFF(NOW(),MAX(time)) FROM invest WHERE user_id= l.user_id) &gt;=#{minLostDay}
+			</if>
+			<if test="maxLostDay != null and minLostDay != ''">
+				AND (SELECT DATEDIFF(NOW(),MAX(time)) FROM invest WHERE user_id= l.user_id) &lt;=#{maxLostDay}
+			</if> 
+		</where> 
+		order by l.evaluation ,l.status,l.activation_time desc
+	</select>
+	<!-- 更新流失预警客户 -->
+	<update id="updateLostCustomer" parameterType="map">
+		UPDATE lost_customer
+		<set>
+			<if test="customerService!=null">customer_service=#{customerService},</if>
+			<if test="activationTime!=null">activation_time=#{activationTime},</if>
+			<if test="evaluation!=null">evaluation=#{evaluation},</if>
+		</set>
+		WHERE user_id=#{userId};
+	</update>
+	<!-- 获取历史定期投资总额和或回访后定期活期投资总额 -->
+	<!-- <select id="getUserTotalInvest" parameterType="map" resultMap="LostCustomerRM2">
+		SELECT
+		sum((select sum(money) from invest where user_id=l.user_id and status!='流标')) as total_invest 
+		FROM
+			lost_customer l
+		LEFT JOIN
+			user r
+		ON l.user_id = r.id
+		<where>
+			<if test="realname != null and realname != ''">
+				AND r.realname = #{realname}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND l.user_id = #{userId}
+			</if>
+			<if test="mobileNumber != null and mobileNumber != ''">
+				AND r.mobile_number=#{mobileNumber}
+			</if>
+			<if test="evaluation != null and evaluation != ''">
+				AND l.evaluation = #{evaluation}
+			</if>
+			<if test="usertype != null and usertype != ''">
+				AND r.user_type = #{usertype}
+			</if>
+			<if test="lostStatus != null and lostStatus != ''">
+				AND l.status = #{lostStatus}
+			</if>
+			<if test="oreferrerStatus != null and oreferrerStatus != ''">
+				AND l.oreferrer_status = #{oreferrerStatus}		
+			</if>
+			<if test="referrer != null and referrer != ''">
+				AND r.referrer = #{referrer}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND l.return_invest_time &gt;= #{minTime}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND l.return_invest_time &lt;= #{maxTime}
+			</if>
+			<if test="minLostDay != null">
+				AND l.lost_day &gt;=#{minLostDay}
+			</if>
+			<if test="maxLostDay != null">
+				AND l.lost_day &lt;=#{maxLostDay}
+			</if>
+
+			<if test="oreferrer_status != null">
+				AND l.oreferrer_status =# {oreferrerStatus}
+			</if>
+		</where>
+	</select> -->
+	<select id="getUserTotalDemand1" parameterType="map" resultMap="LostCustomerRM2">
+		SELECT
+		sum((select sum(money) from demand_treasure_bill where user_id = l.user_id and type ='in' and create_time > l.activation_time and l.`status`=1)) as total_demand1
+		FROM
+			lost_customer l
+		LEFT JOIN
+			user r
+		ON l.user_id = r.id
+		<where>
+			<if test="realname != null and realname != ''">
+				AND r.realname = #{realname}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND l.user_id = #{userId}
+			</if>
+			<if test="mobileNumber != null and mobileNumber != ''">
+				AND r.mobile_number=#{mobileNumber}
+			</if>
+			<if test="evaluation != null and evaluation != ''">
+				AND l.evaluation = #{evaluation}
+			</if>
+			<if test="usertype != null and usertype != ''">
+				AND r.user_type = #{usertype}
+			</if>
+			<if test="lostStatus != null and lostStatus != ''">
+				AND l.status = #{lostStatus}
+			</if>
+			<if test="oreferrerStatus != null and oreferrerStatus != ''">
+				AND l.oreferrer_status = #{oreferrerStatus}		
+			</if>
+			<if test="referrer != null and referrer != ''">
+				AND r.referrer = #{referrer}
+			</if>
+			<if test="customerService != null and customerService != ''">
+				AND l.customer_service = #{customerService}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND l.return_invest_time &gt;= #{minTime}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND l.return_invest_time &lt;= #{maxTime}
+			</if>
+
+			<if test="minLostDay != null and minLostDay != ''">
+				AND (SELECT DATEDIFF(NOW(),MAX(time)) FROM invest WHERE user_id= l.user_id) &gt;=#{minLostDay}
+			</if>
+			<if test="maxLostDay != null and minLostDay != ''">
+				AND (SELECT DATEDIFF(NOW(),MAX(time)) FROM invest WHERE user_id= l.user_id) &lt;=#{maxLostDay}
+			</if> 
+		</where> 
+		order by l.evaluation ,l.status,l.activation_time desc 
+	</select>
+	<select id="getUserTotalInvest1" parameterType="map" resultMap="LostCustomerRM2">
+		SELECT
+		sum((select sum(money) from invest where user_id = l.user_id and status in('还款中','投标成功','完成') and time > l.activation_time and l.`status`=1)) as total_invest1
+		FROM
+			lost_customer l
+		LEFT JOIN
+			user r
+		ON l.user_id = r.id
+		<where>
+			<if test="realname != null and realname != ''">
+				AND r.realname = #{realname}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND l.user_id = #{userId}
+			</if>
+			<if test="mobileNumber != null and mobileNumber != ''">
+				AND r.mobile_number=#{mobileNumber}
+			</if>
+			<if test="evaluation != null and evaluation != ''">
+				AND l.evaluation = #{evaluation}
+			</if>
+			<if test="usertype != null and usertype != ''">
+				AND r.user_type = #{usertype}
+			</if>
+			<if test="lostStatus != null and lostStatus != ''">
+				AND l.status = #{lostStatus}
+			</if>
+			<if test="oreferrerStatus != null and oreferrerStatus != ''">
+				AND l.oreferrer_status = #{oreferrerStatus}		
+			</if>
+			<if test="referrer != null and referrer != ''">
+				AND r.referrer = #{referrer}
+			</if>
+			<if test="customerService != null and customerService != ''">
+				AND l.customer_service = #{customerService}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND l.return_invest_time &gt;= #{minTime}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND l.return_invest_time &lt;= #{maxTime}
+			</if>
+
+			<if test="minLostDay != null and minLostDay != ''">
+				AND (SELECT DATEDIFF(NOW(),MAX(time)) FROM invest WHERE user_id= l.user_id) &gt;=#{minLostDay}
+			</if>
+			<if test="maxLostDay != null and minLostDay != ''">
+				AND (SELECT DATEDIFF(NOW(),MAX(time)) FROM invest WHERE user_id= l.user_id) &lt;=#{maxLostDay}
+			</if> 
+		</where> 
+		order by l.evaluation ,l.status,l.activation_time desc
+	</select>
+	<!-- 更新流失预警客户 -->
+	<update id="update" parameterType="com.duanrong.business.lostcustomer.model.LostCustomer">
+		UPDATE lost_customer
+		<set>
+			<if test="returnInvestTime!=null">return_invest_time=#{returnInvestTime},</if>
+			<if test="returnTotalInvest!=null">return_total_invest=#{returnTotalInvest},</if>
+			<if test="lostStatus!=null">status=#{lostStatus},</if>
+			<if test="returnTotalDemand!=null">return_total_demand=#{returnTotalDemand},</if>
+		</set>
+		WHERE user_id=#{userId};
+	</update>
+	
+</mapper>

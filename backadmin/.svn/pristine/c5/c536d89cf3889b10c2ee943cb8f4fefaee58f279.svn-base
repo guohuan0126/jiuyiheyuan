@@ -1,0 +1,262 @@
+package com.duanrong.newadmin.utility;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import util.OcsUtils;
+
+public class OcsRemoveUtil {
+    
+	  private static String pcHostName; //PC端HostName
+	  private static String mobileHostName; //手机Web端HostName
+	  private static Map<String,String> keyMap = new HashMap<String,String>();
+	  
+	  static{
+		  pcHostName = LoadConstantProterties2.getValueByDefaultPro("pcHostName");
+		  mobileHostName = LoadConstantProterties2.getValueByDefaultPro("mobileHostName");
+		  //初始化加载Key
+		  //pc上的key
+		  keyMap.put("PCBanner",pcHostName+"pcbanner"); //PC网站首页Banner
+		  keyMap.put("PCHomeLinks",pcHostName+"homeLinksIndex"); //pc底部媒体报道
+		  keyMap.put("PCFriendlys",pcHostName+"friendlysIndex"); //pc底部合作伙伴
+		  keyMap.put("PCfooterLinks",pcHostName+"footerLinks"); //pc底部友情链接
+		  keyMap.put("PCWangzhangonggao",pcHostName+"lastwangzhangonggaoIndex"); //pc首页网站公告
+		  keyMap.put("PCHostLoans",pcHostName+"hostLoans"); //pc首页热抢项目
+		  keyMap.put("PCLoanlist",pcHostName+"loanlist"); //pc首页精选项目		
+		  keyMap.put("PCRuralfinanceLoaners",pcHostName+"ruralfinanceLoaners"); //PC金农宝借贷人信息
+		  keyMap.put("PCAllloanList",pcHostName+"allloanList"); //PC全部类型列表页
+		  keyMap.put("PCVehicleloanList",pcHostName+"vehicleloanList"); //PC房押宝列表页
+		  keyMap.put("PCHouseloanList",pcHostName+"houseloanList"); //PC车押宝列表页
+		  keyMap.put("PCEnterpriseloanList",pcHostName+"enterpriseloanList"); //PC车押宝列表页
+		  keyMap.put("PCSupplyloanList",pcHostName+"supplyloanList"); //PC供应宝列表页
+		  keyMap.put("PCAgricultureloanList",pcHostName+"agricultureloanList"); //PC金农宝列表页
+		  keyMap.put("PCInvestCount",pcHostName+"investCount"); //PC投资达人数量
+		  keyMap.put("PCInvests",pcHostName+"invests"); //PC投资达人
+		  keyMap.put("PCInfoPics",pcHostName+"infoPics"); //PC获取项目图片
+		  keyMap.put("PCMapConvertor",pcHostName+"mapConvertor"); //PC项目详情进展
+		  keyMap.put("PCLoan",pcHostName+"loan"); //PC项目详情
+		  keyMap.put("PCNode",pcHostName+"node"); //PC文章列表页
+		   
+		  keyMap.put("PCIpList",pcHostName+"ipList"); //PC ip黑名单
+		  keyMap.put("PCMobileList",pcHostName+"mobileList"); //PC 手机黑名单
+		  
+		  keyMap.put("PCBankCardList",pcHostName+"bankCardList"); //PC
+		  
+		   
+		  //手机webkey值
+		  keyMap.put("WebRuralfinanceLoaners",mobileHostName+"ruralfinanceLoaners"); //web金农宝借贷人信息
+		  keyMap.put("WebKinnonInfo",mobileHostName+"kinnonInfo"); //web金农宝信息
+		  keyMap.put("WebSupplyinfo",mobileHostName+"supplyinfo"); //web供应宝信息
+		  keyMap.put("WebKinnonloandetailfk",mobileHostName+"kinnonloandetailfk"); //web金农宝风控信息
+		  keyMap.put("WebSupplyloandetailfk",mobileHostName+"supplyloandetailfk"); //web供应宝风控信息
+		  keyMap.put("WebKinnonListInfo",mobileHostName+"kinnonListInfo"); //web金农宝分页信息
+		  keyMap.put("WebLoan",mobileHostName+"loan"); //web项目详情
+		  keyMap.put("WebInfoPics",mobileHostName+"infoPics"); //web获取项目图片
+		  keyMap.put("WebIpList",mobileHostName+"ipList"); //web ip黑名单
+		  keyMap.put("WebMobileList",mobileHostName+"mobileList"); //web 手机黑名单
+		  keyMap.put("WebMobileBanner", mobileHostName+"webbanner");//手机web appbanner信息
+		  keyMap.put("WebMobileNode",mobileHostName+"node"); //手机web文章
+		 
+		  
+		  keyMap.put("vehicleloandetail",mobileHostName+"vehicleloandetail"); //web 手机黑名单
+		  keyMap.put("houseloandetail", mobileHostName+"houseloandetail");//手机web appbanner信息
+		  keyMap.put("enterpriseloandetail",mobileHostName+"enterpriseloandetail"); //手机web文章
+		  
+		  
+		  keyMap.put("WebMobileBankCardList",mobileHostName+"bankCardList"); 
+		  //soa黑名单缓存key
+		  keyMap.put("SOAIpList","soa1blackIpList"); //SOA ip黑名单
+		  keyMap.put("SOAMobileList","soa1mobileList"); //SOA 手机黑名单
+		 
+		  //活期宝资产缓存key
+		  keyMap.put("PCdemandtreasureLoanfinish_repay", pcHostName+"demandtreasureLoanfinish_repay"); //PC活期宝首页当前资产
+		  keyMap.put("PCdemandtreasureLoanfinish_finish", pcHostName+"demandtreasureLoanfinish_finish");//PC活期宝首页已完成
+		  keyMap.put("PCdemandtreasureLoanList_repay", pcHostName+"demandtreasureLoanList_repay"); //PC活期宝资产列表页当前资产
+		  keyMap.put("PCdemandtreasureLoanList_finish", pcHostName+"demandtreasureLoanList_finish");//PC活期宝资产列表页已完成
+		  //type+"demandloan"+pageNo
+		  keyMap.put("Webfinishdemandloan", mobileHostName+"finishdemandloan");//web活期宝资产列表页已完成
+		  keyMap.put("Webrepaydemandloan", mobileHostName+"repaydemandloan");//web活期宝资产列表页当前资产
+		  //PC活动专题 key type 1 : 活动   2： 专题
+		  keyMap.put("PCactivityzone1",pcHostName+"1activityzone");//活动
+		  keyMap.put("PCactivityzone2",pcHostName+"2activityzone");//专题
+	  }
+	  
+	  /**
+	   * 清除缓存无分页
+	   * 
+	   * @param key
+	   */
+	  public static void removeCache(String key){
+		  OcsUtils.deleteExclusiveHostName(key);
+	  }
+	  /**
+	   * 清除缓存无分页pc直接调用
+	   * 
+	   * @param key
+	   */
+	  public static void removeCachePC(String key){
+		  OcsUtils.deleteExclusiveHostName(pcHostName+key);
+	  }
+	  /**
+	   * 清除分页缓存
+	   * @param key
+	   */
+	  public static void reomvePageCache(String key){
+          int i = 1;
+			do{
+			   OcsUtils.deleteExclusiveHostName(key+i);
+			   i++;
+			}while(/*OcsUtils.isExist(key+i)*/i<=3);
+	  }	 
+	  /**
+	   * 清除活动分页缓存
+	   * @param key
+	   */
+	  public static void reomvePageActivityCache(String key){
+          int i = 1;
+			do{
+			   OcsUtils.deleteExclusiveHostName(key+i);
+			   i++;
+			}while(i<=20);
+	  }	 
+	  /**
+	   * 清除分页缓存,用于pc直接调取
+	   * @param key
+	   */
+	  public static void reomvePageCachePC(String key){
+          int i = 1;
+			do{
+			   OcsUtils.deleteExclusiveHostName(pcHostName+key+i);
+			   i++;
+			}while(/*OcsUtils.isExist(pcHostName+key+i)*/i<=3);
+	  }	
+	  /**
+	   * 1.清除项目相关信息缓存
+	   */
+	  public static void removeLoanInfo(String loanId){
+		  removeCache(keyMap.get("PCLoan")+loanId);
+		  removeCache(keyMap.get("PCHostLoans"));
+		  removeCache(keyMap.get("PCLoanlist"));
+		  removeCache(keyMap.get("PCInvestCount")+loanId);
+		  removeCache(keyMap.get("PCInvests")+loanId);
+		  removeCache(keyMap.get("PCInfoPics")+loanId);
+		  removeCache(keyMap.get("PCMapConvertor")+loanId);
+		  /**
+		   * removeCache(keyMap.get("enterpriseloandetail")+loanId);
+		  removeCache(keyMap.get("vehicleloandetail")+loanId);
+		  removeCache(keyMap.get("houseloandetail")+loanId);
+		   */
+		  reomvePageCache(keyMap.get("PCAllloanList"));
+		  reomvePageCache(keyMap.get("PCVehicleloanList"));
+		  reomvePageCache(keyMap.get("PCHouseloanList"));
+		  reomvePageCache(keyMap.get("PCEnterpriseloanList"));
+		  reomvePageCache(keyMap.get("PCSupplyloanList"));
+		  reomvePageCache(keyMap.get("PCAgricultureloanList"));
+		 
+		  removeCache(keyMap.get("WebRuralfinanceLoaners")+loanId);
+		  removeCache(keyMap.get("WebKinnonInfo")+loanId);
+		  removeCache(keyMap.get("WebSupplyinfo")+loanId);
+		  removeCache(keyMap.get("WebInfoPics")+loanId);
+		  removeCache(keyMap.get("WebKinnonloandetailfk")+loanId);
+		  removeCache(keyMap.get("WebSupplyloandetailfk")+loanId);
+		  reomvePageCache(keyMap.get("WebKinnonListInfo")+loanId);
+		  
+		  
+		  removeCache(keyMap.get("vehicleloandetail")+loanId);
+		  removeCache(keyMap.get("houseloandetail")+loanId);
+		  reomvePageCache(keyMap.get("enterpriseloandetail")+loanId);
+	
+		  
+	  }
+	  
+	  /**
+	   * 2.清除借款人信息
+	   */
+	  public static void removeRuralfinan(String loanId){
+			reomvePageCache(keyMap.get("PCRuralfinanceLoaners")+loanId);
+			reomvePageCache(keyMap.get("WebKinnonListInfo")+loanId);
+			removeCache(keyMap.get("WebKinnonInfo")+loanId);
+			removeCache(keyMap.get("WebKinnonloandetailfk")+loanId);
+			reomvePageCache(keyMap.get("WebKinnonListInfo")+loanId);
+	  }
+	  
+  /**
+   * 3.清除banner,友情链接
+   */
+	  public static void removeBanner(){
+		  removeCache(keyMap.get("PCBanner"));
+		  removeCache(keyMap.get("PCfooterLinks"));
+		  removeCache(keyMap.get("PCHomeLinks"));
+		  removeCache(keyMap.get("PCFriendlys"));
+		  removeCache(keyMap.get("PCWangzhangonggao"));
+		  removeCache(keyMap.get("WebMobileBanner"));
+	  }
+	
+	  /**
+	   * 4.清除文章列表页
+	   */
+		  public static void removeArticle(String nodeID ){
+			  
+			  //加 ,List  termId
+			//  removeCache(keyMap.get("PCNode")+termId+nodeID);//PC文章内容页	
+			  //媒体报道
+			  removeCache(keyMap.get("PCNode")+"mediapublicity"+nodeID);
+			  //项目公告
+			  removeCache(keyMap.get("PCNode")+"projectNotice"+nodeID);
+			  //
+			  removeCache(keyMap.get("PCNode")+"wangzhangonggao"+nodeID);//PC文章内容页
+			  
+			  removeCache(keyMap.get("WebMobileNode")+nodeID);//手机web文章
+			  
+			  removeCache(keyMap.get("WebMobileNode")+"mediapublicity"+nodeID);
+			  //项目公告
+			  removeCache(keyMap.get("WebMobileNode")+"projectNotice"+nodeID);
+			  //
+			  removeCache(keyMap.get("WebMobileNode")+"wangzhangonggao"+nodeID);
+			
+		 }
+		  
+		
+	  /**
+	   * 5.清除黑名单
+	   */
+		  public static void removeBlack(){
+			  removeCache(keyMap.get("PCIpList"));
+			  removeCache(keyMap.get("PCMobileList"));
+			  removeCache(keyMap.get("WebIpList"));
+			  removeCache(keyMap.get("WebMobileList"));//		 
+			  removeCache(keyMap.get("SOAIpList"));
+			  removeCache(keyMap.get("SOAMobileList"));
+			
+		 } 
+    /**
+     * 6.清除活期宝资产
+     */
+		 public static void removeDemandtreasureLoan(){
+			 reomvePageActivityCache(keyMap.get("PCdemandtreasureLoanfinish_repay"));
+			 reomvePageActivityCache(keyMap.get("PCdemandtreasureLoanfinish_finish"));
+			 reomvePageActivityCache(keyMap.get("PCdemandtreasureLoanList_repay"));
+			 reomvePageActivityCache(keyMap.get("PCdemandtreasureLoanList_finish"));	 
+			 reomvePageActivityCache(keyMap.get("Webfinishdemandloan"));
+			 reomvePageActivityCache(keyMap.get("Webrepaydemandloan"));
+		 }
+		
+		 /**
+		  * 清楚活动专区缓存
+		  */
+		 public static void removeActivityZone(){
+			 reomvePageActivityCache(keyMap.get("PCactivityzone1"));
+			 reomvePageActivityCache(keyMap.get("PCactivityzone2"));
+			 
+		 }
+		 
+		 /**
+		  * 清除银行卡列表
+		  */
+		 public static void removeBankCardList(){
+			 reomvePageActivityCache(keyMap.get("PCBankCardList"));
+			 reomvePageActivityCache(keyMap.get("WebMobileBankCardList"));
+			 
+		 }
+}

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.ruralfinance.mapper.AgricultureDebitRecordsMapper">
+	 <!-- 基本信息 -->
+	<resultMap type="com.duanrong.business.ruralfinance.model.AgricultureDebitRecords" id="DebitRecordsRM">
+		<id property="id" column="id"  />
+		<result property="organizationName" column="organization_name" />
+		<result property="transactionTime" javaType="date" column="transaction_time" />
+		<result property="batchNumber" column="batch_number" />
+		<result property="detailsNumber" column="details_number" />
+		<result property="money" column="money" />
+		<result property="bankID" column="bankID" />
+		<result property="customerType" column="customer_type" />
+		<result property="bankcard" column="bankcard" />
+		<result property="name" column="name" />
+		<result property="branchName" column="branch_name" />
+		<result property="branchCity" column="branch_city" />
+		<result property="branchProvince" column="branch_province" />
+		<result property="remark" column="remark" />
+		<result property="protocolUserid" column="protocol_userid" />
+		<result property="protocolNum" column="protocol_num" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="email" column="email" />
+		<result property="idType" column="id_type" />
+		<result property="idCard" column="id_card" />
+		<result property="bankCollectionTime" javaType="date" column="bank_collection_time" />
+		<result property="transactionStatus" column="transaction_status" />
+		<result property="bankResponseCode"  column="bank_response_code" />
+	    <result property="bankResponseInfo"  column="bank_response_info" />
+	    <result property="status" column="status" />
+	    <result property="flag" column="flag" />
+	    <result property="uploadExcelId" column="upload_excelId" />   
+	    <result property="cardType" column="card_type" />
+	    <result property="balanceFlag" column="balance_flag" />
+	</resultMap>
+	<resultMap type="com.duanrong.business.ruralfinance.model.UploadUser" id="uploadUser">
+		<id property="id" column="id"  />
+		<result property="uploadUser" column="upload_user" />
+		<result property="createTime" column="create_time" />
+		<result property="uploadAddress" column="upload_address" />
+		<result property="status" column="status" />
+	
+	</resultMap>
+			<!--通用条件查询  自己传类型 -->
+	<select id="findByCondition" resultMap="DebitRecordsRM" parameterType="map">
+			SELECT * FROM agriculture_zhongjindebit_records			
+			<if test="byType != null and byType == 1 ">
+			where details_number= #{detailsNumber}
+			</if>
+			<if test="byType != null and byType ==3 ">
+			where details_number= #{detailsNumber}
+			</if>						
+	</select>
+  	<!-- 保存中金扣款结果-->
+  	<insert id="saveZJdebitRecords" parameterType="map">
+  		INSERT INTO agriculture_zhongjindebit_records
+		(id,organization_name,transaction_time,batch_number,details_number,money,bankID,customer_type,
+		bankcard,name,branch_name,branch_city,branch_province,remark,protocol_userid,protocol_num,
+		mobile_number,email,id_type,id_card,bank_collection_time,transaction_status,bank_response_code,
+		bank_response_info,status,flag,upload_excelId,card_type,balance_flag
+		)
+		VALUES(#{id},#{organizationName},#{transactionTime},#{batchNumber},
+		#{detailsNumber},#{money},#{bankID},#{customerType},
+		#{bankcard},#{name},#{branchName},#{branchCity},#{branchProvince},
+		#{remark},#{protocolUserid},#{protocolNum},#{mobileNumber},#{email},
+		#{idType},#{idCard},#{bankCollectionTime},#{transactionStatus},#{bankResponseCode},
+		#{bankResponseInfo},#{status},#{flag},#{uploadExcelId},#{cardType},#{balanceFlag})
+  	</insert>   
+  		
+		<insert id="saveExcle" parameterType="map"> 
+  		INSERT INTO agriculture_zjupload_excel
+		(id,upload_user,create_time,upload_address,status)
+		VALUES(#{id},#{uploadUser},#{createTime},#{uploadAddress},#{status})
+  		</insert>
+  		<!-- 查询所有 -->
+	<select id="readAgricultureDebitRecords" resultMap="DebitRecordsRM">
+		select * from agriculture_zhongjindebit_records 
+		<where>
+		<if test="id !=null and id != ''">
+			AND details_number=#{id}
+		</if>
+		<if test="status != null and status != ''">
+			and status=#{status} 
+		</if>
+		<if test="start != null and start != ''">
+			and transaction_time &gt;=#{start} 
+		</if>
+		<if test="end != null and end != ''">
+			and transaction_time &lt;=#{end} 
+		</if>		
+		<if test="flag != null and flag != ''">
+			and flag=#{flag} 
+		</if>
+		<if test="uploadExcelId !=null and uploadExcelId != ''">
+			AND upload_excelId=#{uploadExcelId}
+		</if>
+		</where>
+		order by transaction_time DESC
+	</select>
+</mapper>
