@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.cps.business.activity.mapper.redPacketRuleMapper">
+
+	<resultMap type="com.duanrong.cps.business.activity.model.RedPacketRule" id="RedPacketRuleRM">
+		<id property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="type" column="type" />
+		<result property="sendType" column="send_style" />
+		<result property="getRule" column="get_rule" />
+	</resultMap>
+
+   <!-- 根据ID查询 -->
+	<select id="get" parameterType="int" resultMap="RedPacketRuleRM">
+		SELECT * FROM
+		red_packet_rule
+		WHERE id = #{id}
+	</select>
+    
+    <!-- 添加 -->
+	<insert id="insert" parameterType="RedPacketRule">
+		INSERT INTO red_packet_rule
+		(name,type,send_style,get_rule)
+		VALUES(#{name},#{type},#{sendType},#{getRule})
+	</insert>
+
+    <!-- 更新 -->
+	<update id="update" parameterType="RedPacketRule">
+		UPDATE red_packet_rule
+		<set>
+			name = #{name},type = #{type},send_style = #{sendType},get_rule = #{getRule}
+		</set>
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 删除 -->
+	<delete id="delete" parameterType="int" >
+	   DELETE
+	   FROM red_packet_rule
+	   WHERE id = #{id}
+	</delete>
+	
+	<!-- 分页查询 -->
+	<select id="pageLite" parameterType="RedPacketRule" resultMap="RedPacketRuleRM" >
+	  	SELECT * FROM
+		red_packet_rule
+		<where>
+		<if test="type != null and type != '' ">
+			and red_packet_rule.type =#{type}
+		</if>
+		<if test="sendType != null and sendType != '' ">
+			and red_packet_rule.send_style =#{sendType}
+		</if>
+		<if test="getRule != null and getRule != '' ">
+			and red_packet_rule.get_rule =#{getRule}
+		</if>
+		</where>
+		ORDER BY send_style DESC
+	</select>
+	<!-- 根据ID查询 -->
+	<select id="findAll"  resultMap="RedPacketRuleRM">
+		SELECT * FROM
+		red_packet_rule
+	</select>
+</mapper>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.duanrong.cps.business.bsy.mapper.bsyInvestMapper">
+
+
+	<resultMap id="bsyInvestMap" type="com.duanrong.cps.business.bsy.model.BsyInvest">
+		<id column="id" property="investId" />
+		<result column="status" property="investStatus" />
+
+		<association property="loan"
+			javaType="com.duanrong.cps.business.loan.model.Loan">
+			<id column="loanId" property="id" />
+			<result column="give_money_time" property="giveMoneyTime" />
+			<result column="expect_time" property="expectTime" />
+			<result column="status" property="status" />
+			<result column="operation_type" property="operationType"/>
+			<result column="day"  property="day"/>
+			<result column="deadline" property="deadline"/>
+		</association>
+		
+		
+		<association property="platformUser"
+			javaType="com.duanrong.cps.business.bsy.model.PlatformUser">
+			<id column="id" property="platfromUserID" />
+			<result column="userID" property="userID" />
+			<result column="user_key" property="userKey" />
+			<result column="type" property="type" />
+		</association>
+	</resultMap>
+	
+	<resultMap id="bsyrepayMoneyMap" type="com.duanrong.cps.business.bsy.model.BsyRepayMoney">
+		<result column="loanId" property="loanId"/>
+		<result column="loanStatus" property="loanStatus"/>
+		<result column="userID" property="userId"/>
+		<result column="repayId" property="repayId"/>
+		<result column="repay_day" property="repayDate"/>
+		<result column="money" property="corpus"/>
+		<result column="interest" property="interest"/>
+		<result column="repayStauts" property="repayStauts"/>
+		<result column="investId" property="investId"/>
+	</resultMap>
+
+<!-- 得到比搜益用户所投标的有起息日期的记录（还款中即有起息日）,只查找投资成功的记录（投资状态不为流标和等待确认的即为成功） -->
+	<select id="getBsyInterest" parameterType="string" resultMap="bsyInvestMap"
+		resultType="java.util.List">
+
+			select invest.id ,loan.id loanId, b.id , invest.`status`,loan.`status` ,loan.give_money_time
+		, loan.expect_time, b.userID ,b.user_key, b.type ,loan.operation_type, loan.`day`, loan.deadline
+		from invest, loan, platform_user_relation b 
+		where
+		loan.id=invest.loan_id  and
+		invest.user_id=b.userID and b.type='BSY' and loan.`status`='还款中'
+		and invest.id not in(select invest_id from bisouyi_push_interest)
+		and invest.`status`!='流标' and invest.`status`!='等待确认'
+		and loan.id IN (SELECT loan_id FROM bisouyi_push_loan)
+	</select>
+
+<!--向数据库中插入推送成功的起息状态变化  -->
+	<insert id="insertBsyInterest"  parameterType="com.duanrong.cps.business.bsy.model.BsyInterest">
+		
+		INSERT INTO bisouyi_push_interest
+		(id,loan_id,invest_id,user_id,interest_date,repay_date,order_status,pay_status,loan_status,message,now_time)
+		VALUES
+		(#{id},#{loanId},#{investId},#{userId},#{interestDate},#{repayDate},#{orderStatus},#{payStatus},#{loanStatus},#{message},#{nowTime});
+		
+	</insert>
+	
+ <!--查询出要推送的回款状态的记录信息  -->
+ <select id="getBsyBackMoney" parameterType="String"  resultMap="bsyrepayMoneyMap" resultType="java.util.List">
+ select loan.id loanId, loan.`status` loanStatus, platform.userID, repay.id repayId, repay.repay_day, invest.money, invest.interest, repay.`status` repayStauts, repay.period,invest.id investId 
+ 	from  loan, platform_user_relation platform , bisouyi_push_loan pushLoan, repay,invest  
+	where platform.type='BSY' 
+	and loan.id=pushLoan.loan_id and  invest.loan_id=loan.id  and (loan.`status`='还款中' or loan.`status`='完成' ) and repay.loan_id=loan.id    
+	and invest.user_id=platform.userID  
+	and repay.id not in(SELECT repay_id from bisouyi_push_repaymoney) and repay.`status`='完成' and invest.`status`!='流标'
+	and loan.id IN (SELECT loan_id FROM bisouyi_push_loan)
+ </select>	
+
+<!--向数据库中插入推送成功的回款状态变化  -->
+<insert id="insertBsyRepayMoney" parameterType="com.duanrong.cps.business.bsy.model.BsyRepayMoney">
+	INSERT INTO bisouyi_push_repaymoney 
+	(id, loan_id,invest_id,user_id,repay_date,repay_money,order_status,pay_status,loan_status,message,now_time,repay_id)
+	VALUES
+	(#{id},#{loanId},#{investId},#{userId},#{repayDate},#{repayMoney},#{orderStatus},#{payStatus},#{bstatus},#{message},#{nowTime},#{repayId})
+</insert>
+
+</mapper>

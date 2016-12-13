@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.duanrong.cps.business.bsy.mapper.bsyPushLoanMapper" >
+  <resultMap id="bsyPushLoadMap" type="bsyPushLoad" >
+    <id column="id" property="id" jdbcType="VARCHAR" />
+    <result column="loan_id" property="loanid" jdbcType="VARCHAR" />
+    <result column="loan_progress" property="loanprogress" jdbcType="DOUBLE" />
+    <result column="invest_money" property="investmoney" jdbcType="DECIMAL" />
+    <result column="tradable" property="tradable" jdbcType="INTEGER" />
+    <result column="loan_status" property="loanstatus" jdbcType="INTEGER" />
+    <result column="s_push_time" property="s_pushtime" jdbcType="VARCHAR" />
+    <result column="push_user_id" property="pushuserid" jdbcType="VARCHAR" />
+    <result column="s_now_time" property="s_nowtime" jdbcType="VARCHAR" />
+    <result column="message" property="message" jdbcType="VARCHAR" />
+    <result column="status" property="status" jdbcType="INTEGER" />
+    <result column="isline" property="isline" jdbcType="INTEGER" />
+  </resultMap>
+  <resultMap id="bsyPushInvest" type="bsyInvest" >
+     <result column="investId" property="investId"/>
+     <result column="loanId" property="loanId"/>
+     <result column="userId" property="userId"/>
+     <result column="idCard" property="idCard"/>
+     <result column="loanName" property="loanName"/>
+     <result column="investMoney" property="investMoney"/>
+     <result column="investStatus" property="investStatus"/>
+     <result column="timeType" property="timeType"/>
+     <result column="day" property="day"/>
+     <result column="month" property="month"/>
+     <result column="investTime" property="investTime"/>
+     <result column="rate" property="rate"/>
+     <result column="repayType" property="repayType"/>
+     <result column="rateTime" property="rateTime"/>
+     <result column="expectTime" property="expectTime"/>
+     <result column="bankCard" property="bankCard"/>
+     <result column="loanStatus" property="loanStatus"/>
+  </resultMap>
+  
+    <resultMap id="bsyChangeInvestStatus" type="bsyChangeInvestStatus" >
+     <result column="id" property="investId"/>
+     <result column="loan_id" property="loanId"/>
+     <result column="status" property="loanType"/>
+     <result column="user_id" property="userId"/>
+     <result column="investStatus" property="investStatus"/>
+  </resultMap>
+  
+  
+  
+  <resultMap id="bsyPushedInvest" type="com.duanrong.cps.business.bsy.model.BsyPushedInvest" >
+     <result column="id" property="id"/>
+     <result column="loan_id" property="loanId"/>
+     <result column="invest_id" property="investId"/>
+     <result column="user_id" property="userId"/>
+     <result column="loan_name" property="loanName"/>
+     <result column="invest_money" property="investMoney"/>
+     <result column="period" property="period"/>
+     <result column="rate" property="rate"/>
+     <result column="profit_way" property="profitWay"/>
+     <result column="interest_date" property="interestDate"/>
+     <result column="repay_date" property="repayDate"/>
+     <result column="pay_type" property="orderStatus"/>
+     <result column="order_status" property="payStatus"/>
+     <result column="loan_status" property="loanStatus"/>
+     <result column="now_time" property="nowTime"/>
+     <result column="invest_status" property="investStatus"/>
+  </resultMap>
+  
+  <resultMap type="com.duanrong.cps.business.bsy.model.InvestByBsy" id="investByBsy">
+  	<result column="investId" property="investId"/>
+  	<result column="interest" property="interest"/>
+  	<result column="investMoney" property="investMoney"/>
+  	<result column="rate" property="rate"/>
+  	<result column="investStatus" property="investStatus"/>
+  	<result column="investTime" property="investTime"/>
+  	<result column="loanId" property="loanId"/>
+  	<result column="userId" property="userId"/>
+  	<result column="userName" property="userName"/>
+  	<result column="loanName" property="loanName"/>
+  	<result column="month" property="month"/>
+  	<result column="days" property="days"/>
+  	<result column="operationType" property="operationType"/>
+  	<result column="mobileNumber" property="mobileNumber"/>
+  </resultMap>
+  
+  <resultMap type="com.duanrong.cps.business.bsy.model.BsyPushInterest" id="bsyPushInterest">
+  		<result column="invest_id" property="investId"/>
+  		<result column="loan_id" property="loanId"/>
+  		<result column="interest_date" property="interestDate"/>
+  		<result column="user_id" property="userId"/>
+  		<result column="repay_date" property="repayDate"/>
+  		<result column="now_time" property="nowTime"/>
+  </resultMap>
+  
+   <resultMap type="com.duanrong.cps.business.bsy.model.BsyPushRepayMent" id="bsyPushRepayMent">
+  		<result column="loan_id" property="loanId"/>
+  		<result column="invest_id" property="investId"/>
+  		<result column="user_id" property="userId"/>
+  		<result column="repay_date" property="repayDate"/>
+  		<result column="repay_money" property="repayMoney"/>
+  		<result column="loan_status" property="loanStatus"/>
+  		<result column="now_time" property="nowTime"/>
+  		<result column="repay_id" property="repayId"/>
+  </resultMap>
+  
+  
+  	<resultMap type="com.duanrong.cps.business.bsy.model.PlatformUserRelation" id="platformUserRelation">
+		<id property="id" column="id" />
+		<result property="WDTY_id" column="WDTY_id" />
+		<result property="userID" column="userID" />
+		<result property="whetherNew" column="whether_new" />
+		<result property="userKey" column="user_key" />
+		<result property="createTime" column="create_time" />
+		<result property="whetherBinding" column="whether_binding" />
+		<result property="type" column="type" />
+	</resultMap>
+  
+  
+  <sql id="Base_Column_List" >
+    id, loan_id, loan_progress, invest_money,tradable,loan_status,date_format(push_time,'%Y-%c-%d %h:%i:%s') as s_push_time ,push_user_id,
+    date_format(now_time,'%Y-%c-%d %h:%i:%s'),message,status,isline
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="bsyPushLoadMap" parameterType="java.lang.String" >
+    select 
+    <include refid="Base_Column_List" />
+    from bisouyi_push_loan
+    where id = #{id}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.String" >
+    delete from bisouyi_push_loan
+    where id = #{id,jdbcType=VARCHAR}
+  </delete>
+  <insert id="insertBsyPushLoad" parameterType="java.util.List" >
+    insert into bisouyi_push_loan (id, loan_id, loan_progress, 
+      invest_money,tradable,loan_status,push_time,push_user_id,now_time,message,status,isline)
+      values 
+      <foreach collection="list" item="item" index="index" separator="," >  
+       (#{item.id},#{item.loanid},#{item.loanprogress},#{item.investmoney},#{item.tradable},#{item.loanstatus},#{item.D_pushtime},#{item.pushuserid},
+          #{item.D_nowtime},#{item.message},#{item.status},#{item.isline}) 
+    </foreach> 
+   
+  </insert>
+  
+  <update id="updateByPrimaryKeySelective" parameterType="bsyPushLoad" >
+    update bisouyi_push_loan
+    <set>
+      <if test="D_pushtime != null" >
+        push_time = #{D_pushtime},
+      </if>
+      <if test="loanstatus != null" >
+        loan_status = #{loanstatus},
+      </if>
+      <if test="loanprogress != null" >
+        loan_progress = #{loanprogress},
+      </if>
+       <if test="investmoney != null" >
+        invest_money = #{investmoney},
+      </if>
+      <if test="tradable != null" >
+        tradable = #{tradable},
+      </if>
+       <if test="isline != null" >
+        isline = #{isline},
+      </if>
+       <if test="message != null" >
+        message = #{message},
+      </if>
+      <if test="status != null" >
+        status = #{status},
+      </if>
+    
+    </set>
+    where loan_id = #{id}
+  </update>
+   <select id="getVehicle" resultType="java.util.Map" parameterType="java.lang.String" >
+    select t.brand,t.license_plate_number,t.kilometre_amount,second_hand_price,assess_price,overdue_info
+    from loan_vehicle t
+    where loan_id = #{loanId}
+  </select>
+   <select id="getHouse" resultType="java.util.Map" parameterType="java.lang.String" >
+   SELECT t.position,t.area,t.nature,t.assess_price,overdue_info from loan_house t 
+    where loan_id = #{loanId}
+  </select>
+   <select id="getEnterprise" resultType="java.util.Map" parameterType="java.lang.String" >
+  SELECT t.establish_time,t.operating_period,t.business_scope,t.registered_capital,t.paid_in_capital,t.inshold,t.company_introduction,other_info
+  from loan_enterprise t 
+    where loan_id = #{loanId}
+  </select>
+   <select id="getSupplychain" resultType="java.util.Map" parameterType="java.lang.String" >
+  select t.build_date,t.operation_year,t.operation_business,t.registered_capital,t.real_income_capital,t.company_desc ,repayment_source
+  from Loan_supplychain t 
+    where loan_id = #{loanId}
+  </select>
+ 
+ <select id="getChangeBsyLoan" resultType="java.util.Map"  >
+   SELECT l.* FROM bisouyi_push_loan p,
+   (SELECT t.id,t.STATUS,t.money ,( SELECT sum(money) FROM invest WHERE invest.loan_id =
+		t.id AND invest.STATUS IN ('等待确认','投标成功','还款中','完成')) AS sum_money FROM loan t)l WHERE p.loan_id=l.id AND ((p.loan_status=l.STATUS and p.invest_money !=sum_money ) OR (p.loan_status!=l.STATUS))
+        and p.status=0 AND l.`STATUS`!='流标'
+  </select>
+  <select id="getPushInvest" resultMap="bsyPushInvest" >
+    SELECT i.id AS investId,i.loan_id AS loanId,l.id,u.id AS userId,u.id_card AS idCard,l.name AS loanName, i.money AS investMoney, l.operation_type AS timeType,l.day AS day, l.deadline AS month, i.time as investTime,i.rate AS rate,
+		l.repay_type AS repayType, l.give_money_time AS rateTime,l.expect_time AS expectTime ,l.status AS loanStatus ,i.status AS investStatus
+		 FROM 
+		invest i LEFT JOIN loan l ON i.loan_id=l.id  LEFT JOIN `user` u ON  i.user_id=u.id 
+		LEFT JOIN platform_user_relation p ON u.id=p.userID 
+		WHERE 
+		 p.type='BSY' AND i.status not in('流标','等待确认')  AND l.status!='流标'
+		AND i.id not in(SELECT invest_id FROM bisouyi_push_invest ) 
+  </select>
+  <insert id="insertBsyPushInvest" parameterType="map">
+  	insert into bisouyi_push_invest (id, loan_id, invest_id, 
+      user_id,id_card,loan_name,invest_money,period,period_unit,rate,profit_way,interest_date,repay_date,bank_card,pay_type,order_status,pay_status,loan_status,now_time,invest_status)
+      values(#{id},#{loan_id},#{invest_id},#{user_id},#{id_card},#{loan_name},#{invest_money},#{period},#{period_unit},#{rate},#{profit_way},#{interest_date},#{repay_date},#{bank_card},#{pay_type},#{order_status},#{pay_status},#{loan_status},#{now_time},#{invest_status})
+  </insert>
+  <select id="getpushChangeInvestStatus" resultMap="bsyChangeInvestStatus">
+		select i.id,b.loan_id,i.status as investStatus,l.status,b.user_id from bisouyi_push_invest  b
+		LEFT JOIN invest i on b.invest_id = i.id
+		LEFT JOIN loan l ON i.loan_id=l.id
+		where b.invest_status !=i.`status` and i.status!='完成'
+  </select>
+  <update id="updatePushInvestStatus" parameterType="map">
+  		update bisouyi_push_invest
+  		<set>
+  			now_time=#{nowTime},
+  			invest_status=#{investStatus},
+  			loan_status=#{loanStatus}
+  		</set>
+  		 where invest_id = #{investId}
+  		
+  </update>
+  <select id="getInvestStatus" parameterType="map" resultMap="bsyPushedInvest">
+  	select * from bisouyi_push_invest 
+  	<where>
+  		<if test="investId !=null and investId !=''  ">
+  			And invest_id=#{investId}
+  		</if>
+  		<if test="loanId !=null and loanId !=''  ">
+  			And loan_id=#{loanId}
+  		</if>
+  		<if test="investTimeBegin !=null and investTimeBegin !=''  ">
+  			And now_time &gt;=#{investTimeBegin}
+  		</if>
+  		<if test="investTimeEnd !=null and investTimeEnd !=''  ">
+  			And now_time &lt;=#{investTimeEnd}
+  		</if>
+  	</where>
+  	ORDER By now_time DESC
+  </select>
+  
+  <select id="getInvestRecordsByBsy" parameterType="map" resultMap="investByBsy">
+		select r.id AS investId ,r.interest as interest ,r.money AS investMoney,r.rate as rate,r.`status`AS investStatus,r.time as investTime,r.loan_id AS loanId, r.user_id AS userId,
+		u.realname AS userName,
+		u.mobile_number as mobileNumber,
+		l. NAME AS loanName,
+		l.deadline as month ,
+		l.day as days,   
+		l.operation_type as operationType 
+		from invest r 
+			LEFT JOIN USER u ON r.user_id = u.id 
+			LEFT JOIN loan l ON r.loan_id = l.id
+			LEFT JOIN bisouyi_push_loan b ON r.loan_id = b.loan_id
+			LEFT join platform_user_relation pr ON pr.userID = r.user_id
+			where pr.type=#{type} 
+		<if test="userType !=null and userType !=''  ">
+  				And pr.whether_new=#{userType}
+  			</if>
+			<if test="userId !=null and userId !=''  ">
+  				And u.id=#{userId}
+  			</if>
+			<if test="investId !=null and investId !=''  ">
+  				And r.id=#{investId}
+  			</if>
+  			<if test="loanId !=null and loanId !=''  ">
+  				And l.id=#{loanId}
+  			</if>
+  			<if test="investTimeBegin !=null and investTimeBegin !=''  ">
+  				And r.time &gt;=#{investTimeBegin}
+  			</if>
+  			<if test="investTimeEnd !=null and investTimeEnd !=''  ">
+  				And r.time &lt;=#{investTimeEnd}
+  			</if>
+		order by r.time DESC
+  </select>
+  <select id="getbsyPushInterest" parameterType="map" resultMap="bsyPushInterest">
+  	select * from bisouyi_push_interest 
+  		<where>
+			<if test="userId !=null and userId !=''  ">
+  				And user_id=#{userId}
+  			</if>
+			<if test="investId !=null and investId !=''  ">
+  				And invest_id=#{investId}
+  			</if>
+  			<if test="loanId !=null and loanId !=''  ">
+  				And loan_id=#{loanId}
+  			</if>
+  			<if test="pushTimeBegin !=null and pushTimeBegin !=''  ">
+  				And now_time &gt;=#{pushTimeBegin}
+  			</if>
+  			<if test="pushTimeEnd !=null and pushTimeEnd !=''  ">
+  				And now_time &lt;=#{pushTimeEnd}
+  			</if>
+		</where>
+		order by now_time DESC
+  </select>
+  <select id="getbsyPushRepayMent" parameterType="map" resultMap="bsyPushRepayMent">
+  	select * from bisouyi_push_repaymoney 
+  	<where>
+			<if test="userId !=null and userId !=''  ">
+  				And user_id=#{userId}
+  			</if>
+			<if test="investId !=null and investId !=''  ">
+  				And invest_id=#{investId}
+  			</if>
+  			<if test="loanId !=null and loanId !=''  ">
+  				And loan_id=#{loanId}
+  			</if>
+  			<if test="pushTimeBegin !=null and pushTimeBegin !=''  ">
+  				And now_time &gt;=#{pushTimeBegin}
+  			</if>
+  			<if test="pushTimeEnd !=null and pushTimeEnd !=''  ">
+  				And now_time &lt;=#{pushTimeEnd}
+  			</if>
+		</where>
+  </select>
+  
+  <select id="getBsyUserInfo" parameterType="map" resultMap="platformUserRelation">
+  	SELECT * FROM platform_user_relation 
+  	WHERE type=#{type}
+			<if test="userId !=null and userId !=''  ">
+  				And userID=#{userId}
+  			</if>
+  			<if test="TimeBegin !=null and TimeBegin !=''  ">
+  				And create_time &gt;=#{TimeBegin}
+  			</if>
+  			<if test="TimeEnd !=null and TimeEnd !=''  ">
+  				And create_time &lt;=#{TimeEnd}
+  			</if>
+  			
+  		order by create_time DESC
+  </select>
+    <select id="getInvestRecordsByBjs" parameterType="map" resultMap="investByBsy">
+		select r.id AS investId ,r.interest as interest ,r.money AS investMoney,r.rate as rate,r.`status`AS investStatus,r.time as investTime,r.loan_id AS loanId, r.user_id AS userId,
+		u.realname AS userName,
+		u.mobile_number as mobileNumber,
+		l. NAME AS loanName,
+		l.deadline as month ,
+		l.day as days,   
+		l.operation_type as operationType 
+		from invest r 
+			LEFT JOIN USER u ON r.user_id = u.id 
+			LEFT JOIN loan l ON r.loan_id = l.id
+			LEFT JOIN bisouyi_push_loan b ON r.loan_id = b.loan_id
+			LEFT join platform_user_relation pr ON pr.userID = r.user_id
+			where pr.type=#{type} 	 
+		<if test="userType !=null">
+		      And pr.whether_new=#{userType}
+		      <if test="userType ==1 ">
+		       AND r.user_source LIKE '%${type}%'
+		      </if>		      				
+  		</if>		   
+			<if test="userId !=null and userId !=''  ">
+  				And u.id=#{userId}
+  			</if>
+			<if test="investId !=null and investId !=''  ">
+  				And r.id=#{investId}
+  			</if>
+  			<if test="loanId !=null and loanId !=''  ">
+  				And l.id=#{loanId}
+  			</if>
+  			<if test="investTimeBegin !=null and investTimeBegin !=''  ">
+  				And r.time &gt;=#{investTimeBegin}
+  			</if>
+  			<if test="investTimeEnd !=null and investTimeEnd !=''  ">
+  				And r.time &lt;=#{investTimeEnd}
+  			</if>
+  		
+		order by r.time DESC
+  </select>
+  <select id="getInvestRecordsByBjsAll" parameterType="map" resultMap="investByBsy">
+		select r.id AS investId ,r.interest as interest ,r.money AS investMoney,r.rate as rate,r.`status`AS investStatus,r.time as investTime,r.loan_id AS loanId, r.user_id AS userId,
+		u.realname AS userName,
+		u.mobile_number as mobileNumber,
+		l. NAME AS loanName,
+		l.deadline as month ,
+		l.day as days,   
+		l.operation_type as operationType 
+		from invest r 
+			LEFT JOIN USER u ON r.user_id = u.id 
+			LEFT JOIN loan l ON r.loan_id = l.id
+			LEFT JOIN bisouyi_push_loan b ON r.loan_id = b.loan_id
+			LEFT join platform_user_relation pr ON pr.userID = r.user_id
+			where pr.type=#{type} 	 
+		     And pr.whether_new=1
+  		    AND r.user_source LIKE '%${type}%'			   
+			<if test="userId !=null and userId !=''  ">
+  				And u.id=#{userId}
+  			</if>
+			<if test="investId !=null and investId !=''  ">
+  				And r.id=#{investId}
+  			</if>
+  			<if test="loanId !=null and loanId !=''  ">
+  				And l.id=#{loanId}
+  			</if>
+  			<if test="investTimeBegin !=null and investTimeBegin !=''  ">
+  				And r.time &gt;=#{investTimeBegin}
+  			</if>
+  			<if test="investTimeEnd !=null and investTimeEnd !=''  ">
+  				And r.time &lt;=#{investTimeEnd}
+  			</if>
+		UNION ALL(
+		select r.id AS investId ,r.interest as interest ,r.money AS investMoney,r.rate as rate,r.`status`AS investStatus,r.time as investTime,r.loan_id AS loanId, r.user_id AS userId,
+		u.realname AS userName,
+		u.mobile_number as mobileNumber,
+		l. NAME AS loanName,
+		l.deadline as month ,
+		l.day as days,   
+		l.operation_type as operationType 
+		from invest r 
+			LEFT JOIN USER u ON r.user_id = u.id 
+			LEFT JOIN loan l ON r.loan_id = l.id
+			LEFT JOIN bisouyi_push_loan b ON r.loan_id = b.loan_id
+			LEFT join platform_user_relation pr ON pr.userID = r.user_id
+			where pr.type=#{type} 	 		
+		     And pr.whether_new=0	      					   
+			<if test="userId !=null and userId !=''  ">
+  				And u.id=#{userId}
+  			</if>
+			<if test="investId !=null and investId !=''  ">
+  				And r.id=#{investId}
+  			</if>
+  			<if test="loanId !=null and loanId !=''  ">
+  				And l.id=#{loanId}
+  			</if>
+  			<if test="investTimeBegin !=null and investTimeBegin !=''  ">
+  				And r.time &gt;=#{investTimeBegin}
+  			</if>
+  			<if test="investTimeEnd !=null and investTimeEnd !=''  ">
+  				And r.time &lt;=#{investTimeEnd}
+  			</if> 			
+		)
+  </select>
+</mapper>

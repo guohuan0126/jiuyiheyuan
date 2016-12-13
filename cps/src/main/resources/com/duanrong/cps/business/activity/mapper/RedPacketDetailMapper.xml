@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.cps.business.activity.mapper.redPacketDetailMapper">
+
+	<resultMap type="com.duanrong.cps.business.activity.model.RedPacketDetail" id="RedPacketDetailRM">
+		<id property="id" column="id" />
+		<result property="mobile" column="mobile_number" />
+		<result property="userId" column="user_id" />
+		<result property="openId" column="open_id" />
+		<result property="createTime" column="create_time" />
+		<result property="deadline" column="deadline" />
+		<result property="money" column="money" />
+		<result property="rate" column="rate" />
+		<result property="sendTime" column="send_time" />
+		<result property="sendStatus" column="send_status" />
+		<result property="shareCount" column="share_count" />
+		<result property="name" column="name" />
+		<result property="roleId" column="role_id" />
+		<result property="ruleId" column="rule_id" />
+		<result property="usageDetail" column="usage_detail" />
+		<result property="investMoney" column="invest_money" />
+		<result property="investRate" column="invest_rate" />
+		<result property="usageRule" column="usage_rule" />
+		<result property="type" column="type" />
+		<result property="useLoanType" column="use_loan_type" />
+		<result property="timeType" column="invest_cycle" />
+		<result property="redpacketType" column="use_loan_type" />
+		<association property="rule" column="rule_id"
+			resultMap="com.duanrong.cps.business.activity.mapper.redPacketRuleMapper.RedPacketRuleRM" />
+	</resultMap>
+	<resultMap type="com.duanrong.cps.business.activity.model.ActivateCoupon" id="activateCoupon">
+		<id property="id" column="id" />
+		<result property="redPacketCode" column="red_packet_code" />
+		<result property="createTime" column="create_time" />
+		<result property="useStatus" column="use_status" />
+		<result property="userId" column="user_id" />
+		<result property="releaseStatus" column="release_status" />
+		<result property="createId" column="create_id" />
+		<result property="ruleId" column="rule_id" />
+		<result property="type" column="type" />
+		<result property="value" column="value" />
+		<result property="endTime" column="end_time" />
+		<result property="activeTime" column="active_time" />
+		<result property="pid" column="pid" />
+	</resultMap>
+	
+	<resultMap type="com.duanrong.cps.business.activity.model.ActivateCouponRecord" id="ActivateCouponRecordRM">
+		<result property="id" column="id" />
+		<result property="createId" column="create_id" />
+		<result property="createTime" column="create_time" />
+		<result property="remark" column="remark" />
+		<result property="flag" column="flag" />
+		<result property="num" column="num" />		
+	</resultMap>
+
+   <!-- 根据ID查询 -->
+	<select id="get" parameterType="int" resultMap="RedPacketDetailRM">
+		SELECT * FROM
+		red_packet_detail
+		WHERE id = #{id}
+	</select>
+    
+    <!-- 添加 -->
+	<insert id="insert" parameterType="RedPacketDetail">
+		INSERT INTO red_packet_detail
+		(mobile_number,user_id,create_time,deadline,money,rate,send_status,name,rule_id,usage_detail,invest_money,invest_rate,type,usage_rule,invest_cycle,use_loan_type)
+		VALUES(#{mobile},#{userId},#{createTime},#{deadline},#{money},#{rate},#{sendStatus},#{name},#{ruleId},#{usageDetail},#{investMoney},#{investRate},#{type},#{usageRule},#{timeType},#{redpacketType})
+	<!-- 	(mobile_number,user_id,open_id,create_time,deadline,money,rate,send_time,send_status,share_count,name,role_id,rule_id)
+		VALUES(#{mobile},#{userId},#{openId},#{createTime},#{deadline},#{money},#{rate},#{sendTime},#{sendStatus},#{shareCount},#{name},#{roleId},#{rule.id}) -->
+	</insert>
+	<insert id="batchInsertRedDetail" parameterType="java.util.List" >
+    INSERT into red_packet_detail(mobile_number, user_id, create_time, deadline, rate, send_status, name, 
+    rule_id, is_available, type, usage_detail, usage_rule, invest_money, use_loan_type) 
+
+    values
+    <foreach collection="list" item="item" index="index" separator="," >
+     (#{item.mobile},#{item.userId},NOW(),NOW()+interval 15 day,#{item.rate},#{item.sendStatus},#{item.name},
+     #{item.ruleId},1,#{item.type},#{item.usageDetail},#{item.usageRule},#{item.investMoney},#{item.redpacketType})
+    </foreach> 	
+  </insert>
+
+    <!-- 更新 -->
+	<update id="update" parameterType="RedPacketDetail">
+		UPDATE red_packet_detail
+		<set>
+			mobile_number = #{mobile},user_id = #{userId},open_id = #{openId},create_time = #{createTime},deadline = #{deadline},
+			money = #{money},rate = #{rate},send_time = #{sendTime},send_status = #{sendStatus},share_count = #{shareCount},name = #{name},
+			role_id = #{roleId},rule_id = #{rule.id}
+		</set>
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 删除 -->
+	<delete id="delete" parameterType="int" >
+	   DELETE
+	   FROM red_packet_detail
+	   WHERE id = #{id}
+	</delete>
+	 <update id="del"  parameterType="RedPacketDetail">
+	  update red_packet_detail
+            <set>
+			<if test="available != null">
+				is_available=#{available},
+			</if>
+		</set>
+		WHERE id=#{id}
+    </update>
+	
+	<!-- 分页查询 -->
+	<select id="pageLite" parameterType="RedPacketDetail" resultMap="RedPacketDetailRM" >
+	  	SELECT * FROM
+		red_packet_detail left join red_packet_rule on  red_packet_detail.id = red_packet_rule.id
+		<where>
+		<if test="sendStatus != null and sendStatus != '' ">
+			and red_packet_detail.send_status =#{sendStatus}
+		</if>
+		<if test="userId != null and userId != '' ">
+			and red_packet_detail.user_id =#{userId}
+		</if>
+		<if test="mobile != null and mobile != '' ">
+			and red_packet_detail.mobile_number =#{mobile}
+		</if>
+		<if test="usageDetail != null and usageDetail != '' ">
+			and red_packet_detail.usage_detail =#{usageDetail}
+		</if>
+		<if test="type != null and type != '' ">
+			and red_packet_detail.type =#{type}
+		</if>
+		<if test="name != null and name != '' ">
+			and red_packet_detail.rule_id =#{name}
+		</if>	
+		<if test="1==1">
+		and is_available=1
+		</if>
+		</where>
+		ORDER BY red_packet_detail.create_time DESC
+	</select>
+	
+	<!-- 查询用户同一项目其他投资记录是否已经使用加息券 -->
+	<select id="getSamePacketUseCount" parameterType="java.lang.String" resultType="java.lang.Integer">
+	  SELECT
+			count(1)
+		FROM
+			invest it
+		LEFT JOIN invest ivt ON it.user_id = ivt.user_id
+		AND it.loan_id = ivt.loan_id
+		WHERE
+			it.redpacket_id IS NOT NULL
+		AND it.redpacket_id > 0
+		AND it.status != '流标'		
+		AND ivt.id = #{investId }
+		AND it.id != #{investId }
+	</select>
+	
+	<!-- 查询加息券 -->
+	<select id="getRedPacketUse" parameterType="java.lang.Object" resultMap="RedPacketDetailRM">
+	   select d.* from red_packet_detail d 
+		<where> 
+		<![CDATA[ 
+			d.usage_detail='invest'
+		  and d.is_available = '1'
+		  and (d.send_status = 'unused' or d.id=#{redpacketId } )
+		  and SYSDATE() BETWEEN d.create_time and d.deadline
+		  and d.invest_money <= #{money }
+		  and d.mobile_number = #{mobileNumber }
+		  ]]>
+		</where>
+	</select>
+	
+	<!-- 更新加息券信息 -->
+	<update id="updateForPacketUse" parameterType="java.lang.Object">
+		update red_packet_detail d 
+		<set>
+			<if test="status != null and status != '' ">
+				d.send_status = #{status }
+			</if>
+			<choose>
+				<when test="status == 'unused'">
+					,d.use_time=null
+				</when>
+				<otherwise>
+					,d.use_time=SYSDATE()
+				</otherwise>
+			</choose>
+		</set>
+		 where d.id = #{redPacketId }	
+	</update>
+	
+	<select id="readRedpacketCouponList" parameterType="map" resultMap="activateCoupon">
+		select * from red_packet_coupon  
+		<where>
+		<if test="start != null and start != '' ">
+				and create_time &gt;= #{start}
+		</if>
+		<if test="end != null and end != '' ">
+				and create_time &lt;= #{end}
+		</if>
+		<if test="usedStatus != null and usedStatus != '' ">
+				 and use_status = #{usedStatus}
+		</if>
+		<if test="releaseStatus != null and releaseStatus != '' ">
+				and release_status = #{releaseStatus}
+		</if>
+		<if test="pid != null and pid != '' ">
+				and pid = #{pid}
+		</if>
+	</where>
+	order by create_time DESC
+	</select>
+	<select id="readRedpacketCouponRecordList" parameterType="map" resultMap="ActivateCouponRecordRM">
+		select * from red_packet_coupon_record  
+		<where>
+		<if test="start != null and start != '' ">
+				and create_time &gt;= #{start}
+		</if>
+		<if test="end != null and end != '' ">
+				and create_time &lt;= #{end}
+		</if>
+		<if test="pid != null and pid != '' ">
+				and id = #{pid}
+		</if>
+		<if test="flag != null and flag != '' ">
+				and flag = #{flag}
+		</if>
+	</where>
+	order by create_time DESC
+	</select>
+	
+	
+	
+	
+	<insert id="addRedpacketCoupon" parameterType="map">
+		INSERT INTO red_packet_coupon
+			(id,red_packet_code,create_time,use_status,release_status,create_id,rule_id,type,value,end_time,pid)
+		VALUES(#{id},#{redPacketCode},#{createTime},#{useStatus},#{releaseStatus},#{createId},#{ruleId},#{type},#{money},#{endTime},#{pid})
+	</insert>
+  	<insert id="addRedpacketCouponRecord" parameterType="map">
+  		INSERT INTO red_packet_coupon_record
+		(num,id,create_id,create_time,remark,flag)
+  		VALUES(#{num},#{id},#{createId},#{createTime},#{remark},#{flag})
+  	</insert>
+  	<select id="readExportRedpacketCouponList" parameterType="map" resultMap="activateCoupon">
+  		select * from red_packet_coupon  
+  		<where>
+  			<if test="pid != null and pid != '' ">
+				pid = #{pid}
+		</if>
+  		</where>
+  		order by create_time DESC
+  	</select>
+  	<update id="updateRedpacketCouponStatusByPid" parameterType="String">
+  		update  red_packet_coupon 
+  		set release_status=1
+  		where pid=#{pid}
+  	</update>
+  	<select id="readUserRedpacketList" parameterType="map" resultMap="RedPacketDetailRM">
+  		SELECT * FROM
+		red_packet_detail left join red_packet_rule on  red_packet_detail.id = red_packet_rule.id  
+		where red_packet_detail.mobile_number =#{mob}
+		ORDER BY red_packet_detail.create_time DESC
+  	</select>
+  	
+  	<update id="updateRedpacketCouponFlagByPid" parameterType="String">
+  		update  red_packet_coupon_record 
+  		set flag=1
+  		where id=#{pid}
+  	</update>
+  	<select id="readFlagByPid" parameterType="String" resultType="int">
+  		select flag FROM red_packet_coupon_record where id=#{pid}
+  	</select>
+  	<select id="readRedpacketListByMobile" parameterType="map" resultMap="RedPacketDetailRM">
+  		SELECT * FROM
+		red_packet_detail where mobile_number =#{mobile}
+		and rule_id=#{ruleId}
+  	</select>
+</mapper>

@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.cps.business.user.mapper.UserDataMapper">
+	<resultMap type="userdata" id="userdateeRM">
+		<result property="allUserCount" column="all_user_count" />
+		<result property="allUserRegisterCount" column="register_count" />
+		<result property="allStateCount" column="state_count" />
+		<!-- 今日新增用户 -->
+		<result property="newAllUserCount" column="new_user_count" />
+		<!-- 今日新增投资 -->
+		<result property="newInvestCount" column="new_invest_count" />
+		<!-- 今日新开户数量 -->
+		<result property="newAllUserRegisterCount" column="new_register_count" />
+		<!-- 昨日开户用户 （待定） -->
+		<result property="lastAllUserRegisterCount" column="last_register_count" />
+		<!-- 昨日投资用户 -->
+		<result property="lastInvestCount" column="last_invest_count" />
+		<!-- 昨日用户 数量 -->
+		<result property="userCount" column="user_count" />
+
+	</resultMap>
+	<resultMap type="com.duanrong.cps.business.user.model.ResData"
+		id="userdateeRM1">
+		<result property="count" column="count" />
+		<result property="timer" column="timer" />
+	</resultMap>
+	<select id="getUserData" resultMap="userdateeRM">
+	SELECT
+		(SELECT count(*) FROM USER) AS all_user_count,
+		(SELECT count(*)	FROM	user_role	WHERE	role_id ='INVESTOR'	) AS register_Count,
+		(SELECT	COUNT(distinct(user_id))	FROM	invest	WHERE	STATUS != '流标'	) AS state_count,
+		(SELECT	COUNT(*)	FROM	USER	WHERE	date(register_time) = curdate()	) AS new_user_count,
+		(select COUNT(distinct(user_id)) FROM invest WHERE date(time) = curdate() AND status !='流标' and user_id not in (select DISTINCT user_id FROM invest WHERE  date(time) &lt; curdate()  AND status !='流标'))AS new_invest_count,
+		(SELECT	COUNT(*)	FROM	`user`	WHERE	date_format(register_time, '%Y-%m-%d') = date_format(CURDATE(),	'%Y-%m-%d') - INTERVAL 1 DAY	) AS user_count,
+		(select COUNT(distinct(user_id)) FROM invest WHERE date(time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND status !='流标' and user_id not in (select DISTINCT user_id FROM invest WHERE  date(time) &lt; DATE_SUB(CURDATE(), INTERVAL 1 DAY)  AND status !='流标')) AS last_invest_count,
+		(SELECT COUNT(*) from user_role where time > CURDATE() and role_id='investor' and user_id not in (SELECT user_id  from user_role where  time &lt; CURDATE()-1 and role_id='investor')) AS new_register_count,
+		(SELECT COUNT(*) FROM user_role WHERE date(time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND role_id='INVESTOR') AS	last_register_count
+		FROM
+		DUAL
+	</select>
+
+	<!-- 今日用户数据 -->
+	<select id="getUserDataByT" resultMap="userdateeRM">
+		SELECT
+		(
+		SELECT
+		COUNT(*)
+		FROM
+		USER
+		WHERE
+		date(register_time) = curdate()
+		) AS new_user_count,
+		(select COUNT(distinct(user_id)) FROM invest WHERE date(time) = curdate() AND status !='流标'
+		 and user_id not in (select DISTINCT user_id FROM invest WHERE  date(time) &lt; curdate()  AND status !='流标')
+		)AS new_invest_count,
+		(SELECT COUNT(*) from user_role where time > CURDATE() and role_id='investor' 
+		and user_id not in (SELECT user_id  from user_role where  time &lt; CURDATE()-1 and role_id='investor')
+		) AS new_register_count
+		FROM
+		DUAL
+	</select>
+	<!-- 最近一周用户注册数量 -->
+	<select id="getUserCountByW" resultMap="userdateeRM1">
+		select count(1) as count,register_time as timer from
+		`user` where DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(register_time) AND
+		NOW()&gt;=register_time
+		GROUP BY DATE(register_time)
+	</select>
+	<!-- 最近一周用户开户数量 -->
+	<select id="getUserRByW" resultMap="userdateeRM1">
+	SELECT COUNT(*) as count,time as timer FROM user_role WHERE role_id = 'INVESTOR' AND
+		DATE_SUB(CURDATE(), INTERVAL 7 day) &lt;=date(time)  and user_id not in (SELECT user_id  from user_role where  time &lt;CURDATE()-8 and role_id='investor')
+		GROUP BY
+		DATE(time)
+	</select>
+	<!-- 最近一周用户投资数量 -->
+	<select id="getUserIByW" resultMap="userdateeRM1">
+	select COUNT(distinct(user_id)) AS count,time as timer, user_id as i_user_id FROM invest t
+	WHERE 
+	DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+ 	&lt;= date(time)
+	AND status !='流标' AND (select DISTINCT count(user_id) FROM invest WHERE  date(time) &lt; date(t.time)  AND status !='流标' and user_id = t.user_id) &lt;= 0 GROUP BY DATE(t.time)
+	</select>
+
+	<!-- 最近一个月用户注册数据 -->
+	<select id="getUserCountByM" resultMap="userdateeRM1">
+	SELECT COUNT(*) as count ,register_time as timer from `user` WHERE DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(register_time) AND NOW()&gt;=register_time
+GROUP BY DATE(register_time) 
+	</select>
+	<!-- 最近一个月用户开户数据 -->
+	<select id="getUserRByM" resultMap="userdateeRM1">
+		SELECT COUNT(*) as count,time as timer FROM user_role WHERE role_id = 'INVESTOR' AND
+		DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;=date(time)  and user_id not in (SELECT user_id  from user_role where  time &lt; CURDATE()-32 and role_id='investor')
+		GROUP BY
+		DATE(time)
+	</select>
+	<!-- 最近一个月用户投资数据 -->
+	<select id="getUserIByM" resultMap="userdateeRM1">
+	select COUNT(distinct(user_id)) AS count,time as timer, user_id as i_user_id FROM invest t
+	WHERE 
+	DATE_SUB(CURDATE(), INTERVAL 1 MONTH)
+ 	&lt;= date(time)
+	AND status !='流标' AND (select DISTINCT count(user_id) FROM invest WHERE  date(time) &lt; date(t.time)  AND status !='流标' and user_id = t.user_id) &lt;= 0 GROUP BY DATE(t.time)
+	</select>
+	<!-- 根据时间段查询 注册 -->
+	<select id="getUserCountByD" resultMap="userdateeRM1" parameterType="map">
+		SELECT COUNT(*) as count ,register_time as timer from
+		`user` WHERE
+		register_time &gt; #{sTime} AND register_time&lt; #{eTime}
+		GROUP BY DATE(register_time)
+	</select>
+	<!-- 开户 -->
+	<select id="getUserRByD" resultMap="userdateeRM1" parameterType="map">
+		SELECT COUNT(*) as count ,time as timer FROM user_role WHERE role_id ='INVESTOR' AND time &gt;  #{sTime} AND time &lt; #{eTime}
+	  	and user_id not in (SELECT user_id  from user_role where  time &lt;  #{sTime}-1  and role_id='investor')
+		GROUP BY
+		DATE(time)
+	</select>
+	<!-- 投资 -->
+	<select id="getUserIByD" resultMap="userdateeRM1" parameterType="map">
+		select COUNT(distinct(user_id)) AS count,time as timer, user_id as i_user_id FROM invest t
+	WHERE 
+	time &gt; #{sTime} AND time &lt;=#{eTime}
+	AND status !='流标' AND (select DISTINCT count(user_id) FROM invest WHERE  date(time) &lt; date(t.time) AND status !='流标' and user_id = t.user_id) &lt;= 0 GROUP BY DATE(t.time)
+	</select>
+	<!-- 来源下的新注册用户 -->
+	<select id="getRegisterCount" parameterType="map" resultType="double">
+		SELECT COUNT(*) from `user`u LEFT JOIN user_other_info u1 ON u.id=u1.id 
+		WHERE 
+		<choose>
+			<when test="userSource !=null and userSource != '' ">
+				u1.user_source LIKE "%"#{userSource}"%" 
+			</when>
+			<otherwise>
+				ISNULL(u1.user_source)
+			</otherwise>
+		</choose>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+		 and u.register_time &gt;= #{start} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+		AND u.register_time &lt;= #{end}
+		</if>
+	</select>
+	
+	<!-- 实名用户 -->
+	<select id="getRealNameUserCount" parameterType="map" resultType="double">
+		SELECT COUNT(*) FROM user_role u LEFT JOIN user_other_info u1 ON u.user_id=u1.id 
+		WHERE u.role_id='INVESTOR' 
+			<choose>
+			<when test="userSource !=null and userSource != '' ">
+				And u1.user_source LIKE "%"#{userSource}"%" 
+			</when>
+			<otherwise>
+				And ISNULL(u1.user_source)
+			</otherwise>
+		</choose>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+		 and u.time &gt;= #{start} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+		AND u.time &lt;= #{end}
+		</if>
+	</select>
+	<!-- 首投人数 -->
+	<select id="getFristInvestCount"  parameterType="map" resultType="double">
+		SELECT  count(DISTINCT(i.user_id)) FROM  invest i  LEFT JOIN user_other_info u1 ON i.user_id=u1.id
+		WHERE  
+			<choose>
+			<when test="userSource !=null and userSource != '' ">
+				u1.user_source LIKE "%"#{userSource}"%" 
+			</when>
+			<otherwise>
+				ISNULL(u1.user_source)
+			</otherwise>
+		</choose>  
+		AND i.status!='流标'
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+		 and i.time &gt;= #{start} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+		AND i.time &lt;= #{end}
+		</if>
+		AND  i.user_id not in  (select DISTINCT user_id FROM invest WHERE time &lt;#{start} AND status != '流标')
+	</select>
+	<!-- 首投金额 -->
+	<select id="getFristInvestMoney" parameterType="map" resultType="double">
+		SELECT IFNULL( SUM(i.money),0) FROM  invest i  LEFT JOIN user_other_info u1 ON i.user_id=u1.id
+		WHERE  
+			<choose>
+			<when test="userSource !=null and userSource != '' ">
+				u1.user_source LIKE "%"#{userSource}"%" 
+			</when>
+			<otherwise>
+				ISNULL(u1.user_source)
+			</otherwise>
+		</choose> 
+		  AND i.status!='流标'
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+		 and i.time &gt;= #{start} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+		AND i.time &lt;= #{end}
+		</if>
+		AND  i.user_id not in  (select DISTINCT user_id FROM invest WHERE time &lt;#{start} AND status != '流标')
+	</select>
+	<!-- 复投人数 -->
+ 	<select id="getInvestMoneyAgain"  parameterType="map" resultType="double">
+ 		SELECT  count(DISTINCT(i.user_id)) FROM  invest i LEFT JOIN user_other_info u1 ON i.user_id=u1.id
+		WHERE  
+			<choose>
+			<when test="userSource !=null and userSource != '' ">
+				u1.user_source LIKE "%"#{userSource}"%" 
+			</when>
+			<otherwise>
+				ISNULL(u1.user_source)
+			</otherwise>
+		</choose>  
+		AND i.status!='流标'
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+		 and i.time &gt;= #{start} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+		AND i.time &lt;= #{end}
+		</if>
+		AND i.user_id in  (select DISTINCT user_id FROM invest WHERE time &lt;#{start} AND status != '流标')
+ 	</select>
+	<!-- 复投金额 -->
+	<select id="getInvestUserMoneyAgain" parameterType="map" resultType="double">
+		SELECT  IFNULL(SUM(i.money),0) FROM  invest i  LEFT JOIN user_other_info u1 ON i.user_id=u1.id
+		WHERE  
+			<choose>
+			<when test="userSource !=null and userSource != '' ">
+				u1.user_source LIKE "%"#{userSource}"%" 
+			</when>
+			<otherwise>
+				ISNULL(u1.user_source)
+			</otherwise>
+		</choose>
+		  AND i.status!='流标'
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+		 and i.time &gt;= #{start} 
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+		AND i.time &lt;= #{end}
+		</if>
+		AND i.user_id in  (select DISTINCT user_id FROM invest WHERE time &lt;#{start} AND status != '流标')
+	</select>
+	<!--   -->
+</mapper>

@@ -1,0 +1,563 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.duanrong.cps.business.thirdPlatform.mapper.thirdPlatformMapper">
+
+	<resultMap type="com.duanrong.cps.business.loan.model.Loan" id="loanRm">
+		<result column="id" property="id"/>
+		<result column="loan_type" property="loanType"/>
+		<result column="name" property="name"/>
+		<result column="day" property="day"/>
+		<result column="deadline" property="deadline"/>
+		<result column="operation_type" property="operationType"/>
+		<result column="rate" property="rate"/>
+		<result column="money" property="totalmoney"/>
+		<result column="repay_type" property="repayType"/>
+		<result column="give_money_time" property="giveMoneyTime"/>
+		<result column="min_invest_money" property="investOriginMoney"/>
+		<result column="status" property="status"/>
+		<result column="sum_money" property="sumMoney"/>
+		<result column="newbieEnjoy" property="newbieEnjoy"/>
+		<result column="user_id" property="borrowMoneyUserID"/>
+		<result column="commit_time" property="commitTime"/>
+		<result column="give_money_operation_time" property="giveMoneyOperationTime"/>
+		<result column="expect_time" property="expectTime"/>
+		<result column="type" property="type"/>
+	</resultMap>
+
+	<resultMap type="com.duanrong.cps.business.repay.model.Repay" id="repayRm">
+		<result column="id" property="id"/>
+		<result column="repay_day" property="repayDay"/>
+		<result column="loan_id" property="loanId"/>
+		<result column="period" property="period"/>
+	</resultMap>
+	
+	<resultMap type="com.duanrong.cps.business.platform.model.PlatformUserRelation" id="platformRm">
+		<result column="id" property="id"/>
+		<result column="WDTY_id" property="platformUserId"/>
+		<result column="userID" property="userId"/>
+		<result column="whether_new" property="whetherNew"/>
+		<result column="user_key" property="userKey"/>
+		<result column="create_time" property="createTime"/>
+		<result column="type" property="type"/>
+		<result column="register_time" property="registerTime"/>
+		<result column="whether_binding" property="whetherBinding"/>
+		<result column="uid" property="uid"/>
+		<result column="username" property="username"/>
+		<result column="mobile_number" property="mobile"/>
+		<result column="user_source" property="userSource"/>
+		<result column="realname" property="realName"/>
+	</resultMap>
+	
+	<resultMap type="com.duanrong.cps.business.invest.model.Invest" id="investRm">
+		<result column="id" property="id"/>
+		<result column="loan_id" property="loanId"/>
+		<result column="rate" property="rate"/>
+		<result column="money" property="money"/>
+		<result column="interest" property="interest"/>
+		<result column="status" property="status"/>
+		<result column="time" property="time"/>
+		<result column="user_source" property="userSource"/>
+		<result column="invest_allowance_interest" property="investAllowanceInterest"/>
+		<result column="paid_money" property="paidMoney"/>
+		<result column="paid_interest" property="paidInterest"/>
+		<result column="user_id" property="userId"/>
+		<result column="day" property="loanDay"/>
+		<result column="operation_type" property="loanOperationType"/>
+		<result column="give_money_time" property="loanGiveMoneyTime"/>
+		<result column="name" property="loanName"/>
+		<result column="repay_day" property="repayDay"/>
+		<result column="period" property="period"/>
+		<result column="repayId" property="repayId"/>
+		<result column="deadline" property="deadline"/>
+		<result column="repay_type" property="repayType"/>
+		<result column="platformType" property="platformType"/>
+		<result column="loanStatus" property="loanStatus"/>
+		<result column="whetherNew" property="whetherNew"/>
+		<result column="WDTY_id" property="thirdPlatformUserId"/>
+		<result column="mobile_number" property="userMobileNumber"/>
+	</resultMap>
+	
+	
+	<resultMap type="com.duanrong.cps.business.bsy.model.InvestByBsy" id="investByPlatform">
+	  	<result column="id" property="investId"/>
+	  	<result column="interest" property="interest"/>
+	  	<result column="money" property="investMoney"/>
+	  	<result column="rate" property="rate"/>
+	  	<result column="status" property="investStatus"/>
+	  	<result column="time" property="investTime"/>
+	  	<result column="loan_id" property="loanId"/>
+	  	<result column="user_id" property="userId"/>
+	  	<result column="realname" property="userName"/>
+	  	<result column="mobile_number" property="mobileNumber"/>
+	  	<result column="name" property="loanName"/>
+	  	<result column="month" property="month"/>
+	  	<result column="day" property="days"/>
+	  	<result column="deadline" property="deadline"/>
+	  	<result column="operation_type" property="operationType"/>
+	  	<result column="mobileNumber" property="mobileNumber"/>
+	  	<result column="user_source" property="userSource"/>
+	  	
+	  	<result column="redpacket_id" property="redId"/>
+	  	<result column="redMoney" property="redMoney"/>
+	  	<result column="redRate" property="redRate"/>
+	  	<result column="redType" property="redType"/>
+	  	<result column="activity_id" property="activityId"/>
+	  	<result column="activity_name" property="activityName"/>
+	  	
+	  	<result column="is_auto_invest" property="isAutoInvest"/>
+	  	
+	  	<result column="infoUserSource" property="infoUserSource"/>
+	 </resultMap>
+	 
+	 
+	 	<resultMap type="FengchelicaiNotice" id="FengchelicaiNotice">
+		<id property="id" column="id" />
+		<result property="title" column="title" />
+		<result property="release_time" column="create_time" />
+		<result property="content" column="body" />
+	</resultMap>
+	
+	
+	<!-- 查询产品信息 -->	
+	<select id="queryLoanInfo" parameterType="map" resultType="java.util.List" resultMap="loanRm">
+		 select id, loan_type, name,day, loan.deadline, operation_type, rate, money,repay_type ,give_money_time ,
+		        min_invest_money ,status, newbieEnjoy,user_id,commit_time,give_money_operation_time,expect_time,
+	       (select sum(money) from invest where invest.loan_id=loan.id and invest.`status` in('等待确认','投标成功','还款中','完成'))as sum_money  
+	       from loan
+	        <where>
+	         company_name='否' AND organization_exclusive='否'
+	        	<if test="startTime!='' and startTime!=null">
+	        		and commit_time>=#{startTime}
+	        	</if>
+	        	<if test="endTime!='' and endTime!=null">
+	        		and commit_time &lt;=#{endTime}
+	        	</if>
+	        	<if test="loanIds!='' and loanIds!=null">
+	        	    and id in(${loanIds})
+	        	</if>
+	        	<if test="userId != null and userId != '' ">
+	        		and user=#{userId}
+	        	</if>
+	        	<if test="loanStatus != null and loanStatus != ''">
+	        		and (loan.`status`='筹款中' OR loan.status='贷前公告')
+	        	</if>
+	        </where>
+	</select>
+	<!-- 查询还款表 -->
+	<select id="queryRepayInfo" parameterType="map" resultType="java.util.List" resultMap="repayRm">
+		select id,corpus, interest,repay_day,status,loan_id,period from repay 
+		<where>
+		    1=1
+		     <if test="loanId!=null and loanId!=''">
+		     	and loan_id=#{loanId} 
+		     </if>	
+			 <if test="startTime!='' and startTime!=null">
+	        	and repay_day>=#{startTime}
+	        </if>
+	        <if test="endTime!='' and endTime!=null">
+	        	and repay_day &lt;=#{endTime}
+	        </if>
+	        <if test="id != null and id != '' ">
+	        	and id in(${id})
+	        </if>
+	        <if test="loanIds != null and loanIds!='' ">
+	        	and loan_id in(${loanIds})
+	        </if>
+		</where>
+		order by repay_day desc
+	</select>
+	
+	<!-- 查询用户关联表 -->
+	<select id="queryPlatformInfo" parameterType="map" resultType="java.util.List" resultMap="platformRm">
+	
+		SELECT  platform.id, platform.WDTY_id, platform.userID, platform.user_key,platform.whether_new,
+		        platform.create_time,platform.type,`user`.register_time , `user`.id uid
+		FROM `platform_user_relation` platform left JOIN `user` ON platform.userID=`user`.id
+		<where>
+			1=1
+			<if test="type!=null and type!='' ">
+				 and platform.type= #{type}
+			</if>
+			<if test="platformUserIds!=null and platformUserIds!='' ">
+				 and platform.WDTY_id in (${platformUserIds})
+			</if>
+			<if test="startTime!='' and startTime!=null">
+	        	and platform.create_time>=#{startTime}
+	        </if>
+	        <if test="endTime!='' and endTime!=null">
+	        	and platform.create_time &lt;=#{endTime}
+	        </if>
+		</where> 
+	</select>
+	
+	<!-- 查询用户可用余额 -->
+	<select id="queryUserEnableAccount" statementType="CALLABLE" parameterType="map">
+       	<![CDATA[
+           call user_balance(
+              #{userId,mode=IN,jdbcType=VARCHAR},
+              #{enableMoney,mode=OUT,jdbcType=DOUBLE},
+              #{frozen,mode=OUT,jdbcType=DOUBLE}
+           )   
+       	]]>
+    </select>
+	
+	<!-- 查询用户投资记录 -->
+	<select id="queryInvest" parameterType="map" resultType="java.util.List" resultMap="investRm">
+		select invest.id, invest.loan_id, invest.rate,invest.money,invest.interest,invest.`status`,
+		       invest.time,invest.user_source, invest.paid_interest, invest.paid_money,invest.user_id,
+		       loan.day,loan.deadline, loan.operation_type, loan.give_money_time,loan.`name`,loan.repay_type,loan.`status` loanStatus,
+		       puser.type platformType, puser.whether_new whetherNew,puser.WDTY_id,
+		       user.mobile_number
+        from invest 
+        LEFT JOIN loan on invest.loan_id=loan.id
+        LEFT JOIN platform_user_relation puser on invest.user_id=puser.userID
+        LEFT JOIN user on invest.user_id=user.id
+        <where>
+          and invest.`status` NOT IN('流标','等待确认')
+          <if test="userType != '' and userType != null">
+            and puser.type=#{userType}
+          </if>
+          <if test="userId != null and userId != '' ">
+             and invest.user_id=#{userId}
+          </if>
+          <if test="startTime!='' and startTime!=null">
+	        	and invest.time>=#{startTime}
+	        </if>
+	        <if test="endTime!='' and endTime!=null">
+	        	and invest.time &lt;=#{endTime}
+	        </if>
+	        <if test="id != null and id != '' ">
+	        	and invest.id in(${id})
+	        </if>
+	        <if test="loanId != null and loanId!='' ">
+	        	and invest.loan_id in(${loanId})
+	        </if>
+	        <if test="userIds != null and userIds != '' ">
+             	and invest.user_id in(${userIds})
+          </if>
+         <if test="platformType!='' and platformType!= null"> 
+         	and  puser.type=#{platformType}
+         </if>
+        </where>
+	</select>
+	
+	<!-- 查询没有绑定关系的用户的投资记录 -->
+	
+	<select id="queryInvestUserOtherInfo" parameterType="map" resultType="java.util.List" resultMap="investRm">
+		select invest.id, invest.loan_id, invest.rate,invest.money,invest.interest,invest.`status`,
+		       invest.time,invest.user_source, invest.paid_interest, invest.paid_money,invest.user_id,
+		       loan.day,loan.deadline, loan.operation_type, loan.give_money_time,loan.`name`,loan.repay_type,loan.`status` loanStatus,
+		       puser.user_source platformType,
+		       user.mobile_number
+        from invest 
+        LEFT JOIN loan on invest.loan_id=loan.id
+        LEFT JOIN user_other_info puser on invest.user_id=puser.id
+        LEFT JOIN user on invest.user_id=user.id
+        <where>
+          and invest.`status` NOT IN('流标','等待确认')
+          <if test="userType != '' and userType != null">
+            and puser.user_source=#{userType}
+          </if>
+          <if test="userId != null and userId != '' ">
+             and invest.user_id=#{userId}
+          </if>
+          <if test="startTime!='' and startTime!=null">
+	        	and invest.time>=#{startTime}
+	        </if>
+	        <if test="endTime!='' and endTime!=null">
+	        	and invest.time &lt;=#{endTime}
+	        </if>
+	        <if test="id != null and id != '' ">
+	        	and invest.id in(${id})
+	        </if>
+	        <if test="loanId != null and loanId!='' ">
+	        	and invest.loan_id in(${loanId})
+	        </if>
+	        <if test="userIds != null and userIds != '' ">
+             	and invest.user_id in(${userIds})
+          </if>
+         <if test="platformType!='' and platformType!= null"> 
+         	and puser.user_source=#{platformType}
+         </if>
+        </where>
+	</select>
+	
+	<!-- 关联查询投资表和还款表 -->
+	  <select id="queryInvestRepay" parameterType="map" resultType="java.util.List" resultMap="investRm">
+  		SELECT invest.id,invest.interest, invest.money, invest.paid_interest,invest.paid_money,invest.`status`,
+  		       invest.loan_id,invest.user_id, 
+  		       repay.period,repay.repay_day,repay.id as repayId 
+       from invest 
+       LEFT JOIN repay on invest.loan_id=repay.loan_id
+       LEFT JOIN platform_user_relation puser ON invest.user_id=puser.userID
+       <where>
+       		invest.status!='流标' and puser.type=#{userType}
+       		<if test="startTime!='' and startTime!=null">
+	        	and repay.repay_day>=#{startTime}
+	        </if>
+	        <if test="endTime!='' and endTime!=null">
+	        	and repay.repay_day &lt;=#{endTime}
+	        </if>
+	         <if test="id != null and id != '' ">
+	        	and invest.id in(${id})
+	        </if>
+	        <if test="loanId != null and loanId!='' ">
+	        	and invest.loan_id in(${loanId})
+	        </if>
+	        <if test="userIds != null and userIds != '' ">
+             and invest.user_id=#{userId}
+          </if>
+       </where>
+  	</select>
+  	
+  	<!-- 插入日志表 -->
+	<insert id="insertRequestLog" parameterType="map">
+	 	insert into ${tableName} (request,response,type,create_time,status,message,ip)
+	 	values(#{request},#{response},#{type},#{createTime},#{status},#{message},#{ip});
+	</insert>
+	
+	
+  <!-- 分页查询相应第三平台的用户 -->	 
+  <select id="getPlatformUserInfo" parameterType="map" resultMap="platformRm">
+  	SELECT * FROM platform_user_relation 
+  	WHERE type=#{type}
+			<if test="userId !=null and userId !=''  ">
+  				And userID=#{userId}
+  			</if>
+  			<if test="TimeBegin !=null and TimeBegin !=''  ">
+  				And create_time &gt;=#{TimeBegin}
+  			</if>
+  			<if test="TimeEnd !=null and TimeEnd !=''  ">
+  				And create_time &lt;=#{TimeEnd}
+  			</if>
+  		order by create_time DESC
+  </select>
+	
+<!-- 查询第三方用户的投资记录 -->		
+ 
+ <select id="getPlatformInvestInfo" parameterType="map" resultMap="investByPlatform">
+ 	SELECT invest.id, invest.interest, invest.money, invest.rate,invest.`status`,invest.time, invest.user_id , invest.loan_id, invest.user_source,invest.redpacket_id,
+           loan.`name`,loan.`day`, loan.deadline,loan.operation_type,
+		   `user`.realname ,
+			puser.whether_new,
+			red.money redMoney,red.rate redRate,red.type redType,red.activity_id,
+			active.activity_name,
+			info.user_source infoUserSource
+			
+    from invest
+
+   left JOIN loan ON invest.loan_id=loan.id
+
+   LEFT JOIN `user` on invest.user_id=`user`.id
+
+   LEFT JOIN platform_user_relation puser ON puser.userID=invest.user_id
+   
+   LEFT JOIN red_packet_detail red ON   invest.redpacket_id=red.id
+   
+   LEFT JOIN marketing_activityinfo active on red.activity_id=active.id
+   
+   LEFT JOIN user_other_info info ON invest.user_id=info.id
+   
+   <where>
+         1=1 
+        <if test="type != null and type != '' ">
+        	and puser.type=#{type} 
+        </if>
+    	
+    	<if test="investId != null and investId != '' ">
+    		and invest.id=#{investId}
+    	</if>
+    	<if test="loanId != null and loanId != ''">
+    		and loan.id=#{loanId}
+    	</if>
+    	<if test="userId != null and userId != ''">
+			and invest.user_id=#{userId}    	
+    	</if>
+    	<if test="investTimeBegin != null and investTimeBegin != ''">
+    		and invest.time>=#{investTimeBegin}
+    	</if>
+    	<if test="investTimeEnd != null and investTimeEnd != '' ">
+    		and invest.time &lt;=#{investTimeEnd}
+    	</if>
+    	<if test="isNewUser != null"> <!-- 新老用户 -->
+    	 	and puser.whether_new=#{isNewUser}
+    	</if>
+    	<if test="investmethod != null and investmethod != '' ">  <!-- 用户投资渠道 -->
+    		and invest.user_source LIKE '%${investmethod}%'
+    	</if>
+   </where>
+   order by invest.time desc
+ </select>
+ 
+ <!-- 查询user_other_info表里某个用户来源的用户信息-->
+ <select id="queryUserByUserSrouce" parameterType="map" resultMap="platformRm">
+ 	select user.id userID, user.username, user.mobile_number,user.realname, user.register_time,
+ 	       info.user_source
+ 	from   `user`
+ 	LEFT JOIN user_other_info info ON user.id=info.id 
+ 	<where>
+ 		info.user_source LIKE '${userSource}%'
+ 		<if test="userId != null and userId != '' ">
+ 			and user.id=#{userId}
+ 		</if>
+ 		<if test="registTimeBegin != null and registTimeBegin != '' ">
+ 			and user.register_time>=#{registTimeBegin}
+ 		</if>
+ 		<if test="registTimeEnd != null and registTimeEnd != '' ">
+ 			and user.register_time &lt;=#{registTimeEnd}
+ 		</if>
+ 		order by user.register_time desc
+ 	</where>
+ </select>
+ 
+ <!-- 查询user_other_info表里某个用户来源的用户投资信息-->
+ <select id="queryUserInvestByUserSource" parameterType="map" resultMap="investByPlatform">
+ 	SELECT invest.id, invest.interest, invest.money, invest.rate,invest.`status`,invest.time, invest.user_id , invest.loan_id, invest.user_source,invest.redpacket_id, invest.is_auto_invest,
+           loan.`name`,loan.`day`, loan.deadline,loan.operation_type,
+		   `user`.realname ,`user`.mobile_number,
+			red.money redMoney,red.rate redRate,red.type redType,red.activity_id,
+			active.activity_name
+    from invest
+
+   left JOIN loan ON invest.loan_id=loan.id
+
+   LEFT JOIN `user` on invest.user_id=`user`.id
+
+   LEFT JOIN user_other_info userInfo ON userInfo.id=invest.user_id
+   
+   LEFT JOIN red_packet_detail red ON   invest.redpacket_id=red.id
+   
+   LEFT JOIN marketing_activityinfo active on red.activity_id=active.id
+   <where>
+   		userInfo.user_source LIKE '${userSource}%'
+   		<if test="investId != null and investId != '' ">
+    		and invest.id=#{investId}
+    	</if>
+    	<if test="loanId != null and loanId != ''">
+    		and loan.id=#{loanId}
+    	</if>
+    	<if test="userId != null and userId != ''">
+			and invest.user_id=#{userId}    	
+    	</if>
+    	<if test="investTimeBegin != null and investTimeBegin != ''">
+    		and invest.time>=#{investTimeBegin}
+    	</if>
+    	<if test="investTimeEnd != null and investTimeEnd != '' ">
+    		and invest.time &lt;=#{investTimeEnd}
+    	</if>
+   </where>
+   order by invest.time desc
+ </select>	
+	
+	  <!-- 分页查询相应第三平台的用户 -->	 
+  <select id="getNotice" parameterType="map" resultMap="FengchelicaiNotice">
+      	SELECT *, id AS node_id
+		FROM node
+		LEFT JOIN category_term_node ct
+		ON
+		node.id = ct.node_id
+		AND
+		node.`status`='1'
+        AND
+				ct.term_id = #{params.entity.termId}
+		ORDER BY seq_num DESC, node.create_time DESC limit #{start},#{pageSize}
+  </select>
+  
+  <select id="getAwardTotalMoney" parameterType="String" resultType="Double">
+     SELECT IFNULL(SUM(money),0) FROM user_bill 
+		WHERE user_id = #{userId}
+			AND type = 'pt_balance'
+  </select>
+  
+  <select id="getRepayInterestTotalMoney" parameterType="map" resultType="Double">
+      SELECT IFNULL(SUM(invest.invest_allowance_interest), 0)
+		from invest,repay_invest
+		where invest.id = repay_invest.invest_id
+		and invest.invest_allowance_interest >0
+		and invest.user_id = #{userId}
+		AND repay_invest.send_allowance_status =
+		#{sendStatus}
+		AND invest.STATUS IN ('完成','还款中')
+		AND invest.time > '2015-09-06'
+  </select>
+  
+   <select id="getRecycledMoney" parameterType="map" resultType="Double">
+     SELECT  IFNULL(SUM(money), 0)-IFNULL(SUM(paid_money), 0)
+		FROM invest
+		WHERE user_id = #{investUserID}
+		<if test="status != null and status != ''">
+			<choose>
+				<when test="status == '!流标'">
+					AND status != '流标'
+				</when>
+				<when test="status == '还款中'">
+					AND status = '还款中'
+				</when>
+				<otherwise>
+					AND status IN
+					<foreach collection="conditions" item="condition" open="("
+						separator="," close=")">
+						#{condition}
+					</foreach>
+				</otherwise>
+			</choose>
+		</if>
+  </select>
+	
+	
+	  <select id="getDemandAvlidTreasureMoney" parameterType="String" resultType="Double">
+     SELECT IFNULL(SUM(money),0) FROM demand_treasure_bill WHERE type = 'in' AND user_id = #{userId}
+  </select>
+  
+   <select id="getDemandAvlidTreasureMoney1" parameterType="String" resultType="Double">
+     SELECT IFNULL(SUM(money),0) FROM demand_treasure_bill WHERE type = 'out' AND user_id = #{userId}
+  </select>
+  
+  
+  <select id="getDemandOutTreasureMoney1" parameterType="String" resultType="Double">
+		SELECT IFNULL(SUM(principal),0) AS principal  FROM demand_treasure_transferout 
+		WHERE status = 'sended' AND user_id = #{userId}
+	</select>
+	
+	
+	 
+  <select id="getInvestLoanDueInterest" parameterType="String" resultType="Double">
+		SELECT IFNULL(SUM(invest.interest), 0) -IFNULL(SUM(paid_interest), 0)
+		FROM invest
+		WHERE user_id = #{userId}
+		AND time > '2015-01-01'
+		AND status != '流标'
+	</select>
+	
+	<select id="getInvestsTotalInterest" parameterType="string"
+		resultType="double">
+		SELECT IFNULL(SUM(paid_interest), 0)
+		FROM
+		invest
+		WHERE
+		user_id
+		=
+		#{userId} AND status IN ('完成', '还款中')
+	</select>
+	
+	  <select id="getDemandInMoney" parameterType="String" resultType="Double">
+     SELECT IFNULL(SUM(money),0) FROM demand_treasure_bill WHERE type = 'in' AND user_id = #{userId}
+  </select>
+  
+  <!-- 根据user_other_info表查询投资用户的用户来源 -->
+  <select id="getUserInfoInvest" parameterType="map" resultMap="investRm">
+  	 SELECT  invest.id , invest.`user_id`,user_other_info.`user_source` platformType 
+  	 
+  	 FROM invest LEFT JOIN user_other_info ON invest.`user_id`=user_other_info.`id`
+  	 
+  	 WHERE invest.id=#{investId}
+  </select>
+  
+  <!-- 查询注册来源为第三方平台，但是没有绑定关系的用户 -->
+  <select id="getNoRelationThirdUser"  parameterType="map" resultMap="investRm">
+     SELECT id user_id ,user_source  platformType FROM user_other_info  WHERE  
+     user_other_info.`id`= (SELECT user_id FROM invest WHERE id=#{investId}) AND 
+     user_other_info.`user_source`=#{type} AND 
+     user_other_info.id NOT IN(SELECT userID FROM platform_user_relation WHERE platform_user_relation.`type`=#{type})
+  </select>
+</mapper>

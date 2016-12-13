@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.dataAnalysis.business.Loan.mapper.LoanDataMapper">
+	<resultMap type="loandata" id="loandateeRM">
+		<result property="allCompany" column="all_company" javaType="java.math.BigDecimal"/>
+		<result property="allCar" column="all_car"/>
+		<result property="allHouse" column="all_house" javaType="java.math.BigDecimal" />
+		<result property="tCompany" column="t_company"/>
+		<result property="tCar" column="t_car"/>
+		<result property="tHouse" column="t_house"/>
+		<result property="lCompany" column="l_company"/>
+		<result property="lCar" column="l_car"/>
+		<result property="lHouse" column="l_house"/>
+		<result property="allSend" column="all_send" javaType="java.math.BigDecimal"/>
+		<result property="allAgent" column="all_agent" javaType="java.math.BigDecimal"/>
+	</resultMap>
+
+
+	<select id="getLoanData" resultMap="loandateeRM" parameterType="String">
+	SELECT
+	(SELECT ROUND(SUM(money),2) FROM  loan WHERE `status`!='流标' AND loan_type='企业贷' AND company_name='否') as all_company,
+	(SELECT ROUND(SUM(money),2) FROM  loan WHERE `status`!='流标' AND  loan_type='车贷' AND company_name='否') as all_car,
+	(SELECT ROUND(SUM(money),2) FROM  loan WHERE `status`!='流标' AND  loan_type='房贷' AND company_name='否') as all_house,
+	(SELECT ROUND(SUM(money),2) FROM  loan WHERE `status`!='流标' AND  loan_type='企业贷' AND date(commit_time) = curdate()AND company_name='否')AS t_company ,
+	(SELECT ROUND(SUM(money),2) FROM  loan WHERE `status`!='流标' AND  loan_type='车贷' AND date(commit_time) = curdate()AND company_name='否') AS t_car,
+	(SELECT ROUND(SUM(money),2) FROM  loan WHERE `status`!='流标' AND  loan_type='房贷' AND date(commit_time) = curdate()AND company_name='否') AS  t_house,
+	(SELECT ROUND(SUM(money),2) FROM  loan WHERE `status`!='流标' AND  loan_type='企业贷' AND date_format(commit_time,'%Y-%m-%d') = date_format(CURDATE(),'%Y-%m-%d') -interval 1 DAY AND company_name='否') AS l_company,
+	(SELECT ROUND(SUM(money),2) FROM  loan WHERE `status`!='流标' AND  loan_type='车贷' AND date_format(commit_time,'%Y-%m-%d') = date_format(CURDATE(),'%Y-%m-%d') -interval 1 DAY AND company_name='否') as l_car,
+ 	(SELECT ROUND(SUM(money),2) FROM  loan WHERE `status`!='流标' AND  loan_type='房贷' AND date_format(commit_time,'%Y-%m-%d') = date_format(CURDATE(),'%Y-%m-%d') -interval 1 DAY AND company_name='否') AS l_house,
+	
+	(SELECT ROUND(SUM(corpus),2) FROM repay WHERE `status`='还款中') AS all_agent,
+	(SELECT (SELECT ROUND(SUM(money),2) FROM  loan WHERE `status`!='流标' AND loan_type='企业贷' AND company_name='否')+
+	(SELECT ROUND(SUM(money),2) FROM  loan WHERE `status`!='流标' AND loan_type='车贷' AND company_name='否')+
+	(SELECT ROUND(SUM(money),2) FROM  loan WHERE `status`!='流标' AND loan_type='房贷' AND company_name='否') 
+FROM
+	DUAL)AS all_send
+FROM
+	DUAL
+	</select>
+	
+	
+</mapper>

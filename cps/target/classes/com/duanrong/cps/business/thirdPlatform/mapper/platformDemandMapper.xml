@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.duanrong.cps.business.thirdPlatform.mapper.platformDemandMapper">
+
+	<resultMap type="com.duanrong.cps.business.platform.model.DemandBill" id="demandBillRm">
+	  <result column="id" property="id"/>
+	  <result column="money" property="money"/>
+	  <result column="type" property="type"/>
+	  <result column="create_time" property="createTime"/>
+	  <result column="tranfer_way" property="tranferWay"/>
+	  <result column="detail" property="detail"/>
+	  <result column="info" property="info"/>
+	  <result column="bill_id" property="billId"/>
+	  <result column="is_read" property="isRead"/>
+	  <result column="user_id" property="userId"/>
+	  <result column="mobile_number" property="mobileNumber"/>
+	  <result column="realname" property="realname"/>
+	  <result column="user_source" property="userSource"/>
+	</resultMap>
+	
+	<!--查询活期流水记录 -->
+	<select id="queryDemandBill" parameterType="map" resultMap="demandBillRm">
+		select bill.* ,
+		
+		      `user`.mobile_number,`user`.realname,
+		      
+		      info.user_source
+		      
+		from demand_treasure_bill bill 
+
+        LEFT JOIN `user` ON bill.user_id=`user`.id
+
+        LEFT JOIN user_other_info info ON bill.user_id=info.id
+        
+        <where>
+        	info.user_source=#{userSource} and (bill.type='in' or bill.type='out') 
+        	<if test="mobileNumber!='' and mobileNumber!= null ">
+        		and user.mobile_number=#{mobileNumber}
+        	</if>
+        	<if test="type != '' and type != null">
+        		and bill.type=#{type}
+        	</if>
+        	<if test="investTimeBegin != null and investTimeBegin != ''">
+    			and bill.create_time>=#{investTimeBegin}
+	    	</if>
+	    	<if test="investTimeEnd != null and investTimeEnd != '' ">
+	    		and bill.create_time &lt;=#{investTimeEnd}
+	    	</if>
+        </where>
+        
+        order by bill.create_time DESC
+		
+	</select>
+</mapper>

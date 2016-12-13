@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.duanrong.cps.business.netloaneye.mapper.PushInfoMapper" >
+  <resultMap id="PushInfoRowMap" type="com.duanrong.cps.business.netloaneye.model.PushInfoRow" >
+    <id column="mobile" property="mobile" />
+    <result column="loan_id" property="loan_id" />
+    <result column="userkey" property="userkey"/>
+    <result column="order_id" property="order_id" />
+    <result column="amount" property="amount" />
+    <result column="trade_time" property="trade_time" />
+    <result column="cost" property="cost" />
+    <result column="userId" property="userId" />
+    <result column="whetherNew" property="whetherNew" />
+  </resultMap>
+
+  
+  <!-- 1.投资人,推送投资人记录,状态为0的 -->
+  <select id="getPushInvestList" parameterType="String" resultMap="PushInfoRowMap">
+ select u.mobile_number as mobile,i.loan_id as loan_id,pur.user_key as userkey,i.id as order_id,
+     i.money as amount,i.time as trade_time,l.rate as cost,i.user_id as userId,pur.whether_new as whetherNew
+	 from invest i  
+	 left join platform_user_relation pur on i.user_id = pur.userID
+	 left join user u on i.user_id = u.id
+	 left join loan l on i.loan_id = l.id
+	where pur.user_key is not null and i.status != '流标'  and pur.type = 'p2peye'
+	AND l.id=#{id}
+  </select>
+  
+<!-- 1.投资人,推送投资人记录,状态为0的 -->
+  <select id="getPushInvestPersonByUserId" parameterType="map" resultMap="PushInfoRowMap">
+ select u.mobile_number as mobile,i.loan_id as loan_id,pur.user_key as userkey,i.id as order_id,
+     i.money as amount,i.time as trade_time,l.rate as cost,i.user_id as userId,pur.whether_new as whetherNew
+	 from invest i  
+	 left join platform_user_relation pur on i.user_id = pur.userID
+	 left join user u on i.user_id = u.id
+	 left join loan l on i.loan_id = l.id
+	where pur.user_key is not null and i.status != '流标'  and pur.type = 'p2peye'
+		<if test="userId != null and userId != '' ">
+				AND u.id = #{userId}
+			</if>
+		<if test="startTime != null and startTime != '' ">
+				AND i.time &gt;= #{startTime}
+			</if>
+		<if test="endTime != null and endTime != '' ">
+				AND i.time &lt;= #{endTime}
+			</if>
+			order by trade_time
+  </select>
+  
+
+</mapper>

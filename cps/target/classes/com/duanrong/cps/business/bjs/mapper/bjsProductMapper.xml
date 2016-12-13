@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.duanrong.cps.business.bjs.mapper.bjsProductMapper">
+
+	<resultMap type="com.duanrong.cps.business.loan.model.Loan" id="productRm">
+		<result column="id" property="id"/>
+		<result column="loan_type" property="loanType"/>
+		<result column="name" property="name"/>
+		<result column="day" property="day"/>
+		<result column="operation_type" property="operationType"/>
+		<result column="rate" property="rate"/>
+		<result column="money" property="totalmoney"/>
+		<result column="repay_type" property="repayType"/>
+		<result column="give_money_time" property="giveMoneyTime"/>
+		<result column="min_invest_money" property="investOriginMoney"/>
+		<result column="status" property="status"/>
+		<result column="sum_money" property="sumMoney"/>
+		<result column="newbieEnjoy" property="newbieEnjoy"/>
+	</resultMap>
+	
+	<resultMap type="com.duanrong.cps.business.user.model.UserBill" id="userBillRm">
+		<result column="id" property="id"/>
+		<result column="detail" property="detail"/>
+		<result column="money" property="money"/>
+		<result column="seq_num" property="seqNum"/>
+		<result column="time" property="time"/>
+		<result column="type_info" property="typeInfo"/>
+		<result column="user_id" property="userId"/>
+		<result column="type" property="type"/>
+	</resultMap>
+	<resultMap type="com.duanrong.cps.business.invest.model.Invest" id="investRm">
+		<result column="id" property="id"/>
+		<result column="loan_id" property="loanId"/>
+		<result column="rate" property="rate"/>
+		<result column="money" property="money"/>
+		<result column="interest" property="interest"/>
+		<result column="status" property="status"/>
+		<result column="time" property="time"/>
+		<result column="user_source" property="userSource"/>
+		<result column="invest_allowance_interest" property="investAllowanceInterest"/>
+		<result column="paid_money" property="paidMoney"/>
+		<result column="day" property="loanDay"/>
+		<result column="operation_type" property="loanOperationType"/>
+		<result column="give_money_time" property="loanGiveMoneyTime"/>
+		<result column="name" property="loanName"/>
+	</resultMap>
+
+	<resultMap type="com.duanrong.cps.business.repay.model.Repay" id="repayRm">
+		<result column="id" property="id"/>
+		<result column="repay_day" property="repayDay"/>
+		<result column="loan_id" property="loanId"/>
+		<result column="period" property="period"/>
+	</resultMap>
+	<!-- 查询产品信息 -->
+	 <select id="getProductInfo" resultMap="productRm" resultType="java.util.List" parameterType="map" >
+	       select id, loan_type, name,day, operation_type, rate, money,repay_type ,give_money_time ,min_invest_money ,status, newbieEnjoy,
+	       (select sum(money) from invest where invest.loan_id=loan.id and invest.`status` in('等待确认','投标成功','还款中','完成'))as sum_money  
+	       from loan
+	        where commit_time >=#{date} and company_name='否' limit #{startProduct}, #{limitProduct}
+	 </select>
+
+	<!-- 查询产品总数 -->
+	<select id="getProductAccount"  resultType="int" parameterType="string">
+		select COUNT(*) as countTotal from loan 
+
+	    where  commit_time>=#{date} and company_name='否'
+	</select>
+	
+	<!-- 插入日志表 -->
+	<insert id="insertBjsRequestLog" parameterType="map">
+	 	insert into ${tableName} (request,response,type,create_time,status,message,ip)
+	 	values(#{request},#{response},#{type},#{createTime},#{status},#{message},#{ip});
+	</insert>
+
+	<!-- 查询帐户信息 -->
+	<select id="queryBjsUserInfo" statementType="CALLABLE" parameterType="map">
+       	<![CDATA[
+           call user_balance(
+              #{userId,mode=IN,jdbcType=VARCHAR},
+              #{enableMoney,mode=OUT,jdbcType=DOUBLE},
+              #{frozen,mode=OUT,jdbcType=DOUBLE}
+           )   
+       	]]>
+    </select>
+
+	<!-- 查询与第三方用户的关联关系 -->
+	<select id="getPlatFormUserRelation" parameterType="string" resultType="map">
+		
+		SELECT * FROM `platform_user_relation` where platform_user_relation.WDTY_id=#{userId};
+	</select>
+	
+	<!-- 查询用户的总收益 -->
+	<select id="getUserTotalInterest" parameterType="string" resultType="double">
+		SELECT SUM(paid_interest) as totalInterest FROM `invest` where invest.user_id=#{userId};
+	</select>
+	
+	 <!-- 用户交易流水查询 -->
+	<select id="queryCapitalFlow" parameterType="map" resultType="java.util.List" resultMap="userBillRm">
+      select * from user_bill where user_bill.user_id=#{userId} and time>=#{date} limit #{startAccount}, #{limitAccout}
+	</select>
+	
+	<!-- 用户交易流水的个数 -->
+	<select id="queryCapitalFlowAccount" parameterType="map" resultType="int">
+		SELECT COUNT(*) from user_bill where user_bill.user_id=#{userId} and time>=#{date}
+	</select>
+	
+	<!-- 查询用户投资记录 -->
+	<select id="queryInvestByUserId" parameterType="map" resultType="java.util.List" resultMap="investRm">
+		select invest.id, invest.loan_id, invest.rate,invest.money,invest.interest,invest.`status`,invest.time,invest.user_source ,loan.day, loan.operation_type, loan.give_money_time,loan.`name`  
+        from invest LEFT JOIN loan on invest.loan_id=loan.id
+        where invest.user_id=#{userId} and time>=#{date} limit #{startInvest}, #{limitInvest}
+	</select>
+	
+	<!-- 查询用户投资记录的总个数 -->
+	<select id="queryInvestAccount" parameterType="map" resultType="int">
+		SELECT COUNT(*) from invest where invest.user_id=#{userId} and time>=#{date} 
+	</select>
+	
+	<!--查询用户相关收益  -->
+	<select id="queryInterest" parameterType="map" resultType="java.util.List" resultMap="investRm">
+		SELECT * from invest 
+		 where 
+		 invest.user_id=#{userId} and invest.time>=#{date} and invest.`status` not in('流标') limit #{startInterest}, #{limitInterest}
+	</select>
+	
+	<!-- 查询用户收益的总记录数 -->
+	<select id="queryInterestAccount" parameterType="map" resultType="int">
+		SELECT COUNT(*) from invest ,repay 
+		where 
+		invest.loan_id=repay.loan_id  and invest.user_id=#{userId} and 
+		invest.time>=#{date} and invest.`status` not in('流标')
+	</select>
+	
+	<!--  根据loanId查询还款表 -->
+	<select id="queryRepay" parameterType="string" resultType="java.util.List" resultMap="repayRm">
+		select * from repay where loan_id=#{loanId}
+	</select>
+</mapper>

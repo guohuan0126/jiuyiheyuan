@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.duanrong.cps.business.thirdPlatform.mapper.PushThirdPlatformMapper">
+<resultMap type="com.duanrong.cps.business.loan.model.Loan" id="loanRm">
+		<result column="id" property="id"/>
+		<result column="loan_type" property="loanType"/>
+		<result column="name" property="name"/>
+		<result column="day" property="day"/>
+		<result column="deadline" property="deadline"/>
+		<result column="operation_type" property="operationType"/>
+		<result column="rate" property="rate"/>
+		<result column="money" property="totalmoney"/>
+		<result column="repay_type" property="repayType"/>
+		<result column="give_money_time" property="giveMoneyTime"/>
+		<result column="min_invest_money" property="investOriginMoney"/>
+		<result column="status" property="status"/>
+		<result column="sum_money" property="sumMoney"/>
+		<result column="newbieEnjoy" property="newbieEnjoy"/>
+		<result column="user_id" property="borrowMoneyUserID"/>
+		<result column="commit_time" property="commitTime"/>
+		<result column="give_money_operation_time" property="giveMoneyOperationTime"/>
+		<result column="type" property="type"/>
+		<result column="pushTime" property="pushTime"/>
+		<result column="updateTime" property="updateTime"/>
+		<result column="thirdType" property="thirdType"/>
+	</resultMap>
+	<resultMap type="com.duanrong.cps.business.netloaneye.model.PushLoan" id="pushLoanRm">
+		<result column="id" property="id"/>
+		<result column="loan_id" property="loanId"/>
+		<result column="push_time" property="pushTime"/>
+		<result column="push_userId" property="pushUserid"/>
+		<result column="status" property="status"/>
+		<result column="push_status" property="pushStatus"/>
+		<result column="loan_money" property="loanMoney"/>
+		<result column="already_money" property="alreadyMoney"/>
+		<result column="update_time" property="updateTime"/>
+		<result column="message" property="message"/>
+		<result column="type" property="type"/>
+	</resultMap>
+
+	<resultMap type="com.duanrong.cps.business.platform.model.PushInvest" id="pushInvestRm">
+		<result column="id" property="id"/>
+		<result column="user_id" property="userId"/>
+		<result column="loan_id" property="loanId"/>
+		<result column="amount" property="amount"/>
+		<result column="invest_time" property="investTime"/>
+		<result column="send_time" property="sendTime"/>
+		<result column="invest_id" property="investId"/>
+		<result column="interest" property="interest"/>
+		<result column="invest_channel" property="investChannel"/>
+		<result column="interestdate" property="interestdate"/>
+		<result column="type" property="type"/>
+	</resultMap>
+
+<resultMap type="com.duanrong.cps.business.invest.model.Invest" id="investRm">
+		<result column="id" property="id"/>
+		<result column="loan_id" property="loanId"/>
+		<result column="rate" property="rate"/>
+		<result column="money" property="money"/>
+		<result column="interest" property="interest"/>
+		<result column="status" property="status"/>
+		<result column="time" property="time"/>
+		<result column="user_source" property="userSource"/>
+		<result column="invest_allowance_interest" property="investAllowanceInterest"/>
+		<result column="paid_money" property="paidMoney"/>
+		<result column="paid_interest" property="paidInterest"/>
+		<result column="user_id" property="userId"/>
+		<result column="day" property="loanDay"/>
+		<result column="operation_type" property="loanOperationType"/>
+		<result column="give_money_time" property="loanGiveMoneyTime"/>
+		<result column="name" property="loanName"/>
+		<result column="repay_day" property="repayDay"/>
+		<result column="period" property="period"/>
+		<result column="repayId" property="repayId"/>
+		<result column="deadline" property="deadline"/>
+		<result column="repay_type" property="repayType"/>
+		<result column="platformType" property="platformType"/>
+		<result column="loanStatus" property="loanStatus"/>
+		<result column="send_time" property="sendTime"/>
+		
+	</resultMap>
+
+<!-- 查询可以推送给第三方的标的 -->
+<select id="getWaitPushLoanList" parameterType="map" resultMap="loanRm">
+		select  loan.* from loan
+		 where loan.id not in (select loan_id from push_loan p where p.type = #{thirdType})
+		   and loan.`status` in('筹款中','贷前公告')
+			and loan.company_name='否'
+			order by loan.commit_time DESC
+</select>
+
+<!-- 得到推送标的信息 -->
+<select id="getLoanByLoanId" parameterType="map" resultMap="loanRm">
+		select l.id,l.`name`,l.money,l.rate,l.repay_type,l.operation_type,l.deadline,l.newbieEnjoy ,l.`day`,l.loan_type,l.`status`,l.commit_time,l.type ,min_invest_money,
+		( SELECT sum(money) FROM invest WHERE invest.loan_id =
+		l.id and invest.status in ('等待确认','投标成功','还款中','完成')) AS sum_money
+		
+		from loan l  where l.id in (${Ids}) 
+</select>
+
+<!-- 查询push_loan表 -->
+<select id="getPushLoanInfo" parameterType="map" resultMap="pushLoanRm">
+	select * from push_loan
+	<where>
+		type=#{type}
+		<if test="id != null and id !=''">
+			id=#{id}
+		</if>
+		<if test="loanId != null and loanId != ''">
+			and loan_id=#{loanId}
+		</if>
+		<if test="pushTime != null and pushTime != ''">
+			and push_time=#{pushTime}
+		</if>
+		
+	</where>
+</select>
+
+<!-- 修改push_loan表 -->
+	<update id="updatePushLoan" parameterType="com.duanrong.cps.business.netloaneye.model.PushLoan">
+		update push_loan set  update_time=#{updateTime}
+		<if test="status!=null and status!='' ">
+			,status=#{status}
+		</if>
+		<if test="alreadyMoney!=null and alreadyMoney!='' ">
+			,already_money=#{alreadyMoney}
+		</if>
+		 where loan_id=#{loanId} and type=#{type}
+	</update>
+
+<!-- 把推送了的标的插入我们的数据库push_loan表中 -->
+ <insert id="insertPushLoan" parameterType="com.duanrong.cps.business.netloaneye.model.PushLoan" >
+    insert into push_loan (id, loan_id, push_time, 
+            push_userId,status,push_status,loan_money,already_money,update_time,type)
+    values (#{id}, #{loanId}, #{pushTime}, #{pushUserid},#{status},#{pushStatus},
+           #{loanMoney},#{alreadyMoney},#{updateTime},#{type})
+</insert>
+
+<!-- 查询push_investors表 -->
+<select id="getPushInvestorsInfo" parameterType="map" resultMap="pushInvestRm">
+	SELECT * from push_investors 
+	<where>
+		type=#{type}
+		<if test="investId !=null and investId != ''">
+	    	and invest_id=#{investId}
+	    </if>
+	</where>
+	
+  
+</select>
+
+<!-- 插入push_investors表 -->
+<insert id="insertPushInvestors" parameterType="com.duanrong.cps.business.platform.model.PushInvest">
+	insert into push_investors
+	          (id,invest_id,user_id,loan_id,amount,invest_time,send_time,interest,invest_channel,interestdate,type,commission) 
+	values
+	          (#{id},#{investId},#{userId},#{loanId},#{amount},#{investTime},#{sendTime},#{interest},#{investChannel},#{interestdate},#{type},#{commission})
+</insert>
+
+<!--查询推送到第三方平台的标的  -->
+	<select id="getLoanHistory"  resultMap="loanRm" resultType="java.util.List" parameterType="java.util.Map">
+		SELECT loan.*, pushLoan.push_time pushTime , pushLoan.update_time updateTime,pushLoan.type thirdType 
+		FROM  loan ,push_loan pushLoan 
+		where loan.id=pushLoan.loan_id and pushLoan.type=#{thridType}
+		<if test="loanId != null and loanId != ''">
+			and loan.id=#{loanId}
+		</if>
+		<if test="timeBegin != null and timeBegin != ''">
+			and loan.commit_time >= #{timeBegin}
+		</if>
+		<if test="timeEnd != null and timeEnd !=''">
+			and loan.commit_time &lt;= #{timeEnd}
+		</if>
+		<if test="loanStatus != null and loanStatus != ''">
+			and loan.`status` = #{loanStatus}
+		</if>
+		<if test="loanName != null and loanName != ''"> 
+			and loan.`name` = #{loanName}
+		</if>
+		<if test="pushTimeBegin != null and pushTimeBegin != ''">
+			and pushLoan.push_time >= #{pushTimeBegin}
+		</if>
+		<if test="pushtimeEnd != null and pushtimeEnd != ''">
+			and pushLoan.push_time &lt;= #{pushtimeEnd}
+		</if>
+		<if test="loanType != null and loanType != ''">
+			and loan.type = #{loanType} 
+		</if>
+   
+		ORDER By pushLoan.push_time DESC
+
+	</select>
+	
+<!-- 查询已经推送给第三方的投资记录 -->
+    <select id="getInvestHistory" parameterType="map" resultMap="investRm">
+    	select invest.*,
+    	       push_investors.send_time,
+    	       loan.status loanStatus,loan.operation_type ,loan.`day`,loan.deadline,loan.repay_type,loan.`name`
+    	from       invest 
+    	LEFT JOIN  push_investors on invest.id=push_investors.invest_id
+    	LEFT JOIN  loan on invest.loan_id=loan.id
+    	<where>
+    		 push_investors.type=#{type}
+    		 <if test="investId != null and investId!=''">
+    		     and invest.id=#{investId}
+    		 </if>
+    		 <if test="loanId != null and loanId!='' ">
+    		 	and loan.id=#{loanId}
+    		 </if>
+    		 <if test="investTimeBegin != null and investTimeBegin != '' ">
+    		 	and push_investors.send_time>=#{investTimeBegin}
+    		 </if>
+    		 <if test="investTimeEnd != null and  investTimeEnd != '' ">
+    		 	and push_investors.send_time &lt;=#{investTimeEnd}
+    		 </if>
+    	</where>
+     	
+    </select>
+    
+    <!-- 插入推送给第三方的个人帐户信息 -->
+    <insert id="insertPushUserAccount" parameterType="com.duanrong.cps.business.platform.model.PushUserAccount">
+    
+	insert into push_useraccount
+	          (user_id,trade_amount,wait_interest,amount,balance,create_time,invest_id,type) 
+	values
+	          (#{userId},#{tradeAmount},#{waitInterest},#{amount},#{balance},#{createTime},#{investId},#{type})
+</insert>
+    
+</mapper>
