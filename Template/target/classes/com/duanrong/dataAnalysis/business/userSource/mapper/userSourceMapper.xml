@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.dataAnalysis.business.Loan.mapper.LoanDataMapper">
+	<resultMap type="usersource" id="userSourceCount">
+		<result property="nUserCountT" column="n_user_countT" />
+		<result property="nUserCountB" column="n_user_countB"/>
+		<result property="rUserCountT" column="r_user_countT"/>
+		<result property="rUserCountB" column="r_user_countB"/>
+		<result property="bUserCountT" column="b_user_countT"/>
+		<result property="bUserCountB" column="b_user_countB"/>
+		<result property="iUserCountT" column="i_user_countT"/>
+		<result property="iUserCountB" column="i_user_countB"/>
+	</resultMap>
+
+
+	<select id="getUserCount" resultMap="userSourceCount" >
+	SELECT
+	(
+		SELECT COUNT(*) FROM `user` u LEFT JOIN user_other_info u1 ON u.id=u1.id WHERE u1.user_source LIKE '360%' AND date(u.register_time)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+
+	) AS n_user_countT,
+	(
+		SELECT	COUNT(*)	FROM	`user` u LEFT JOIN user_other_info u1 ON u.id = u1.id	WHERE	u1.user_source LIKE 'baidu%' AND date(u.register_time)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+
+	) AS n_user_countB,
+	(
+		SELECT	COUNT(*)	FROM	user_role u LEFT JOIN user_other_info u1 ON u.user_id = u1.id	WHERE	u.role_id = 'INVESTOR' AND u1.user_source LIKE '360%' AND date(u.time)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+
+	) AS r_user_countT,
+	( 
+		SELECT	COUNT(*) FROM	user_role u	LEFT JOIN user_other_info u1 ON u.user_id = u1.id	WHERE	u.role_id = 'INVESTOR'	AND u1.user_source LIKE 'baidu%' AND date(u.time)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+
+	) AS r_user_countB,
+	(
+		SELECT	COUNT(*)	FROM	bank_card b LEFT JOIN user_other_info u1 ON b.user_id = u1.id	WHERE	u1.user_source LIKE '360%'	AND b.bank_city IS NULL	AND b. STATUS IN ('VERIFIED', 'VERIFYING') AND date(b.time)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+
+	) AS b_user_countT,
+	(
+		SELECT	COUNT(*)	FROM		bank_card b	LEFT JOIN user_other_info u1 ON b.user_id = u1.id WHERE	u1.user_source LIKE 'baidu%'	AND b.bank_city IS NULL	AND b. STATUS IN ('VERIFIED', 'VERIFYING') AND date(b.time)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+
+	) AS b_user_countB,
+	(
+		SELECT	COUNT(*)	FROM	invest i	LEFT JOIN user_other_info u1 ON i.user_id = u1.id	WHERE	i. STATUS != '流标'	AND u1.user_source LIKE '360%' AND date(i.time)=DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND i.user_id not in (select DISTINCT user_id FROM invest WHERE  date(time) &lt;  DATE_SUB(CURDATE(), INTERVAL 2 DAY) AND status !='流标')
+		
+
+	) AS i_user_countT,
+	(
+		SELECT	COUNT(*)	FROM	invest i	LEFT JOIN user_other_info u1 ON i.user_id = u1.id	WHERE	i. STATUS != '流标'	AND u1.user_source LIKE 'baidu%' AND date(i.time)=DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND i.user_id not in (select DISTINCT user_id FROM invest WHERE  date(time) &lt;  DATE_SUB(CURDATE(), INTERVAL 2 DAY)  AND status !='流标')
+		
+	) AS i_user_countB
+FROM
+	DUAL
+	
+	</select>
+</mapper>

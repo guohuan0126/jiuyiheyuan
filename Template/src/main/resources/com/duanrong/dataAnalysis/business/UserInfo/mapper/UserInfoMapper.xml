@@ -1,0 +1,638 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.dataAnalysis.business.UserInfo.mapper.UserInfoMapper">
+		<resultMap type="userInfoR" id="userInfoRm">
+			<result property="id" column="id" />
+			<result property="name" column="realname" />
+			<result property="registerTime" column="register_time"/>
+			<result property="isRealName" column="role" />
+			<result property="userSource" column="user_source" />
+			<result property="lastLoginTime" column="last_login_time" />
+			<result property="liveInvestMoney" column="live_invest_money" />
+			<result property="regularInvestMoneyAgain" column="regular_invest_money_again" />
+	</resultMap>
+	<resultMap type="com.duanrong.dataAnalysis.business.UserInfo.model.ComeBack" id="comeBackRm">
+		<result property="remark" column="remark"/>
+		<result property="time" column="time"/>
+		<result property="admin" column="admin"/>
+	</resultMap>
+	<resultMap type="com.duanrong.dataAnalysis.business.UserInfo.model.UserSourceData" id="userSourceDataR">
+		<result property="userCount" column="user_count"/>
+		<result property="realNameCount" column="realname_count"/>
+		<result property="regularInvestCount" column="regular_invest_count"/>
+		<result property="regularInvestMoney" column="regular_invest_money"/>
+		<result property="investIngMoney" column="investIng_money"/>
+		<result property="liveInvestCount" column="live_invest_count"/>
+		<result property="liveInvestMoney" column="live_invest_money"/>
+		<result property="allMoney" column="all_money"/>
+	</resultMap>
+
+	<select id="pageLite4Map" resultMap="userInfoRm" parameterType="map">
+SELECT DISTINCT(u.id) AS id,case when (select count(*) from user_role where
+		user_id=u.id and
+		role_id='INVESTOR')>=1 then '实名认证'
+		else '未实名认证' END
+		role,
+		u.realname AS realname,
+		u.register_time AS register_time, o.user_source AS user_source,
+<!-- #最后登录时间 -->
+(SELECT login_time FROM  user_login_log WHERE user_login_log.user_id=u.id ORDER BY login_time DESC LIMIT 1)AS last_login_time
+<!-- #活期投资金额 -->
+
+from `user` u,user_other_info o,user_role u1 
+where u.id=o.id   AND u1.user_id=u.id and  u.user_authentic!=1
+<!-- #来源 -->
+AND o.user_source LIKE #{userSource}"%" 
+<!-- #活期投资金额 -->
+<if test="liveInvestMin !='' and liveInvestMin !=null">
+	AND (SELECT IFNULL(sum(d.money),0) FROM demand_treasure_bill d WHERE d.type='in' AND d.user_id=u.id)-(SELECT IFNULL(sum(d.money),0) FROM demand_treasure_bill d WHERE d.type='out' AND d.user_id=u.id) - (SELECT IFNULL(sum(d.money),0) FROM demand_treasure_transferout d where status='sended' AND user_id=u.id)&gt;=#{liveInvestMin} 
+</if>
+<if test="liveInvestMin !='' and liveInvestMin !=null and liveInvestMax !='' and liveInvestMax !=null ">
+AND (SELECT IFNULL(sum(d.money),0) FROM demand_treasure_bill d WHERE d.type='in' AND d.user_id=u.id)-(SELECT IFNULL(sum(d.money),0) FROM demand_treasure_bill d WHERE d.type='out' AND d.user_id=u.id) - (SELECT IFNULL(sum(d.money),0) FROM demand_treasure_transferout d where status='sended' AND user_id=u.id)&gt;=#{liveInvestMin} 
+AND (SELECT IFNULL(sum(d.money),0) FROM demand_treasure_bill d WHERE d.type='in' AND d.user_id=u.id)-(SELECT IFNULL(sum(d.money),0) FROM demand_treasure_bill d WHERE d.type='out' AND d.user_id=u.id) - (SELECT IFNULL(sum(d.money),0) FROM demand_treasure_transferout d where status='sended' AND user_id=u.id)&lt;=#{liveInvestMax}
+</if>
+<!-- #定期投资金额 -->
+<if test="regularInvestMin !='' and regularInvestMin !=null">
+AND (SELECT SUM(money) FROM invest WHERE `status`IN('投资成功','还款中') AND invest.user_id =u.id )&gt;=#{regularInvestMin}
+</if>
+<if test="regularInvestMin !='' and regularInvestMin !=null and regularInvestMax !='' and regularInvestMax !=null ">
+AND (SELECT SUM(money) FROM invest WHERE `status`IN('投资成功','还款中') AND invest.user_id =u.id )&gt;=#{regularInvestMin} AND (SELECT SUM(money) FROM invest WHERE `status`IN('投资成功','还款中') AND invest.user_id =u.id ) &lt;=#{regularInvestMax}
+</if>
+<!-- #可用红包数量 -->
+<if test="minRedPackCount !='' and minRedPackCount !=null">
+AND (SELECT COUNT(red_packet_detail.id) FROM red_packet_detail WHERE red_packet_detail.send_status='unused' AND type='money' and red_packet_detail.user_id=u.id)&gt;=#{minRedPackCount}
+</if>
+<if test="minRedPackCount !='' and minRedPackCount !=null and maxRedPackCount !='' and maxRedPackCount !=null ">
+AND (SELECT COUNT(red_packet_detail.id) FROM red_packet_detail WHERE red_packet_detail.send_status='unused' AND type='money' and red_packet_detail.user_id=u.id)&gt;=#{minRedPackCount} AND (SELECT COUNT(red_packet_detail.id) FROM red_packet_detail WHERE red_packet_detail.send_status='unused' AND type='money' and  red_packet_detail.user_id=u.id)  &lt;=#{maxRedPackCount}
+</if>
+<!-- #可用加息券数量 --> 
+<if test="minRateCount !='' and minRateCount !=null">
+AND(SELECT COUNT(red_packet_detail.id) FROM red_packet_detail WHERE red_packet_detail.send_status='unused' AND type='rate' and red_packet_detail.user_id=u.id)&gt;=#{minRateCount}
+</if>
+<if test="minRateCount !='' and minRateCount !=null and maxRateCount !='' and maxRateCount !=null ">
+AND(SELECT COUNT(red_packet_detail.id) FROM red_packet_detail WHERE red_packet_detail.send_status='unused' AND type='rate' and red_packet_detail.user_id=u.id)&gt;=#{minRateCount} AND (SELECT COUNT(red_packet_detail.id) FROM red_packet_detail WHERE red_packet_detail.send_status='unused' AND type='rate' and red_packet_detail.user_id=u.id) &lt;=#{maxRateCount}
+</if>
+<!-- #定期投资总额 -->
+<if test="minInvestMoney !='' and minInvestMoney !=null">
+AND (SELECT SUM(money) FROM invest WHERE `status`!='流标' AND invest.user_id =u.id )&gt;=#{minInvestMoney}
+</if>
+<if test="minInvestMoney !='' and minInvestMoney !=null and maxInvestMoney !='' and maxInvestMoney !=null ">
+AND (SELECT SUM(money) FROM invest WHERE `status`!='流标' AND invest.user_id =u.id )&gt;=#{minInvestMoney} AND (SELECT SUM(money) FROM invest WHERE `status`!='流标' AND invest.user_id =u.id ) &lt;=#{maxInvestMoney}
+</if>
+<!-- 注册时间 -->
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>
+<choose>
+<when test="real=='yes'">
+<!-- #实名 -->
+and  (select count(*) from user_role where
+		user_id=u.id and
+		role_id='INVESTOR')>=1
+</when>
+<when test="real=='no'">
+<!-- # 不实名 -->
+and (select count(*) from user_role where
+		user_id=u.id and
+		role_id='INVESTOR')=0
+</when>
+</choose>
+	</select>
+	
+
+
+<!-- 回访记录 -->
+<select id="getComeBack" parameterType="map" resultMap="comeBackRm">
+	SELECT remark AS remark ,time as time ,admin AS admin FROM user_visit_info WHERE userid=#{id}
+</select>
+<!-- 投资时间 -->
+<select id="getInvestTime" resultType="String" parameterType="map">
+
+SELECT time FROM invest WHERE invest.user_id=#{id}  ORDER BY invest.time asc LIMIT 1
+
+</select>
+
+
+<!-- 底部数据 -->
+<select id="getUserSourceData" resultMap="userSourceDataR" parameterType="map">
+SELECT 
+(SELECT COUNT(*) FROM `user` u JOIN user_other_info o ON u.id=o.id AND o.user_source LIKE #{userSource}"%"
+	<!-- 注册时间 -->
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>
+ )AS user_count,
+ 
+(SELECT COUNT(*) FROM user_role JOIN user_other_info o  ON o.id=user_role.user_id 
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+JOIN `user` u ON u.id=o.id  
+</if>
+WHERE user_role.role_id='INVESTOR' AND o.user_source LIKE #{userSource}"%"
+<!-- 注册时间 -->
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>)AS realname_count,
+(SELECT COUNT(DISTINCT(invest.user_id)) FROM invest JOIN user_other_info o ON invest.user_id=o.id 
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+JOIN `user` u ON o.id=u.id
+</if>
+ WHERE invest.`status`!='流标'AND o.user_source LIKE #{userSource}"%"
+<!-- 注册时间 -->
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>) AS regular_invest_count,
+(SELECT COUNT(DISTINCT(d.user_id)) FROM demand_treasure_bill d JOIN user_other_info o ON o.id=d.user_id 
+<if test="registerTimeBegin !='' and registerTimeBegin !=null"> 
+JOIN `user` u ON o.id=u.id   
+</if>
+WHERE d.type='in' AND o.user_source LIKE #{userSource}"%"
+<!-- 注册时间 -->
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>) AS live_invest_count,
+(select TRUNCATE((SELECT IFNULL(sum(d.money),0) FROM demand_treasure_bill d JOIN user_other_info o ON o.id=d.user_id  
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+JOIN `user` u ON u.id=o.id  
+</if>
+WHERE d.type='in' AND o.user_source LIKE #{userSource}"%"
+<!-- 注册时间 -->
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>
+)-
+(SELECT IFNULL(sum(d.money),0) FROM demand_treasure_bill d  JOIN user_other_info o ON o.id=d.user_id 
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+JOIN `user` u ON u.id=o.id  
+</if>
+WHERE d.type='out' AND o.user_source LIKE #{userSource}"%"
+ <!-- 注册时间 -->
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>
+  ) - 
+(SELECT IFNULL(sum(d.money),0) FROM demand_treasure_transferout d JOIN user_other_info o ON o.id=d.user_id  
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+JOIN `user` u ON u.id=o.id 
+</if>
+ where d.status='sended' AND o.user_source LIKE #{userSource}"%"
+  <!-- 注册时间 -->
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>
+ ),3)
+)AS live_invest_money,
+
+(SELECT IFNULL(SUM(i.money),0) FROM invest i JOIN user_other_info o ON i.user_id=o.id  
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+JOIN `user` u ON o.id=u.id 
+</if>
+ WHERE i.status!='流标'AND o.user_source LIKE #{userSource}"%"
+<!-- 注册时间 -->
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>) AS regular_invest_money,
+(SELECT ROUND(SUM(money),2) FROM invest i  JOIN user_other_info o ON i.user_id=o.id  
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+JOIN `user` u ON o.id=u.id 
+</if>
+ WHERE i.`status`IN('投资成功','还款中') AND o.user_source LIKE #{userSource}"%"
+ <!-- 注册时间 -->
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>)AS investIng_money
+FROM DUAL
+</select>
+
+<!-- 根据用户id 查出账户总资产 -->
+<select id="getUserAllMoneyById" resultType="double" parameterType="map">
+	SELECT 
+(SELECT ROUND(((
+SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 
+		WHERE user_id=#{id}
+			AND type='ti_balance')+
+(SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 
+		WHERE user_id=#{id}
+			AND type='pt_balance')-
+(SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 
+		WHERE user_id=#{id}
+			AND type='to_balance')-
+(SELECT IFNULL(SUM(money),0) 
+	FROM user_bill 
+		WHERE user_id=#{id}
+			AND type='freeze')+
+(SELECT IFNULL(SUM(money),0) 
+	FROM user_bill 
+		WHERE user_id=#{id}
+			AND type='unfreeze')
+			),2) AS money
+	FROM
+		DUAL)
+		
+		+
+(SELECT(
+(SELECT IFNULL(SUM(money),0)
+	FROM user_bill 
+		WHERE user_id=#{id}
+			AND type='freeze')-
+
+(SELECT IFNULL(SUM(money),0)
+		FROM user_bill 
+		WHERE user_id=#{id}
+			AND user_bill.type='unfreeze')-
+
+(SELECT IFNULL(SUM(money),0)
+	FROM user_bill 
+		WHERE user_id=#{id}
+			AND user_bill.type='to_frozen')
+) 
+AS money
+	FROM
+		DUAL)
+		+
+(SELECT TRUNCATE((
+(SELECT IFNULL(SUM(money) ,0)
+FROM demand_treasure_bill 
+WHERE type ='in' 
+AND user_id = #{id})-
+(SELECT IFNULL(sum(money),0)
+FROM demand_treasure_bill 
+WHERE type ='out' 
+AND user_id = #{id})+
+(SELECT IFNULL(sum(money),0) 
+FROM demand_treasure_bill 
+WHERE type ='interest' 
+AND user_id = #{id})-
+(SELECT IFNULL(sum(money),0)
+FROM demand_treasure_bill 
+WHERE type ='outinterest' 
+AND user_id = #{id})
+),3 )
+AS money
+	FROM
+		DUAL)
+		+
+(SELECT IFNULL(SUM(money), 0)
+		FROM invest
+		WHERE user_id = #{id}
+AND status IN('还款中','投资成功') ) FROM DUAL
+	
+</select>
+
+<!-- 账户总资产ByuserSource -->
+<select id="getUserAllMoney" resultType="double" parameterType="map" >
+SELECT 
+(SELECT ROUND(((
+SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 
+		LEFT JOIN user_other_info o 
+		ON user_bill.user_id = o.id
+	<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		JOIN `user` u 
+		ON  o.id=u.id
+	</if>
+		WHERE o.user_source LIKE #{userSource}"%" 
+		AND type='ti_balance'
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>)+
+(SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 
+		LEFT JOIN user_other_info o 
+		ON user_bill.user_id = o.id
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		JOIN `user` u 
+		ON  o.id=u.id
+</if>
+		WHERE o.user_source LIKE #{userSource}"%" 
+		AND type='pt_balance'
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>)-
+(SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 	
+		LEFT JOIN user_other_info o 
+		ON user_bill.user_id = o.id
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		JOIN `user` u 
+		ON  o.id=u.id
+</if>
+		WHERE o.user_source LIKE #{userSource}"%" 
+		AND type='to_balance'
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>)-
+(SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 		
+		LEFT JOIN user_other_info o 
+		ON user_bill.user_id = o.id
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">		
+		JOIN `user` u 
+		ON  o.id=u.id
+</if>
+		WHERE o.user_source LIKE #{userSource}"%" 
+		AND type='freeze'
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>)+
+(SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 
+		LEFT JOIN user_other_info o 
+		ON user_bill.user_id = o.id
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		JOIN `user` u 
+		ON  o.id=u.id
+</if>
+		WHERE o.user_source LIKE #{userSource}"%" 
+		AND type='unfreeze'
+
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>)),2) AS money
+	FROM
+		DUAL)+
+(SELECT (
+(SELECT ROUND(IFNULL(SUM(money),0),2)
+		FROM user_bill 
+		LEFT JOIN user_other_info o 
+		ON user_bill.user_id = o.id
+	  	<if test="registerTimeBegin !='' and registerTimeBegin !=null">		
+		JOIN `user` u
+		ON o.id=u.id
+		</if>
+		WHERE o.user_source LIKE #{userSource}"%" 
+		AND user_bill.type='freeze'
+		<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>
+)-
+(SELECT ROUND(IFNULL(SUM(money),0),2)
+		FROM user_bill
+		LEFT JOIN user_other_info o 
+		ON user_bill.user_id = o.id
+  		<if test="registerTimeBegin !='' and registerTimeBegin !=null">		
+		JOIN `user` u
+		ON o.id=u.id
+		</if>
+		WHERE o.user_source LIKE #{userSource}"%" 
+		AND user_bill.type='unfreeze'
+		<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>
+)-
+(SELECT ROUND(IFNULL(SUM(money),0),2)
+		FROM user_bill
+		LEFT JOIN user_other_info o  
+		ON user_bill.user_id = o.id
+  		<if test="registerTimeBegin !='' and registerTimeBegin !=null">		
+		JOIN `user` u
+		ON o.id=u.id
+		</if>
+		WHERE o.user_source LIKE #{userSource}"%" 
+		AND user_bill.type='to_frozen'
+		<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>
+)
+) 
+AS money
+	FROM
+		DUAL)+
+(SELECT TRUNCATE((
+(SELECT IFNULL(sum(money),0)
+FROM demand_treasure_bill d 
+JOIN user_other_info o 
+ON o.id=d.user_id
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">		
+		JOIN `user` u
+		ON o.id=u.id
+</if>
+WHERE d.type ='in' 
+AND o.user_source LIKE #{userSource}"%" 
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>)-
+(SELECT IFNULL(sum(money),0)
+FROM demand_treasure_bill d
+JOIN user_other_info o 
+ON o.id=d.user_id
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">		
+JOIN `user` u
+ON o.id=u.id
+</if>
+WHERE d.type ='out' 
+AND o.user_source LIKE #{userSource}"%" 
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>
+)+
+(SELECT IFNULL(sum(money),0) 
+FROM demand_treasure_bill d 
+JOIN user_other_info o 
+ON o.id=d.user_id
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">		
+JOIN `user` u
+ON o.id=u.id
+</if>
+WHERE d.type ='interest' 
+AND o.user_source LIKE #{userSource}"%" 
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>
+)-
+(SELECT IFNULL(sum(money),0)
+FROM demand_treasure_bill d
+JOIN user_other_info o 
+ON o.id=d.user_id
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">		
+JOIN `user` u
+ON o.id=u.id
+</if>
+WHERE d.type ='outinterest' 
+AND o.user_source LIKE #{userSource}"%" 
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>
+ )
+),3 )
+AS money
+	FROM
+		DUAL)+
+(SELECT IFNULL(SUM(money), 0)
+		FROM invest i JOIN user_other_info o 
+		ON o.id=i.user_id
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">		
+		JOIN `user` u
+		ON o.id=u.id
+</if>
+		WHERE o.user_source LIKE #{userSource}"%" 
+		AND i.status IN('还款中','投资成功')
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>) FROM DUAL
+
+</select>
+<!-- 根据用户来源查询出账户可用余额 -->
+<select id="getUserUsedMoney" parameterType="map" resultType="double">
+	SELECT ROUND(((
+SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 
+		LEFT JOIN user_other_info o 
+		ON user_bill.user_id = o.id
+	<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		JOIN `user` u 
+		ON  o.id=u.id
+	</if>
+		WHERE o.user_source LIKE #{userSource}"%" 
+		AND type='ti_balance'
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>)+
+(SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 
+		LEFT JOIN user_other_info o 
+		ON user_bill.user_id = o.id
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		JOIN `user` u 
+		ON  o.id=u.id
+</if>
+		WHERE o.user_source LIKE #{userSource}"%" 
+		AND type='pt_balance'
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>)-
+(SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 	
+		LEFT JOIN user_other_info o 
+		ON user_bill.user_id = o.id
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		JOIN `user` u 
+		ON  o.id=u.id
+</if>
+		WHERE o.user_source LIKE #{userSource}"%" 
+		AND type='to_balance'
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>)-
+(SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 		
+		LEFT JOIN user_other_info o 
+		ON user_bill.user_id = o.id
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">		
+		JOIN `user` u 
+		ON  o.id=u.id
+</if>
+		WHERE o.user_source LIKE #{userSource}"%" 
+		AND type='freeze'
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>)+
+(SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 
+		LEFT JOIN user_other_info o 
+		ON user_bill.user_id = o.id
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		JOIN `user` u 
+		ON  o.id=u.id
+</if>
+		WHERE o.user_source LIKE #{userSource}"%" 
+		AND type='unfreeze'
+
+<if test="registerTimeBegin !='' and registerTimeBegin !=null">
+		AND u.register_time &gt;=#{registerTimeBegin}
+</if>
+<if test="registerTimeBegin !='' and registerTimeBegin !=null and registerTimeEnd !='' and registerTimeEnd !=null ">
+		AND u.register_time >=#{registerTimeBegin} AND u.register_time &lt;= #{registerTimeEnd}
+</if>)),2) AS money
+	FROM
+		DUAL
+</select>
+
+
+
+</mapper> 

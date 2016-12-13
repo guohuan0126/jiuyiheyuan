@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.dataAnalysis.business.currnetData.mapper.currnetDataMapper">
+	<resultMap type="currnetData" id="userdateeRM">
+		<result property="inMoney" column="in_money" />
+		<result property="outMoney" column="out_money" />
+	</resultMap>
+	
+	<resultMap type="com.duanrong.dataAnalysis.business.currnetData.model.ResCurrnetData" id="userdateeRM1">
+		<result property="money" column="money" />
+		<result property="timer" column="timer" />
+	</resultMap>
+	
+	
+	<!-- 今日转入 转出金额 -->
+	<select id="getCurrnetDataT" resultMap="userdateeRM">
+	SELECT
+		(SELECT IFNULL(round(SUM(money), 2),0) FROM demand_treasure_transferin WHERE `status` in('confirm','freeze') AND date(sended_time) = curdate()) AS in_money,
+		(SELECT IFNULL(round(SUM(principal), 2),0) FROM demand_treasure_transferout where `status` in('success','sended') AND date(sended_time) = curdate()) AS out_money
+	FROM
+	DUAL 
+	</select>
+	<!-- 转入 -->
+	<select id="getInData" resultMap="userdateeRM1" parameterType="map">
+		SELECT IFNULL(round(sum(money), 2),0) AS money,sended_time AS timer FROM demand_treasure_transferin  WHERE `status` in('confirm','freeze') AND sended_time &gt;#{beginTime} AND sended_time &lt;=#{endTime} 
+		 GROUP BY DATE(sended_time)
+	</select>
+	<!-- 转出金额-->
+	<select id="getOutData" resultMap="userdateeRM1" parameterType="map">
+		SELECT IFNULL(round(sum(money), 2),0) AS money,sended_time AS timer FROM demand_treasure_transferout  WHERE `status` in('success','sended') AND sended_time &gt;#{beginTime} AND sended_time &lt;=#{endTime} 
+		GROUP BY DATE(sended_time)
+	</select> 
+	
+</mapper>

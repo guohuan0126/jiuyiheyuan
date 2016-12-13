@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.dataAnalysis.business.user.mapper.UserMapper">
+	<resultMap type="user" id="userRM">
+		<id property="userId" column="id" />
+		<result property="username" column="username" />
+		<result property="email" column="email" />
+		<result property="registerTime" column="register_time" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="status" column="status" />
+		<result property="password" column="password" />
+		<result property="cashPassword" column="cash_password" />
+		<result property="postAddress" column="post_address" />
+		<result property="postCode" column="post_code" />
+		<result property="realname" column="realname" />
+		<result property="idCard" column="id_card" />		
+	</resultMap>
+	
+	<resultMap type="role" id="roleRM">
+		<id property="id" column="id"/>
+		<result property="name" column="name" />
+		<result property="description" column="description" />
+		<result property="status" column="status" />			
+	</resultMap>
+	
+	<resultMap type="templateUser" id="templateUserRm">
+		<id property="id" column="id"/>
+		<result property="time" column="time" />
+		<result property="year" column="year" />
+		<result property="month" column="month" />			
+		<result property="count" column="count" />			
+	</resultMap>
+	
+	<!-- 根据手机号查询用户  -->
+	<select id="getUserByMobileNumber" resultMap="userRM" parameterType="string">		
+		select * from user where mobile_number = #{mobileNumber}
+	</select>
+	<select id="getUserById" resultMap="userRM" parameterType="string">		
+		select * from user where id = #{id}
+	</select>
+	<select id="getUserByEmail" resultMap="userRM" parameterType="string">		
+		select * from user where email = #{email}
+	</select>
+	<select id="getRoleByUserId" resultType="List" parameterType="string">
+	select  * from user_role where user_id= #{userId}
+	</select>	
+	<select id="getCountUserAndRole" resultType="Integer" parameterType="map">
+	select  count(*) from user_role where user_id= #{userId} and role_id =#{roleId}
+	</select>
+	
+	<select id="getUserTemplate" parameterType="map" resultMap="templateUserRm">
+		select * from template_user where year=#{year} and month=#{month}
+	</select>
+	
+	<insert id="insertUsers" parameterType="java.util.List">
+		INSERT INTO `user`  
+		(id,username,password,realname,sex,mobile_number,id_card,register_time,user_authentic,status)
+		VALUES
+		(#{userId},#{userId},#{password},#{realName},#{sex},#{mobileNumber},#{idCard},#{time},#{isReal},#{status})
+	<foreach collection="list" item="item" index="index" separator="," >
+		(#{item.userId},#{item.userId},#{item.password},#{item.realName},#{item.sex},#{item.mobileNumber},#{item.idCard},#{item.registerTime},#{item.isReal},#{item.status}) 
+		</foreach>
+	
+	</insert>
+	<select id="getUserByIdCard" parameterType="String" resultType="int">
+		select count(*) from  user where id_card=#{idCard}
+	</select>
+	<select id="getUserCountByMobileNumber" parameterType="String" resultType="int">
+		select count(*) from  user where mobile_number=#{mobileNumber}
+	</select>
+	
+</mapper>

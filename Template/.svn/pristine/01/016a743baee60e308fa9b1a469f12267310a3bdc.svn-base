@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.dataAnalysis.business.TurnOVerT.mapper.TurnOVerTMapper">
+		<resultMap type="turntVert" id="userdateeRM">
+		<result property="moneyCar" column="money_Car" />
+		<result property="moneyHouse" column="moeny_house" />
+		<result property="moneyCompany" column="money_Company" />
+		<result property="moneyNp" column="money_NP" />
+		<result property="nUserMoneyCar" column="N_user_Money_Car" />
+		<result property="nUserMoneyH" column="N_user_Money_H" />
+		<result property="nUserMoneyCompany" column="N_user_Money_Company" />
+		<result property="nUserMoneyB" column="N_user_Money_B" />
+		<result property="aUserMoneyCar"  column="A_user_Money_Car" />
+		<result property="aUserMoneyH" column="A_user_Money_H" />
+		<result property="aUserMoneyCompany" column="A_user_Money_Company" />
+		<result property="aUserMoneyB" column="A_user_Money_B" />
+		<result property="sUserMoneyCar" column="S_user_Money_Car" />
+		<result property="sUserMoneyH" column="S_user_Money_H" />
+		<result property="sUserMoneyCompany" column="S_user_Money_Company" />
+		<result property="sUserMoneyB" column="S_user_Money_B" />
+		<result property="mUserMoneyCar" column="M_user_Money_Car" />
+		<result property="mUserMoneyH" column="M_user_Money_H" />
+		<result property="mUserMoneyCompany" column="M_user_Money_Company" />
+		<result property="mUserMoneyB" column="M_user_Money_B" />
+	</resultMap>
+	<!-- 用户成交量（除人均） -->
+		<select id="getTurnOverMoney" resultMap="userdateeRM">
+					SELECT
+(SELECT SUM(invest.money) from invest LEFT JOIN loan on invest.loan_id = loan.id where loan.loan_type='车贷' and loan.newbieEnjoy!='是' and invest.`status`!='流标' and loan.company_name='否' AND loan.`status`!='流标' and date(invest.time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY))AS money_Car,
+(SELECT SUM(invest.money) from invest LEFT JOIN loan on invest.loan_id = loan.id where loan.loan_type='房贷' and invest.`status`!='流标' and loan.company_name='否' AND loan.`status`!='流标' and date(invest.time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY))as moeny_house,
+(SELECT SUM(invest.money) from invest LEFT JOIN loan on invest.loan_id = loan.id where loan.loan_type='金农宝' and invest.`status`!='流标' and loan.company_name='否' AND loan.`status`!='流标' and date(invest.time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY))AS money_Company,
+(SELECT SUM(invest.money) from invest LEFT JOIN loan on invest.loan_id = loan.id where loan.newbieEnjoy='是' and invest.`status`!='流标' and loan.company_name='否' AND loan.`status`!='流标' and date(invest.time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY))AS money_NP,
+(select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id  LEFT JOIN loan l ON i.loan_id= l.id where date(u.register_time) =DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND l.loan_type='车贷' AND i.`status` != '流标') AS N_user_Money_Car,
+(select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id  LEFT JOIN loan l ON i.loan_id= l.id where date(u.register_time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)  AND l.loan_type='房贷' AND i.`status` != '流标') AS N_user_Money_H,
+(select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id  LEFT JOIN loan l ON i.loan_id= l.id where date(u.register_time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND l.loan_type='金农宝'AND i.`status` != '流标') AS N_user_Money_Company,
+(select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id  LEFT JOIN loan l ON i.loan_id= l.id where date(u.register_time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)  AND l.newbieEnjoy='是' AND i.`status` != '流标') AS  N_user_Money_B ,
+(select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id  LEFT JOIN loan l ON i.loan_id= l.id where  l.loan_type='车贷'AND i.`status` != '流标') AS A_user_Money_Car,
+(select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id  LEFT JOIN loan l ON i.loan_id= l.id where  l.loan_type='房贷'AND i.`status` != '流标') AS A_user_Money_H,
+(select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id  LEFT JOIN loan l ON i.loan_id= l.id where  l.loan_type='金农宝'AND i.`status` != '流标') AS A_user_Money_Company,
+(select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id  LEFT JOIN loan l ON i.loan_id= l.id where  l.newbieEnjoy='是'AND i.`status` != '流标') AS A_user_Money_B,
+(select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id  LEFT JOIN loan l ON i.loan_id= l.id where DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(u.register_time) AND l.loan_type='车贷'AND i.`status` != '流标') AS S_user_Money_Car,
+(select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id  LEFT JOIN loan l ON i.loan_id= l.id where DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(u.register_time) AND l.loan_type='房贷'AND i.`status` != '流标') AS S_user_Money_H,
+(select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id  LEFT JOIN loan l ON i.loan_id= l.id where DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(u.register_time) AND l.loan_type='金农宝'AND i.`status` != '流标') AS S_user_Money_Company,
+(select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id  LEFT JOIN loan l ON i.loan_id= l.id where DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(u.register_time) AND l.newbieEnjoy='是'AND i.`status` != '流标') AS S_user_Money_B ,
+(select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id  LEFT JOIN loan l ON i.loan_id= l.id where DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(u.register_time) AND l.loan_type='车贷'AND i.`status` != '流标') AS M_user_Money_Car,
+(select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id  LEFT JOIN loan l ON i.loan_id= l.id where DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(u.register_time) AND l.loan_type='房贷'AND i.`status` != '流标') AS M_user_Money_H,
+(select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id  LEFT JOIN loan l ON i.loan_id= l.id where DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(u.register_time) and l.loan_type='金农宝'AND i.`status` != '流标') AS M_user_Money_Company,
+(select sum(i.money) from user u LEFT JOIN invest i on u.id = i.user_id  LEFT JOIN loan l ON i.loan_id= l.id where DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(u.register_time) AND l.newbieEnjoy='是'AND i.`status` != '流标') AS M_user_Money_B
+		FROM
+		DUAL
+
+		</select>
+</mapper>

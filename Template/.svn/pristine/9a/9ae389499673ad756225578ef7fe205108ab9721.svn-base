@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>日报模板</title>
+<style>
+div.box{margin-bottom:5px;}
+table{border-bottom:0;border-right:0;margin:0;padding:0;}
+table tr td{margin:0;padding:0;border:1px solid #ccc;border-left:0;border-top:0;text-align:center; vertical-align:middle;height:36px;font-size:14px;color:#333;font-family:"微软雅黑";background:#f1faff;}
+table tr.top td{margin:0;padding:0;background:#D5EDFC;border-top:1px solid #ccc;}
+table tr.top-bg td{background:#fff;border:0;color:#F63;font-size:18px;}
+table tr td.left-bd{border-left:1px solid #ccc;}
+</style>
+
+<script type="text/javascript">
+				
+					
+
+
+</script>
+
+	<div class="box">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr class="top-bg">
+        <td colspan="6">当日用户转化</td>
+        </tr>
+      <tr class="top">
+        <td width="22%" class="left-bd">用户类别</td>0
+        <td width="15%">注册用户</td>
+        <td width="14%">实名用户</td>
+        <td width="14%">绑卡用户</td>
+        <td width="14%">投资用户</td>
+        <!-- <td width="21%">人均投资金额</td> -->
+      </tr>
+      <tr>
+        <td class="left-bd">新增用户</td>
+        <td>${userDataT.newUserCount}</td>
+        <td>${userDataT.realNameCount}</td>
+        <td>${userDataT.hasCardCount}</td>
+        <td>${userDataT.invsetCount}</td>
+       <!--  <td>${(userDataT.investMoneyByP/10000)?string('#.##')} 万元</td> -->
+      </tr>
+      <tr>
+        <td class="left-bd">7天累计</td>
+        <td>${userDataT.newUserCountS}</td>
+        <td>${userDataT.realNameCountS}</tdb>
+        <td>${userDataT.hasCardCountS}</td>
+        <td>${userDataT.invsetCountS}</td>
+       <!--  <td>${(userDataT.investMoneyByPS/10000)?string('#.##')} 万元</td> -->
+         
+      </tr>
+      <tr>
+        <td class="left-bd">30天累计</td>
+        <td>${userDataT.newUserCountM}</td>
+        <td>${userDataT.realNameCountM}</td>
+        <td>${userDataT.hasCardCountM}</td>
+        <td>${userDataT.invsetCountM}</td>
+        <!-- <td>${(userDataT.investMoneyByPM/10000)?string('#.##')} 万元</td> -->
+      </tr>
+      <tr>
+        <td class="left-bd">历史注册用户</td>
+        <td>${userDataT.allUserCount}</td>
+        <td>${userDataT.allRealNameCount}</td>
+        <td>${userDataT.allHasCardCount}</td>
+        <td>${userDataT.allInvsetCount}</td>
+       <!--  <td>${(userDataT.allInvestMoneyByP/10000)?string('#.##')} 万元</td> -->
+      </tr>
+    </table> 
+</div>
+<div class="box">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr class="top-bg">
+        <td colspan="7">充值提现金额</td>
+        </tr>
+      <tr class="top">
+        <td width="22%" class="left-bd">期间</td>
+        <td width="15%">充值金额</td>
+        <td width="14%">提现金额</td>
+      </tr>
+      <tr>
+        <td class="left-bd">当日汇总</td>
+        <td>${(payAndCashData.tPayMoney/10000)?string('#.##')} 万元</td>
+        <td>${(payAndCashData.tDrawMoney/10000)?string('#.##')} 万元</td>
+      </tr>
+      <tr>
+        <td class="left-bd">7天累计</td>
+        <td>${(payAndCashData.wPayMoney/10000)?string('#.##')} 万元</td>
+        <td>${(payAndCashData.wDrawMoney/10000)?string('#.##')} 万元</td>
+      </tr>
+      <tr>
+        <td class="left-bd">30天累计</td>
+        <td>${(payAndCashData.mPayMoney/10000)?string('#.##')} 万元</td>
+        <td>${(payAndCashData.mDrawMoney/10000)?string('#.##')} 万元</td>
+      </tr>
+    </table>
+</div> 
+<div class="box">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr class="top-bg">
+        <td colspan="6">当日成交量</td>
+        </tr>
+      <tr class="top">
+        <td width="22%" class="left-bd">用户类别</td>
+        <td width="15%">车贷</td>
+        <td width="14%">房贷</td>
+        <td width="14%">金农宝</td>
+        <td width="14%">新手标</td>
+        <td width="21%">总成交量</td>
+      </tr>
+    	
+    	<tr>
+        <td class="left-bd">新注册用户(当天注册用户投资金额)</td>
+        <td>${(turnOverT.nUserMoneyCar/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.nUserMoneyH/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.nUserMoneyCompany/10000)?string('#.##')} 万元</td><!-- ?string('#.##') -->
+        <td>${(turnOverT.nUserMoneyB/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.nAllMoney/10000)?string('#.##')} 万元</td>
+      </tr>
+      	<tr>
+        <td class="left-bd">当日项目成交量</td>
+        <td>${(turnOverT.moneyCar/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.moneyHouse/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.moneyCompany/10000)?string('#.##')} 万元</td><!-- ?string('#.##') -->
+        <td>${(turnOverT.moneyNp/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.allMoneyLoan/10000)?string('#.##')} 万元</td>
+      </tr>
+    	
+      <tr>
+        <td class="left-bd">7天累计(7天内注册用户投资金额)</td>
+        <td>${(turnOverT.sUserMoneyCar/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.sUserMoneyH/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.sUserMoneyCompany/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.sUserMoneyB/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.sAllMoney/10000)?string('#.##')} 万元</td>
+      </tr>
+      <tr>
+        <td class="left-bd">30天累计(30天内注册用户投资金额)</td>
+        <td>${(turnOverT.mUserMoneyCar/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.mUserMoneyH/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.mUserMoneyCompany/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.mUserMoneyB/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.mAllMoney/10000)?string('#.##')} 万元</td>
+      </tr>
+      <tr>
+        <td class="left-bd">历史注册用户投资金额</td>
+        <td>${(turnOverT.aUserMoneyCar/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.aUserMoneyH/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.aUserMoneyCompany/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.aUserMoneyB/10000)?string('#.##')} 万元</td>
+        <td>${(turnOverT.allMoney/10000)?string('#.##')} 万元</td>
+      </tr>
+    </table>
+</div>
+<div class="box">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr class="top-bg">
+        <td colspan="7">当日上线项目</td>
+        </tr>
+      <tr class="top">
+        <td width="22%" class="left-bd">期间</td>
+        <td width="15%">上线项目数</td>
+        <td width="14%">项目总金额</td>
+        <td width="13%">车押宝</td>
+        <td width="13%">房押宝</td>
+        <td width="12%">金农宝</td>
+      </tr>
+      <tr>
+        <td class="left-bd">当日汇总</td>
+        <td>${loanDataT.nLoanCount}</td>
+        <td>${(loanDataT.nLoanMoney/10000)?string('#.##')} 万元</td>
+        <td>${loanDataT.nCarCount}</td>
+        <td>${loanDataT.nHouseCount}</td>
+        <td>${loanDataT.nCompanyCount}</td>
+      </tr>
+      <tr>
+        <td class="left-bd">7天累计</td>
+        <td>${loanDataT.sLoanCount}</td>
+        <td>${(loanDataT.sLoanMoney/10000)?string('#.##')} 万元</td>
+        <td>${loanDataT.sCarCount}</td>
+        <td>${loanDataT.sHouseCount}</td>
+        <td>${loanDataT.sCompanyCount}</td>
+      </tr>
+      <tr>
+        <td class="left-bd">30天累计</td>
+        <td>${loanDataT.mLoanCOunt}</td>
+        <td>${(loanDataT.mLoanMoney/10000)?string('#.##')} 万元</td>
+        <td>${loanDataT.mCarCount}</td>
+        <td>${loanDataT.mHouseCount}</td>
+        <td>${loanDataT.mCompanyCount}</td>
+      </tr>
+    </table>
+</div>
+<div class="box">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr class="top-bg">
+        <td colspan="6">当日SEM效果</td>
+        </tr>
+      <tr class="top">
+        <td width="22%" class="left-bd">搜索来源</td>
+        <td width="15%">注册用户</td>
+        <td width="14%">实名用户</td>
+        <td width="14%">绑卡用户</td>
+        <td width="15%">投资用户</td>
+        <!-- <td width="20%">RoI</td> -->
+      </tr>
+      <tr>
+        <td class="left-bd">360</td>
+        <td>${userSource.nUserCountT}</td>
+        <td>${userSource.rUserCountT}</td>
+        <td>${userSource.bUserCountT}</td>
+        <td>${userSource.iUserCountT}</td>
+       <!--  <td>---</td> -->
+      </tr>
+      <tr>
+        <td class="left-bd">百度</td>
+        <td>${userSource.nUserCountB}</td>
+        <td>${userSource.rUserCountB}</td>
+        <td>${userSource.bUserCountB}</td>
+        <td>${userSource.iUserCountB}</td>
+       <!--  <td>---</td> -->
+      </tr>
+  
+   
+    </table>
+</div>
+
+</html>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.duanrong.dataAnalysis.business.CouponByPerson.mapper.CouponByPersonMapper">
+	<resultMap type="couponByPerson" id="couponByPersonRM">
+		<result property="id" column="rule_id" />
+		<result property="redPackageMoney" column="money" />
+		<result property="sendData" column="send_time" />
+		<result property="endData" column="deadline" />
+		<result property="redPackageStauts" column="send_status" />
+		<result property="usedData" column="use_time" />
+		<result property="usedRule" column="invest_money" />
+		<result property="investMoney" column="Rinvest_money" />
+	</resultMap>
+	<resultMap type="userinfo" id="userRm">
+		<result property="redCount" column="red_count" />
+		<result property="usedCount" column="used_count" />
+		<result property="investMoney" column="invest_money" />
+		<result property="sendedMoney" column="has_money" />
+	</resultMap>
+
+	<!-- 红包的-->
+	<select id="pageLite4Map" resultMap="couponByPersonRM" parameterType="map">
+		SELECT r.rule_id , r.money,r.create_time as sendData,r.deadline,r.send_status,r.use_time, r.invest_money ,
+		(SELECT IFNULL(SUM(money),0) FROM invest WHERE invest.`status`!='流标' and invest.redpacket_id=r.id) AS Rinvest_money
+			FROM red_packet_detail r 
+			
+			WHERE  r.mobile_number=#{id}  AND r.type=#{status} AND r.is_available='1'
+			
+			<if test="type!='all'">
+				AND r.send_status=#{type}
+			</if>
+			
+			<if test="activeId!=null and activeId !='' ">
+				  AND r.rule_id=#{activeId}
+			</if>
+			
+	</select>
+		<!-- 红包汇总 -->
+		<select id="getRedPackageInfo" resultMap="userRm" parameterType="map"  >
+			
+		SELECT 
+(SELECT COUNT(*) FROM red_packet_detail r  WHERE  r.mobile_number=#{id} AND r.type='money' AND r.is_available='1') AS red_count,
+(SELECT COUNT(*) FROM red_packet_detail r  WHERE r.mobile_number=#{id} AND r.type='money' AND r.send_status='used' AND r.is_available='1') AS used_count,
+(SELECT SUM(r.money) FROM red_packet_detail r WHERE  r.mobile_number=#{id} AND r.type='money' and r.send_status='used' AND r.is_available='1' ) AS has_money
+FROM
+		DUAL
+		</select>
+		
+	<!-- 使用红包投资金额 -->
+	<select id="getInvestMoney" parameterType="map" resultType="double">
+	SELECT IFNULL(SUM(i.money),0) FROM red_packet_detail r LEFT JOIN invest i ON r.id=i.redpacket_id WHERE i.`status`!='流标' AND r.user_id=#{userId} AND r.type='money' 
+	</select>	
+		
+		<!--  当前账户可用余额 -->
+		
+		<select id="getUserMoney" parameterType="map" resultType="double">
+	SELECT ROUND(((
+SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 
+		WHERE user_id =#{id}
+			AND type='ti_balance')+
+(SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 
+		WHERE user_id =#{id}
+			AND type='pt_balance')-
+(SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 	
+		WHERE user_id =#{id}
+			AND type='to_balance')-
+(SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 		
+		WHERE user_id =#{id}
+			AND type='freeze')+
+(SELECT IFNULL(SUM(money),0) 
+		FROM user_bill 
+		WHERE user_id =#{id}
+			AND type='unfreeze')
+			),2) AS money
+	FROM
+		DUAL
+			
+		</select>
+	
+	
+	<!-- 查询定期在投金额 -->
+	<select id="getRegularInvestMoneyAgain" parameterType="String" resultType="double">
+	<!-- #定期再投 -->
+	SELECT  IFNULL(ROUND(SUM(money),2),0) FROM invest WHERE `status`IN ('投资成功','还款中') AND invest.user_id=#{id}
+	 </select>
+	 
+	 
+	 <!-- 查询活期在投金额 -->
+	<select id="getLiveInvestMoney" parameterType="String" resultType="double">
+	select TRUNCATE((SELECT IFNULL(sum(d.money),0) FROM demand_treasure_bill d WHERE d.type='in' AND d.user_id=#{id})-
+	(SELECT IFNULL(sum(d.money),0) FROM demand_treasure_bill d WHERE d.type='out' AND d.user_id=#{id}) - 
+	(SELECT IFNULL(sum(d.money),0) FROM demand_treasure_transferout d where status='sended' AND user_id=#{id}),3)
+	 </select>
+</mapper>		
+		
+
+
+

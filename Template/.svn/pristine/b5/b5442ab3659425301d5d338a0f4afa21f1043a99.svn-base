@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.dataAnalysis.business.loanDataT.mapper.loanDataTMapper">
+		<resultMap type="loandataT" id="userdateeRM">
+		<result property="nLoanCount" column="n_loan_count" />
+		<result property="sLoanCount" column="s_loan_count" />
+		<result property="mLoanCOunt" column="m_loan_count" />
+		<result property="nLoanMoney" column="n_loan_money" />
+		<result property="sLoanMoney" column="s_loan_money" />
+		<result property="mLoanMoney" column="m_loan_money" />
+		<result property="nCarCount" column="n_car_count" />
+		<result property="nHouseCount" column="n_house_count" />
+		<result property="nCompanyCount" column="n_company_count" />
+		<result property="sCarCount" column="s_car_count" />
+		<result property="sHouseCount" column="s_house_count" />
+		<result property="sCompanyCount" column="s_company_count" />
+		<result property="mCarCount" column="m_car_count" />
+		<result property="mHouseCount" column="m_house_count" />
+		<result property="mCompanyCount" column="m_company_count" />
+	</resultMap>
+	
+	<!-- 当日项目（除人均） -->
+		<select id="getLoanDataT" resultMap="userdateeRM">
+SELECT  
+(SELECT COUNT(*) FROM loan WHERE loan_type in('车贷', '房贷', '金农宝') AND `status`!='流标' AND company_name='否' AND date(commit_time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY))AS n_loan_count ,
+(SELECT COUNT(*) FROM loan WHERE loan_type in('车贷', '房贷', '金农宝') AND `status`!='流标' AND company_name='否' AND DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(commit_time) )AS s_loan_count ,
+(SELECT COUNT(*) FROM loan WHERE loan_type in('车贷', '房贷', '金农宝') AND `status`!='流标' AND company_name='否' AND DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(commit_time))AS m_loan_count,
+(SELECT SUM(money) FROM loan WHERE date(commit_time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)  AND `status`!='流标' AND company_name='否')AS  n_loan_money,
+(SELECT SUM(money) FROM loan WHERE DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(commit_time)  AND `status`!='流标' AND company_name='否')AS s_loan_money ,
+(SELECT SUM(money) FROM loan WHERE DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(commit_time) AND `status`!='流标' AND company_name='否')AS m_loan_money,
+(SELECT COUNT(*) FROM loan WHERE date(commit_time) =DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND loan_type='车贷' AND `status`!='流标' AND company_name='否')AS n_car_count,
+(SELECT COUNT(*) FROM loan WHERE date(commit_time) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND loan_type='房贷' AND `status`!='流标' AND company_name='否')AS n_house_count,
+(SELECT COUNT(*) FROM loan WHERE date(commit_time) =DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND loan_type='金农宝' AND `status`!='流标' AND company_name='否')AS n_company_count ,
+(SELECT COUNT(*) FROM loan WHERE DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(commit_time) AND loan_type='车贷' AND `status`!='流标' AND company_name='否')AS s_car_count ,
+(SELECT COUNT(*) FROM loan WHERE  DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(commit_time) AND loan_type='房贷' AND `status`!='流标' AND company_name='否')AS s_house_count ,
+(SELECT COUNT(*) FROM loan WHERE  DATE_SUB(CURDATE(), INTERVAL 7 DAY) &lt;= date(commit_time) AND loan_type='金农宝' AND `status`!='流标' AND company_name='否')AS  s_company_count,
+(SELECT COUNT(*) FROM loan WHERE  DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(commit_time) AND loan_type='车贷' AND `status`!='流标' AND company_name='否')AS  m_car_count,
+(SELECT COUNT(*) FROM loan WHERE  DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(commit_time) AND loan_type='房贷' AND `status`!='流标' AND company_name='否')AS  m_house_count,
+(SELECT COUNT(*) FROM loan WHERE  DATE_SUB(CURDATE(), INTERVAL 1 MONTH) &lt;= date(commit_time) AND loan_type='金农宝' AND `status`!='流标' AND company_name='否')AS m_company_count 
+FROM
+	DUAL
+		</select>
+		
+</mapper>

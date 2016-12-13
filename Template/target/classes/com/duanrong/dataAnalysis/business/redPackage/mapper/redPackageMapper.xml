@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.duanrong.dataAnalysis.business.redPackage.mapper.redPackageMapper">
+	<resultMap type="redPackageData" id="redPackageRM">
+		<result property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="redPackageRule" column="red_package_rule" />
+		<result property="redPackageMoney" column="money" />
+	</resultMap>
+
+
+
+
+
+ 
+ <select id="pageLite4Map" resultMap="redPackageRM" parameterType="map">
+ 		SELECT r.id AS id, r.name AS name, r.get_rule AS red_package_rule,SUM(DISTINCT(
+ 		<choose>
+			<when test="type == 'rate' ">
+				rate
+			</when>
+			<otherwise>
+				money
+			</otherwise>
+		</choose>
+ 		))As money
+ 		FROM red_packet_rule r left JOIN red_packet_detail d ON rule_id = r.id
+		where d.type = #{type} GROUP BY d.rule_id
+ </select>
+ 
+ <!-- 红包数量 -->
+ <select id="getRedCount" resultType="int" parameterType="map">
+ 	SELECT COUNT(DISTINCT(money)) FROM red_packet_detail  where type='money' and rule_id =#{id}  AND is_available='1'
+ </select>
+ <!-- 领取用户数 -->
+ <select id="getByUserCount" resultType="int" parameterType="map">
+ SELECT COUNT(DISTINCT(user_id)) FROM red_packet_detail where 
+		rule_id = #{id} and type = 'money' AND is_available='1'
+ </select>
+ <!-- 使用用户数 -->
+ <select id="getUsedUserCount" resultType="int" parameterType="map">
+ SELECT COUNT(DISTINCT(user_id)) FROM red_packet_detail where send_status in ('used','sended') and
+		type='money' and rule_id =#{id} AND is_available='1'
+ </select>
+ <!-- 红包发放数 -->
+ <select id="getRedPackageSendedCount" resultType="int" parameterType="map">
+ SELECT COUNT(*) FROM red_packet_detail where 
+		type='money' and rule_id =#{id} AND is_available='1'
+ </select>
+ <!-- 过期总数 -->
+  <select id="getUnCount" resultType="int" parameterType="map">
+ 	SELECT COUNT(*) FROM red_packet_detail where send_status='expired' and
+		type='money' and rule_id =#{id} AND is_available='1'
+ </select>
+ <!-- 未用总数 -->
+  <select id="getUnUsedCount" resultType="int" parameterType="map">
+ 	SELECT COUNT(*) FROM red_packet_detail where send_status='unused' and
+		type='money' AND rule_id = #{id} AND is_available='1'
+ </select>
+ <!-- 已用 -->
+  <select id="getUsedCount" resultType="int" parameterType="map">
+ 	SELECT COUNT(*) FROM red_packet_detail where send_status in ('used','sended') and
+		type='money' AND rule_id = #{id} AND is_available='1'
+ </select>
+ <!-- 投入金额 -->
+ <select id="getPayMoney" resultType="double" parameterType="map" >
+ 	SELECT  IFNULL(sum(money),0) FROM red_packet_detail where send_status in ('used',
+		'sended') and type='money' and rule_id = #{id} AND is_available='1'
+ </select>
+ <!-- 投资金额 -->
+ <select id="getAllPayMoney" resultType="double" parameterType="map">
+ 	SELECT IFNULL(ROUND(SUM(invest.money),2), 0) FROM invest LEFT JOIN red_packet_detail
+		ON invest.redpacket_id = red_packet_detail.id WHERE
+		red_packet_detail.type='money' AND red_packet_detail.rule_id =#{id} AND invest.`status`!='流标' AND red_packet_detail.is_available='1'
+ </select>
+</mapper>		
+		
+
