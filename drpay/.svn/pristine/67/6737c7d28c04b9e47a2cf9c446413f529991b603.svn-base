@@ -1,0 +1,36 @@
+package com.duanrong.drpay.business.invest.dao;
+
+import java.util.List;
+
+import base.dao.BaseDao;
+
+import com.duanrong.drpay.business.invest.model.Invest;
+import com.duanrong.drpay.business.invest.model.InvestRedpacket;
+
+public interface InvestDao extends BaseDao<Invest> {
+
+	/**
+	 * 查询项目募集金额
+	 * @param loanId
+	 * @return
+	 */
+	public Double getInvestSumMoneyByLoan(String loanId);
+
+	public Double getInvestSumMoneyByUser(String userId, String loanId);
+
+	public List<Invest> getInvestLoan(Invest invest);
+	
+
+	/**
+	 * 创建补息奖励记录
+	 * @param investRedpacket
+	 */
+	void insertInvestRedpacket(InvestRedpacket investRedpacket);
+
+	/**
+	 * 根据项目id查询投资成功的的数量
+	 * @param loanId
+	 * @return
+	 */
+	int getInvestSeccessByLoanId(String loanId);
+}

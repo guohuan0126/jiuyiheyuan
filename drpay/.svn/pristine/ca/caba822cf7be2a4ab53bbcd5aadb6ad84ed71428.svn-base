@@ -1,0 +1,33 @@
+package security;
+
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
+
+import org.bouncycastle.util.encoders.Base64;
+
+import com.duanrong.util.security.SHA1withRSA;
+
+
+public class SHAWithRSATest {
+
+	private final static String publicKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiNhUlp1k4kuHAIcmsF9klkiNpRVLkEwR+xl2c+8JLnXsBn0D3dbn4dzEeyEi/pYFeAUdWHZUIfiQe/LEwQPsjXJcr8V5k/I1PI2kQW1GEEY7B72btCxZThSxh7g3GAuCk82hZrnwgD+PuKFBQUnPmHZkRJrwyy1pcZiDSvXCWTuLYMMJRBMjUemgIbaL9mPate50jTB6fPi8c4O1ADq1TR/P3Jkouu9yi4ClReRbA+JhuAWS1E4SshMZ8zVxrkeRrUesAonZ7mCmjvemefV0agN1xnd0Sk/iuKqIgDWqf7lUpr7bhhOBvTlAveOxKlOioshPYXhYMOqCabgsGZDSEwIDAQAB";
+	private final static String privateKey = "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCI2FSWnWTiS4cAhyawX2SWSI2lFUuQTBH7GXZz7wkudewGfQPd1ufh3MR7ISL+lgV4BR1YdlQh+JB78sTBA+yNclyvxXmT8jU8jaRBbUYQRjsHvZu0LFlOFLGHuDcYC4KTzaFmufCAP4+4oUFBSc+YdmREmvDLLWlxmINK9cJZO4tgwwlEEyNR6aAhtov2Y9q17nSNMHp8+Lxzg7UAOrVNH8/cmSi673KLgKVF5FsD4mG4BZLUThKyExnzNXGuR5GtR6wCidnuYKaO96Z59XRqA3XGd3RKT+K4qoiANap/uVSmvtuGE4G9OUC947EqU6KiyE9heFgw6oJpuCwZkNITAgMBAAECggEALGNPfNNtB+JL1iYArLEkpYK/P08bBaFHK9XkkFJ2/fUOLESc3nZ5HNBJg08KVN5Aw9+U1z76p1JDO5FRtPIa5v6zheheOVkVX6DqKLbTRTAisa4VNWo1RZh8xXNBm7EQF/VZZ0Lk+hSj/9V+nzjb965fc8l2VdFTJJ+95rC069BgNhhha6MwwKfH3UYC2Mru1RZTLqZWyvxM7ppTzvKT8Zqn1wHponk+He0w2UBxBzXet+AH0KMX/z7FJHW+r0g8a/45jp/ST9+Sfq2lBbVifLFUneGc3cuZ7IFAsxkEAbGAzNx9viNZ/Q2qPtduJ7CtmYHeFh6uXwW2/CdzYpA+4QKBgQD5mS2kRM/adOzDLFSfB6+8G1ZktpzDjqK0O05ZXzhkVYEfBZd4lRGpJ1I8lfPHAouinwoY/WETAvjsmosBDUN4w0PvRpu2C2RJIYKYullNp3urLIGk7oYKWl2bogwrPm7ljK6gr/60RpGGyDEVqWHzovY9m0nG9tLKT5RkAHLVawKBgQCMWtUa9Z8Xlkqs9+m3MGLccSddWzHvnHtda+2OMTObjnUUGTH+tW1BFHfVvTHxDMrirJ1a9FjFkAwhgXqwic+em4N9YVRrCZ6fGr9cFLKSfcs85Pt8LQijZ3BKrMRf75mkzp0MP4lZP42BmDo+EHT0pqoFWK6Y9jhOXs0Okh/3+QKBgB8AU5bvpRFxLGchfnEyNzWZ/6UKuXXgpXzVUOnw1cRAioUb4LBtc4AbDi/QQDMbsdRFBLAN6Jy/5cMdft5mk1bQigOSNYzq5U3gB6SIoMbwYn/kS0X9ClEG4FGQUwqb+pIwYxA6S9yAV1rySoZyP2RPfV4xh3xa89uE/t1c4OZ5AoGAfRKAbvrMX7eFKift9FnA71JCUvXuROj8Ih8IXTrJE2jaOiPNon3IM0NrGmPzeiv9LAvIWYH/DWa0+LKqQ2E7S8qnXPZ7xLqYyI2MUyD6lIJWtxgSZvC2ju6haVoV0KvyDaQ03PJNkeOJVR/zXtVJc66FOihxxks7l9LxBnf+1vkCgYEAq6Bmb2LUoRa+gZIyYBzUoHZKhVc7tjco42GjFAAsD2VNfdr1zUF/GS2s9O1UZIZ7vjqTA1jHuo8eFwPGyQiwFeUHQcSKkKgch6xJIO7pfk3sPqD/q7N690fCqEfb2hlsy5CATYCz2fKfgAiFF5LhubPhMuqte2SItUSW5gZKHpQ=";
+	
+	
+	public static void main(String[] args) throws NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException, SignatureException, UnsupportedEncodingException {
+		
+		
+		String a = new String(Base64.encode(SHA1withRSA.sign("123456".getBytes("utf-8"), Base64.decode(privateKey))));
+		
+		System.out.println(a);
+		
+		boolean b = SHA1withRSA.verify(Base64.decode(a), "123456".getBytes(), Base64.decode(publicKey));
+		
+		System.out.println(b);
+	
+	}
+
+}

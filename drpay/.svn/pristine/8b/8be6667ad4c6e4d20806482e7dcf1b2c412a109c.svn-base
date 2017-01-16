@@ -1,0 +1,198 @@
+package com.duanrong.drpay.trusteeship.service.impl;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
+import util.ArithUtil;
+import util.Log;
+import base.error.ErrorCode;
+import base.exception.ParameterException;
+import base.exception.UserAccountException;
+
+import com.duanrong.drpay.business.account.model.BankCard;
+import com.duanrong.drpay.business.account.service.BankCardService;
+import com.duanrong.drpay.business.account.service.UserAccountService;
+import com.duanrong.drpay.business.payment.model.Recharge;
+import com.duanrong.drpay.business.payment.model.WithdrawCash;
+import com.duanrong.drpay.business.payment.service.ChannelMatchingService;
+import com.duanrong.drpay.business.payment.service.RechargeService;
+import com.duanrong.drpay.business.payment.service.WithdrawCashService;
+import com.duanrong.drpay.business.user.UserConstants;
+import com.duanrong.drpay.config.IdUtil;
+import com.duanrong.drpay.config.ToType;
+import com.duanrong.drpay.jsonservice.param.PaymentParameter;
+import com.duanrong.drpay.trusteeship.constants.TrusteeshipServer;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorRechargeJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorWithdrawJSON;
+import com.duanrong.drpay.trusteeship.helper.model.NotifyURL;
+import com.duanrong.drpay.trusteeship.helper.model.RechargeWay;
+import com.duanrong.drpay.trusteeship.helper.service.TrusteeshipService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipPaymentService;
+
+@Service
+public class TrusteeshipPaymentServiceImpl implements TrusteeshipPaymentService {
+
+	@Resource
+	Log log;
+	@Resource
+	RechargeService rechargeService;
+	@Resource
+	ChannelMatchingService channelMatchingService;
+	@Resource
+	TrusteeshipService trusteeshipService;
+	@Resource
+	BankCardService bankCardService;
+	@Resource
+	WithdrawCashService withdrawCashService;
+	@Resource
+	UserAccountService userAccountService;
+
+	@Override
+	public Generator recharge(PaymentParameter parameter)
+			throws ParameterException {
+		if ("TENDER".equals(parameter.getAuthtradeType())) {
+			if (parameter.getAuthtenderAmount() == null
+					|| parameter.getProjectNo() == null) {
+				log.errLog(this.getClass().getName() + ".recharge()", "userId:"
+						+ parameter.getUserId() + "选择充值投标时，授权投标金额或标的号不能为空");
+				throw new ParameterException(ErrorCode.ParametersError);
+			}
+		}
+		if (parameter.getMoney() < 1) {
+			log.errLog(this.getClass().getName() + ".recharge()", "userId:"
+					+ parameter.getUserId() + "的充值金额小于1块");
+			throw new ParameterException("充值金额不能低于1元");
+		}
+		// 查询用户绑定的银行卡编码
+		List<BankCard> bankCards = bankCardService.getValidBankCardByUserId(
+				parameter.getUserId(), false);
+		String bankCode = bankCards.get(0).getBank();
+
+		// 根据充值金额获取支付公司
+		Map<String, Object> channel = channelMatchingService
+				.findChannelByMoney(parameter.getUserId(),
+						parameter.getMoney(), "");
+		// 增加充值记录
+		Recharge recharge = new Recharge();
+		recharge.setActualMoney(parameter.getMoney());
+		recharge.setUserId(parameter.getUserId());
+		recharge.setType(parameter.getRechargeWay().toString());
+		if (parameter.getUserSource() != null) {
+			recharge.setRechargeWay(parameter.getUserSource());
+		}
+		String id = IdUtil.generateId(ToType.RECH);
+		recharge.setId(id);
+		// 等待付款
+		recharge.setStatus(UserConstants.RechargeStatus.WAIT_PAY);
+		recharge.setFee(0D);
+		recharge.setPaymentId(channel.get("channelType").toString());
+		rechargeService.insert(recharge);
+		// 封装请求存管通参数
+		String rechargeWay = "";
+		if (com.duanrong.drpay.business.payment.RechargeWay.gateway.name().equals(parameter.getRechargeWay().name())) {
+			rechargeWay = RechargeWay.WEB.name();
+		} else {
+			rechargeWay = RechargeWay.SWIFT.name();
+		}
+		GeneratorRechargeJSON json = new GeneratorRechargeJSON();
+		json.setPlatformUserNo(parameter.getUserId());
+		json.setRequestNo(id);
+		json.setAmount(parameter.getMoney());
+		json.setExpectPayCompany(channel.get("channelType").toString());
+		json.setRechargeWay(RechargeWay.valueOf(rechargeWay));
+		if (RechargeWay.SWIFT.name().equals(rechargeWay)) {
+			json.setBankcode(bankCode);
+		}
+		if ("TENDER".equals(parameter.getAuthtradeType())) {
+			json.setAuthtradeType("TENDER");
+			json.setAuthtenderAmount(parameter.getAuthtenderAmount());
+			json.setProjectNo(parameter.getProjectNo());
+		}
+		json.setCallbackUrl(NotifyURL.RECH);
+		return trusteeshipService.create(json, TrusteeshipServer.RECHARGE);
+	}
+	
+	@Override
+	public void rechargeCallback(GeneratorRechargeJSON respData){
+		 if (respData.getCode().equals("0")) {
+			 //SUCCESS 表示支付成功， FAIL 表示支付失败，PENDDING 表示支付中
+			if (respData.getStatus().equals("SUCCESS")) {
+				rechargeService.rechargeSuccess(respData.getRequestNo(), "");
+			} else {
+				Recharge recharge = rechargeService.get(respData.getRequestNo());
+				recharge.setType(respData.getRechargeWay().toString());
+				recharge.setStatus(respData.getStatus());
+				rechargeService.update(recharge);
+			}
+		} else {
+			log.errLog(this.getClass().getName() + ".rechargeCallback()", respData.toJSON());
+		}
+	}
+
+	@Override
+	public Generator withdraw(String userId, Double money)throws UserAccountException {
+		List<BankCard> bankCards = bankCardService.getValidBankCardByUserId(userId, false);								
+		if (CollectionUtils.isEmpty(bankCards)) {
+			throw new UserAccountException(ErrorCode.BankCardNoFound);
+		}else{
+			WithdrawCash withdrawCash = new WithdrawCash();
+			String id = IdUtil.generateId(ToType.WICA);
+			withdrawCash.setUserId(userId);
+			withdrawCash.setActualMoney(money);
+			Double balance = userAccountService.getUserAccount(withdrawCash.getUserId()).getAvailableBalance();
+			if(ArithUtil.round(withdrawCash.getActualMoney(),2) > ArithUtil.round(balance, 2)) {
+				log.errLog("提现错误", withdrawCash.getUserId()+":的提现金额大于账户余额,提现金额"+withdrawCash.getActualMoney()+"余额："+balance);
+				throw new  UserAccountException("您的提现金额大于账户余额");
+			}
+			withdrawCash.setCashFine(0D);
+			withdrawCash.setAccount("借款账户");
+			withdrawCash.setId(id);
+			withdrawCash.setTime(new Date());
+			withdrawCash.setFee(0D);
+			withdrawCash.setBankCardId(bankCards.get(0).getId());
+			withdrawCash.setWithdrawType("NORMAL");
+			withdrawCash.setPaymentId("XMbank");
+			withdrawCash.setStatus(UserConstants.WithdrawStatus.WAIT_VERIFY);
+			withdrawCashService.insert(withdrawCash);
+
+			GeneratorWithdrawJSON json = new GeneratorWithdrawJSON();
+			json.setPlatformUserNo(userId);
+			json.setRequestNo(id);
+			json.setAmount(money);
+			json.setCallbackUrl(NotifyURL.WICA);
+			json.setWithdrawType("NORMAL");
+			json.setWithdrawForm("IMMEDIATE");
+			System.out.println(json.toJSON());
+			return trusteeshipService.create(json, TrusteeshipServer.WITHDRAW);
+		}
+	}
+
+	@Override
+	public void withdrawCallback(GeneratorWithdrawJSON respData) throws UserAccountException{
+		String code = respData.getCode();
+		String requestNo = respData.getRequestNo();
+		String status = respData.getStatus();
+		if (StringUtils.isBlank(code) || StringUtils.isBlank(requestNo) || StringUtils.isBlank(status)) {
+			throw new UserAccountException("响应参数为空");
+		}
+		if (StringUtils.equals("0", code)) {
+			if (StringUtils.equals("ACCEPT", status)
+					||StringUtils.equals("REMITING", status)
+					||StringUtils.equals("SUCCESS", status)) {
+				withdrawCashService.successWithdraw(requestNo);
+			} else if(StringUtils.equals("ACCEPT_FAIL", status)){
+				withdrawCashService.failWithdraw(requestNo);
+			}
+		} else {
+			log.errLog(this.getClass().getName() + ".withdrawCallback()", respData.toJSON());
+		}
+	}
+}

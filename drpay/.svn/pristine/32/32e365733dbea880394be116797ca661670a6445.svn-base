@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.payment.mapper.WithdrawCashMapper">
+	<resultMap type="WithdrawCash" id="withdrawCashRM">
+		<id property="id" column="withdrawCash_id" />
+		<result property="userId" column="user_id" />
+		<result property="time" column="time" />
+		<result property="actualMoney" column="actual_money" />
+		<result property="status" column="status" />
+		<!-- 需要修改 -->
+		<result property="bankCardId" column="bank_card_id" />
+		<result property="fee" column="fee" />
+		<result property="cashFine" column="cash_fine" />
+		<result property="account" column="account" />
+		<result property="withdrawType" column="withdraw_type" />
+		<result property="paymentId" column="payment_id"/>
+		<result property="remitTime" column="remit_time"/>
+		<result property="completedTime" column="completed_time"/>
+		<association property="bankCard" column="bank_card_id"
+			resultMap="com.duanrong.drpay.business.account.mapper.BankCardMapper.bcRM" />
+	</resultMap>
+
+	<insert id="insert" parameterType="withdrawCash">
+		INSERT INTO withdraw_cash
+		(id,
+		user_id, time, actual_money, status, bank_card_id, fee, cash_fine,
+		account,withdraw_type,payment_id)
+		VALUES
+		(#{id},#{userId},#{time},#{actualMoney},#{status},#{bankCardId},
+		#{fee},#{cashFine},#{account},#{withdrawType},#{paymentId})
+	</insert>
+
+	<select id="get" parameterType="string" resultMap="withdrawCashRM">
+		SELECT *, id
+		AS withdrawCash_id FROM withdraw_cash
+		WHERE id = #{id}
+	</select>
+	
+	<select id="getWithLock" parameterType="string" resultMap="withdrawCashRM">
+		SELECT *, id
+		AS withdrawCash_id FROM withdraw_cash
+		WHERE id = #{id} for update
+	</select>
+
+	<!-- 根据条件进行组合查询 -->
+	<select id="getByCondition" parameterType="withdrawCash"
+		resultMap="withdrawCashRM">
+		SELECT *, id AS withdrawCash_id FROM withdraw_cash
+		<where>
+			<if test="id != null and id != ''">
+				AND id = #{id}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND user_id = #{userId}
+			</if>
+			<if test="time != null and time != ''">
+				AND time = #{time}
+			</if>
+			<if test="actualMoney != null and actualMoney != ''">
+				AND actual_money = #{actualMoney}
+			</if>
+			<if test="status != null and status != ''">
+				AND status = #{status}
+			</if>
+			<if test="bankCardId != null and bankCardId != ''">
+				AND bank_card_id = #{bankCardId}
+			</if>
+			<!-- 其他条件根据需求添加 -->
+		</where>
+	</select>
+
+
+	<!-- 进行update的时候一定要设置id -->
+	<update id="update" parameterType="withdrawCash">
+		UPDATE withdraw_cash
+		<set>
+			<if test="userId != null">user_id=#{userId},</if>
+			<if test="time != null">time=#{time},</if>
+			<if test="actualMoney != null">actual_money=#{actualMoney},</if>
+			<if test="status != null">status=#{status},</if>
+			<if test="bankCard.id != null">bank_card_id=#{bankCard.id},</if>
+			<if test="fee != null">fee=#{fee},</if>
+			<if test="cashFine != null">cash_fine=#{cashFine},</if>
+			<if test="account != null">account=#{account},</if>
+			<if test="remitTime != null">remit_time=#{remitTime},</if>
+			<if test="completedTime != null">completed_time=#{completedTime},</if>
+		</set>
+		WHERE id = #{id};
+	</update>
+	
+	<!-- 查询用户提现次数 -->
+	<select id="getHolidayDate" parameterType="map" resultType="int">
+		SELECT COUNT(*) FROM holiday_date where date like date_format(#{date}, '%Y-%m-%d') and type = #{type}
+	</select>
+
+</mapper>

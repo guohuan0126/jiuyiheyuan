@@ -1,0 +1,16 @@
+package com.duanrong.drpay.business.platformtransfer.service;
+
+import java.util.List;
+
+import com.duanrong.drpay.business.platformtransfer.model.PlatformTransfer;
+
+public interface PlatformTransferService {
+	public void save(PlatformTransfer platformTransfer);
+	
+	/**
+	 * 批量添加
+	 * 
+	 * @param list
+	 */
+	public void insertBatch(List<PlatformTransfer> list);
+}

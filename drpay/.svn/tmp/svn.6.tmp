@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-4.0.xsd 
+	http://www.springframework.org/schema/mvc 
+	http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd 
+	http://www.springframework.org/schema/context 
+	http://www.springframework.org/schema/context/spring-context-4.0.xsd ">
+
+    <import resource="beans-*.xml"/>
+    <!-- 设置使用注解的类所在的jar包 -->
+    <context:component-scan
+            base-package="com.duanrong.drpay.jsonservice.controller,
+	com.duanrong.drpay.trusteeship.controller"/>
+
+    <bean
+            class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter">
+        <!-- 消息转换器 对应@RequestBody、@ResponseBody标签 -->
+        <property name="messageConverters">
+            <list>
+                <bean id="jsonConverter"
+                      class="com.duanrong.drpay.jsonservice.handler.MappingFastjsonHttpMessageConverter">
+                    <property name="supportedMediaTypes">
+                        <list>
+                            <value>application/json;charset=UTF-8</value>
+                        </list>
+                    </property>
+                    <!-- 请求业务参数名称，必须为data，否则无法自动解析类型 -->
+                    <property name="requestParamName" value="data"/>
+                </bean>
+            </list>
+        </property>
+        <!-- 自定义参数解析器 -->
+        <property name="customArgumentResolvers">
+            <list>
+                <bean class="com.duanrong.drpay.jsonservice.handler.RequestParamterHandlerMethodArgumentResolver">
+                    <property name="requestParamName" value="data"/>
+                </bean>
+            </list>
+        </property>
+    </bean>
+    <!-- 注解驱动尽量放后面， 如果放在自定义的数据格式转化器之前， spring 会调用默认的格式转换器，导致自定义的格式转换器不起作用 -->
+    <mvc:annotation-driven/>
+
+    <!-- 统一异常处理 -->
+    <bean class="com.duanrong.drpay.jsonservice.handler.ExceptionHandler"/>
+
+    <!-- 拦截器  -->
+ 	<mvc:interceptors>
+        <mvc:interceptor>
+           <!--  接口鉴权拦截器 -->
+            <mvc:mapping path="/**"/>
+            <bean class="com.duanrong.drpay.jsonservice.interceptor.OAuthInterceptor">
+                <property name="key" value="duanrongf0f22ac60d07407cfb7c587f9cab"/>
+                <property name="timeout" value="180000"/>
+                <property name="filtration" value="depository"/>
+            </bean>
+        </mvc:interceptor>
+
+        <mvc:interceptor>
+            <mvc:mapping path="/depository/**"/>
+            <bean class="com.duanrong.drpay.jsonservice.interceptor.DepositoryInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+</beans>

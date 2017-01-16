@@ -1,0 +1,33 @@
+package com.duanrong.drpay.business.demand.service.impl;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+import com.duanrong.drpay.business.demand.dao.DemandtreasureDao;
+import com.duanrong.drpay.business.demand.model.Demandtreasure;
+import com.duanrong.drpay.business.demand.service.DemandtreasureService;
+
+@Service
+public class DemandtreasureServiceImpl implements DemandtreasureService {
+
+	@Resource
+	DemandtreasureDao demandtreasureDao;
+
+	@Override
+	public List<Demandtreasure> queryAll() {
+		return demandtreasureDao.findAll();
+	}
+
+	@Override
+	public void insert(Demandtreasure demandtreasure) {
+		demandtreasureDao.insert(demandtreasure);
+	}
+
+	@Override
+	public void update(Demandtreasure demandtreasure) {
+		demandtreasureDao.update(demandtreasure);
+	}
+
+}

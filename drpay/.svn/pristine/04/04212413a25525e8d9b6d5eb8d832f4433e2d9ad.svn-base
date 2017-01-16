@@ -1,0 +1,29 @@
+package com.duanrong.drpay.business.demand.dao;
+
+import base.dao.BaseDao;
+
+import com.duanrong.drpay.business.demand.model.DemandtreasureTransferOut;
+
+/**
+ * @Description: 活期宝转入
+ * @Author: 赵磊
+ * @CreateDate: 2015-07-17
+ */
+
+public interface DemandtreasureTransferOutDao extends BaseDao<DemandtreasureTransferOut> {
+
+	Double getOutMoneySumByStatus(String userId, String status);
+
+	Integer getValidOutCount(String userId);
+
+	Double getOutInterestSumByStatus(String userId, String status);
+
+	public DemandtreasureTransferOut queryOutSumMoney(String userId, String status);
+	
+	/**
+	 * 用户当日转出总额
+	 * @param userId
+	 * @return
+	 */
+	public double queryValidOutSumMoney(String userId);
+}

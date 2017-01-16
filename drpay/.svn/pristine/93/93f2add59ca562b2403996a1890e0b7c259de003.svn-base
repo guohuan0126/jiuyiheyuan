@@ -1,0 +1,203 @@
+package com.duanrong.drpay.trusteeship.service;
+
+import base.exception.BankCardException;
+import base.exception.ParameterException;
+import base.exception.UserAccountException;
+import base.exception.UserInfoException;
+
+import com.duanrong.drpay.business.account.model.CgtUserAccount;
+import com.duanrong.drpay.business.account.model.UserAccount;
+import com.duanrong.drpay.business.autoinvest.model.AutoInvest;
+import com.duanrong.drpay.jsonservice.param.AutoInvestParamter;
+import com.duanrong.drpay.jsonservice.param.UserAccountParameter;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorUserAccountJSON;
+
+/**
+ * 账户相关业务 开户 绑卡 自动授权.....
+ * 
+ * @author xiao
+ * @datetime 2016年12月7日 上午9:13:25
+ */
+public interface TrusteeshipAccountService {
+
+	/**
+	 * 个人用户开户预处理，参数封装
+	 * 
+	 * @param params
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 * @throws ParameterException
+	 * @throws BankCardException
+	 */
+	Generator createAccount(UserAccountParameter params)
+			throws UserInfoException, UserAccountException, ParameterException,
+			BankCardException;
+
+	/**
+	 * 开户回调服务器通知处理
+	 * 
+	 * @param respData
+	 * @throws BankCardException
+	 * @throws UserAccountException
+	 */
+	void createAccountCallback(GeneratorUserAccountJSON respData)
+			throws BankCardException, UserAccountException;
+
+	/**
+	 * 查询存管通用户信息
+	 * 
+	 * @param userId
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 */
+	CgtUserAccount queryCgtUserInfo(String userId) throws UserInfoException,
+			UserAccountException;
+
+	/**
+	 * 查询本地用户信息
+	 * 
+	 * @param userId
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 */
+	UserAccount queryLocalUserInfo(String userId) throws UserInfoException,
+			UserAccountException;
+
+	/**
+	 * 存管通校验交易密码
+	 * 
+	 * @param templateType
+	 * @param userId
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 */
+	Generator checkPassword(String userId, String templateType)
+			throws UserInfoException, UserAccountException;
+
+	/**
+	 * 校验密码回调服务器通知处理
+	 * 
+	 * @param respData
+	 */
+	void checkPasswordCallback(GeneratorJSON respData);
+
+	/**
+	 * 个人绑卡预处理，参数封装
+	 * 
+	 * @param userId
+	 * @param mobile
+	 * @param bankcardNo
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 * @throws ParameterException
+	 * @throws BankCardException
+	 */
+	Generator bindCard(String userId, String bankcardNo)
+			throws UserInfoException, UserAccountException, ParameterException,
+			BankCardException;
+
+	/**
+	 * 修改密码
+	 * 
+	 * @param userId
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 */
+	Generator resetPassword(String userId) throws UserInfoException,
+			UserAccountException;
+
+	/**
+	 * 修改密码回调服务器通知处理
+	 * 
+	 * @param respData
+	 */
+	void resetPasswordCallback(GeneratorJSON respData);
+
+	/**
+	 * 解绑卡（直连）
+	 * 
+	 * @param userId
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 */
+	String unBindCard(String userId) throws UserInfoException,
+			UserAccountException;
+
+	/**
+	 * 解绑卡回调服务器通知处理
+	 * 
+	 * @param respData
+	 * @throws UserAccountException
+	 * @throws UserInfoException
+	 *//*
+	void unBindCardCallback(GeneratorJSON respData) throws UserInfoException,
+			UserAccountException;*/
+
+	/**
+	 * 绑卡回调服务器通知处理
+	 * 
+	 * @param respData
+	 */
+	void bindCardCallback(GeneratorUserAccountJSON respData);
+
+	/**
+	 * 修改手机号
+	 * 
+	 * @param userId
+	 * @param mobile
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 */
+	Generator modifyMobile(String userId, String mobile)
+			throws UserInfoException, UserAccountException;
+
+	/**
+	 * 修改手机号回调服务器通知处理
+	 * 
+	 * @param respData
+	 */
+	void modifyMobileCallback(GeneratorUserAccountJSON respData);
+
+	/**
+	 * 冻结用户资金
+	 * 
+	 * @param userId
+	 * @param money
+	 * @return
+	 */
+	Generator freezeMoney(String userId, Double money);
+
+	/**
+	 * 解冻用户资金
+	 * 
+	 * @param userId
+	 * @param money
+	 * @return
+	 */
+	Generator unfreezeMoney(String userId, Double money);
+
+	/**
+	 * 设置自动投标
+	 */
+	void settingAutoInvest(AutoInvestParamter paramter)
+			throws ParameterException;
+
+	/**
+	 * 取消自动投标
+	 */
+	void cancelAutoInvest(String userId);
+
+	AutoInvest getAutoInvest(String userId);
+
+	Generator activateUserAccount(String userId);
+}

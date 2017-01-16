@@ -1,0 +1,22 @@
+package com.duanrong.drpay.business.account.service.impl;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+
+import com.duanrong.drpay.business.account.dao.FreezeDao;
+import com.duanrong.drpay.business.account.model.Freeze;
+import com.duanrong.drpay.business.account.service.FreezeService;
+
+@Service
+public class FreezeServiceImpl implements FreezeService {
+
+	@Resource
+	FreezeDao freezeDao;
+	
+	@Override
+	public void save(Freeze freeze) {
+		freezeDao.insert(freeze);
+	}
+
+}

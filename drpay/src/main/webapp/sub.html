@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+ <head>
+	<meta charset="UTF-8">
+    <title>网管接口测试提交.html</title>	
+    <meta name="keywords" content="keyword1,keyword2,keyword3">
+    <meta name="description" content="this is my page">
+	<meta name="content-type" content="text/html; charset=UTF-8">
+  </head>
+  
+  <body>
+  	<form action="http://220.181.25.233:8602/bha-neo-app/lanmaotech/gateway/">
+    	测试环境中转页面：
+    	userDevice : <input name="userDevice">
+    	serviceName : <input name="serviceName">
+    	<input type="hidden" name="platformNo" value="3000000066">
+    	reqData : <input name="reqData">
+    	<input type="hidden" name="keySerial" value="1">
+    	sign : <input name="sign">
+    	<input type="submit" value="提交">
+    </form>
+    <form action="https://cunguan.xmbankonline.com/bha-neo-app/lanmaotech/gateway/">
+    	灰度环境中转页面：
+    	userDevice : <input name="userDevice">
+    	serviceName : <input name="serviceName">
+    	<input type="hidden" name="platformNo" value="3000000066">
+    	reqData : <input name="reqData">
+    	<input type="hidden" name="keySerial" value="1">
+    	sign : <input name="sign">
+    	<input type="submit" value="提交">
+    </form>
+  </body>
+</html>

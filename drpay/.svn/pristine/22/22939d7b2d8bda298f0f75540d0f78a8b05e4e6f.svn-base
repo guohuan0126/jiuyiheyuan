@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+			http://www.springframework.org/schema/beans/spring-beans-4.0.xsd 
+			http://www.springframework.org/schema/context 
+			http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+
+	<!-- 扫描 service,dao -->
+	<context:component-scan
+		base-package="com.duanrong.drpay.business.*.service, 
+		com.duanrong.drpay.business.*.dao, com.duanrong.drpay.trusteeship.service"/>
+	
+	<!-- 本地日志 -->
+	<bean class="util.Log"/>
+	
+	<!-- 本地日志 -->
+	<bean class="util.SmsHttpClient"/>
+	
+	<!-- 存管通默认助手类， 用户处理网关和直连请求 -->
+	<bean class="com.duanrong.drpay.trusteeship.helper.service.impl.DefaultTrusteeshipService"/>
+	
+	<!-- 理财计划资产匹配算法默认实现类 -->
+	<bean class="com.duanrong.drpay.business.loan.service.impl.DefaultSubloanForkServiceImpl"/>
+</beans>

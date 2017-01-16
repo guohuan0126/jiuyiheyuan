@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.user.mapper.AuthInfoMapper">
+	<resultMap type="AuthInfo" id="authRM">
+		<id property="id" column="authInfo_id" />
+		<result property="generationTime" column="generationTime" />
+		<result property="authCode" column="authCode" />
+		<result property="mobileNumber" column="mobileNumber" />
+		<result property="status" column="status" />
+		<result property="deadline" column="deadline" />
+		<result property="type" column="type" />
+	</resultMap>
+
+	<select id="findAll" resultMap="authRM">
+		SELECT *, id AS authInfo_id
+		FROM
+		phone_auth
+	</select>
+
+	<select id="getAuthInfoDateScope" parameterType="map"
+		resultType="long">
+		SELECT count(*)
+		FROM phone_auth
+		WHERE mobileNumber = #{mobileNumber}
+		<if test="@org.apache.commons.lang3.StringUtils@equals('today', scope)">
+			AND date(generationTime) = CURDATE()
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@equals('month', scope)">
+			<![CDATA[
+				AND DATE_SUB(CURDATE(), INTERVAL 1 MONTH) <= date(generationTime)
+			]]>
+		</if>
+	</select>
+
+	<!-- 删除已过期的验证码 -->
+	<delete id="delete" parameterType="string">
+		DELETE FROM phone_auth
+		WHERE id
+		= #{id}
+	</delete>
+
+	<select id="getAuthInfo" parameterType="map" resultMap="authRM">
+		SELECT *,
+		id AS authInfo_id
+		FROM phone_auth
+		WHERE mobileNumber = #{mobileNumber}
+		AND authCode = #{authCode}
+		AND status = '0'
+		AND type = #{type}
+	</select>
+
+	<insert id="insert" parameterType="authInfo">
+		INSERT INTO phone_auth
+		(id,generationTime,deadline,authCode,mobileNumber,type,status)
+		VALUES
+		(#{id},#{generationTime},#{deadline},#{authCode},#{mobileNumber},#{type},#{status})
+	</insert>
+
+	<update id="update" parameterType="authInfo">
+		UPDATE phone_auth
+		SET status =
+		'1'
+		WHERE id = #{id}
+	</update>
+</mapper>

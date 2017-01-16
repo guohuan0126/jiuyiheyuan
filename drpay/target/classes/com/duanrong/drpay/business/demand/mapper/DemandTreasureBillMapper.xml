@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.demand.mapper.DemandTreasureBillMapper">
+	<resultMap type="DemandTreasureBill" id="DemandTreasureBillRM">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="money" column="money" />
+		<result property="createTime" column="create_time" />
+		<result property="type" column="type" />
+		<result property="tranferWay" column="tranfer_way" />
+		<result property="status" column="status" />
+		<result property="detail" column="detail" />
+		<result property="info" column="info" />
+	</resultMap>
+
+	<!-- 获取用户累计活期宝收益 -->
+	<select id="getDemandTreasureMoneyByType" parameterType="map"
+		resultType="double">
+		SELECT SUM(money) FROM demand_treasure_bill WHERE type =
+		#{type} AND user_id = #{userId}
+	</select>
+	
+	<!-- 获取活期宝资金 -->
+	<select id="getDemandTreasureMoney" parameterType="string"
+		resultType="double">
+		SELECT SUM(money) FROM demand_treasure_bill where type=#{type}
+			
+	</select>
+
+	<!-- 获取用户前一天15点以后转入活期宝金额（无效计息本金） -->
+	<select id="getDemandTreasureInvalidMoney" parameterType="map"
+		resultType="double">
+		SELECT SUM(money) from demand_treasure_bill where
+		create_time >= date_format(#{date}, '%Y-%m-%d')-interval 9 hour
+		AND user_Id = #{userId} AND
+		type = #{type}
+	</select>
+	
+	<!-- 昨日收益 -->
+	<select id="getDemandLaterInterest" parameterType="string"
+		resultType="double">
+		SELECT money from demand_treasure_bill where
+		date_format(create_time, '%Y-%m-%d') = date_format(CURDATE(), '%Y-%m-%d')
+		AND user_Id = #{userId} AND
+		type = 'interest' limit 1
+	</select>
+
+	<!-- 获取活期宝用户 -->
+	<select id="getDemandTreasureUser" resultType="string">
+		SELECT distinct
+		user_id FROM demand_treasure_bill
+	</select>
+	
+	<select id="pageLite" resultMap="DemandTreasureBillRM" parameterType="DemandTreasureBill">
+		SELECT * FROM demand_treasure_bill WHERE		
+		user_Id = #{userId} 
+		<if test="type != null">
+			AND type = #{type}
+		</if>	
+		ORDER BY create_time DESC	
+	</select>
+
+	<!-- 批量派息 -->
+	<insert id="insertInterestBatch" parameterType="java.util.List">
+		INSERT INTO demand_treasure_bill
+		(id,user_id,money,
+		type, create_time,
+		tranfer_way, status, detail)
+		VALUES
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.id},#{item.userId},#{item.money}, #{item.type},
+			#{item.crateTime},#{item.tranferWay}, #{item.status},#{item.detail})
+		</foreach>
+	</insert>
+	<insert id="insert" parameterType="DemandTreasureBill">
+		INSERT INTO
+		demand_treasure_bill
+		(id,user_id,money,
+		type, create_time,
+		tranfer_way,
+		detail)
+		VALUES(#{id},#{userId},#{money}, #{type},
+		#{createTime},#{tranferWay},#{detail})
+	</insert>
+</mapper>

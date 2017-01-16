@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.trade.demand.mapper.DemandtreasureGuOutDetailMapper">
+	<resultMap type="DemandtreasureGuOutDetail" id="DemandtreasureGuOutDetailRM">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="money" column="money" />
+		<result property="sendedTime" column="sended_time" />
+		<result property="confirmTime" column="confirm_time" />
+		<result property="freezeTime" column="freeze_time" />
+		<result property="transferWay" column="trnsfer_way" />
+		<result property="status" column="status" />
+		<result property="type" column="type" />
+		<result property="guOutId" column="guOut_id" />
+		<result property="transferOutId" column="transferOut_id" />
+		<result property="principal" column="principal" />
+		<result property="interest" column="interest" />
+		<association property="user" column="user_id"
+			resultMap="com.duanrong.drpay.business.user.mapper.UserMapper.userRM"/>
+	</resultMap>
+	
+  <insert id="insertBatch" parameterType="java.util.List">
+		INSERT INTO demand_treasure_GuOut_detail
+		(id,user_id,money,
+		sended_time,
+		status, guOut_id,transferOut_id,principal,interest)
+		VALUES
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.id},#{item.userId},#{item.money},
+			#{item.sendedTime},#{item.status}, #{item.guOutId},#{item.transferOutId},#{item.principal},#{item.interest})
+		</foreach>
+	</insert>
+	<!-- <update id="batchUpdate"  parameterType="java.util.List">
+	 
+       <foreach collection="list" item="item" index="index"  open="" close="" separator=";">
+                update demand_treasure_GuOut_detail
+            <set>
+			<if test="item.status != null">
+				status=#{item.status},
+			</if>
+			<if test="item.freezeTime != null">
+				freeze_time=#{item.freezeTime},
+			</if>
+			<if test="item.confirmTime != null">
+				confirm_time =#{item.confirmTime},
+			</if>
+		</set>
+           where id = '${item.id}'
+       </foreach>
+    </update> -->
+    <update id="update"  parameterType="DemandtreasureGuOutDetail">
+	 
+	  update demand_treasure_GuOut_detail
+            <set>
+			<if test="status != null">
+				status=#{status},
+			</if>
+			<if test="freezeTime != null">
+				freeze_time=#{freezeTime},
+			</if>
+			<if test="confirmTime != null">
+				confirm_time =#{confirmTime},
+			</if>
+		</set>
+		WHERE id=#{id}
+    </update>
+    
+    <select id="find" resultMap="DemandtreasureGuOutDetailRM" parameterType="DemandtreasureGuOutDetail">
+		SELECT g.*,u.realname,u.mobile_number
+		FROM demand_treasure_GuOut_detail g LEFT JOIN  user u on g.user_id=u.id where g.guOut_id=#{guOutId}
+	</select>
+    <select id="findGuOutDetails" resultMap="DemandtreasureGuOutDetailRM" parameterType="DemandtreasureGuOutDetail">
+		SELECT g.*,u.realname,u.mobile_number
+		FROM demand_treasure_GuOut_detail g LEFT JOIN  user u on g.user_id=u.id where g.status='sended' and g.guOut_id=#{guOutId}
+	</select>
+</mapper>

@@ -1,0 +1,17 @@
+logServerUrl=http\://demosoa2-log.duanrong.net
+
+hostName=demodrpay.duanrong.com
+#服务器
+servers=dmso
+#oss资源服务器
+oss_server=http\://drwebdemo.oss-cn-qingdao.aliyuncs.com
+
+#测试wap callback url
+#callback_m=https\://devmdrpay.duanrong.com/drpayCallback/
+#测试pc callback url
+#callback_pc=https\://devpcdrpay.duanrong.com/drpayCallback/
+
+#灰度wap callback url
+callback_m=https\://demomdrpay.duanrong.com/drpayCallback/
+#灰度pc callback url
+callback_pc=https\://demopcdrpay.duanrong.com/drpayCallback/

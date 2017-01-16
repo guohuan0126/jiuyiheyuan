@@ -1,0 +1,24 @@
+package com.duanrong.drpay.business.payment.service;
+
+import com.duanrong.drpay.business.payment.model.WithdrawCash;
+
+import java.util.Date;
+
+/**
+ * @Description: 提现
+ * @Author: 林志明
+ * @CreateDate: Sep 11, 2014
+ */
+public interface WithdrawCashService {
+
+	WithdrawCash get(String id);
+
+	/**
+	 * 预计到账时间，只限普通提现
+	 * 
+	 * @param date
+	 * @return
+	 */
+	Date getArrivalDate(Date date);
+
+}

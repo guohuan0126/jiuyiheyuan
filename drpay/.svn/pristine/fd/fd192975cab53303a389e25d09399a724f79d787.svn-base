@@ -1,0 +1,52 @@
+package com.duanrong.drpay.business.invest.service;
+
+
+import org.quartz.SchedulerException;
+import org.springframework.transaction.annotation.Transactional;
+
+import base.exception.AccountException;
+import base.exception.TradeException;
+import base.exception.UserAccountException;
+
+import com.duanrong.drpay.business.invest.model.Invest;
+
+public interface InvestService {
+
+	/**
+	 * 校验Invest
+	 * @param invest
+	 * @throws TradeException,AccountException 
+	 */
+	public void verifyInvest(Invest invest) throws TradeException, UserAccountException;
+
+	/**
+	 * 创建Invest
+	 * @param invest
+	 * @throws TradeException,AccountException 
+	 */
+	@Transactional(rollbackFor = Exception.class)
+	public void createInvest(Invest invest) throws TradeException, UserAccountException,SchedulerException;
+	/**
+	 * 投资流标
+	 * @param invest
+	 * @throws TradeException
+	 * @throws AccountException
+	 */
+	@Transactional(rollbackFor = Exception.class)
+	public void failInvest(Invest invest) throws TradeException, AccountException;
+
+	/**
+	 * 根据ID查询投资记录
+	 * @param id
+	 * @return
+	 */
+	public Invest query(String id);
+
+	/**
+	 * 更新投资记录
+	 * @param invest
+	 */
+	public void update(Invest invest);
+
+}
+

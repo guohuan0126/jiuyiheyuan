@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" 
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+			http://www.springframework.org/schema/beans/spring-beans-4.0.xsd 
+			http://www.springframework.org/schema/context 
+			http://www.springframework.org/schema/context/spring-context-4.0.xsd 
+			http://www.springframework.org/schema/aop 
+			http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+			http://www.springframework.org/schema/tx 
+			http://www.springframework.org/schema/tx/spring-tx-4.0.xsd">
+
+	<!-- 事务 -->
+	<bean id="txManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dynamicDataSource" />
+		<property name="globalRollbackOnParticipationFailure" value="true" />
+	</bean>
+
+	<!-- 注解事务 -->
+	<tx:annotation-driven transaction-manager="txManager" order="2"/>
+
+	<!-- 数据源读写分离  aop -->
+	<bean id="dynamicDataSourceAOP" class="base.dataSource.aop.DynamicDataSourceAOP">
+		<property name="methods"> 
+     		<map>     			 
+     			<entry key="select" value="dataSourceKeyR" />
+     			<entry key="get" value="dataSourceKeyR" />
+     			<entry key="find" value="dataSourceKeyR" />
+     			<entry key="page" value="dataSourceKeyR" />
+     			<entry key="has" value="dataSourceKeyR" /> 
+     			<entry key="query" value="dataSourceKeyRW" />
+     			<entry key="insert" value="dataSourceKeyRW" />
+     			<entry key="add" value="dataSourceKeyRW" />
+     			<entry key="save" value="dataSourceKeyRW" />
+     			<entry key="update" value="dataSourceKeyRW" />
+     			<entry key="edit" value="dataSourceKeyRW" />
+     			<entry key="prepare" value="dataSourceKeyRW" />
+     		</map>
+   		</property>
+		<property name="defaultDataSource" value="dataSourceKeyRW"/>
+	</bean>	
+		
+	<!-- 账户检查  aop -->
+	<bean id="userAccountAOP" class="com.duanrong.drpay.business.account.UserAccountAOP"/>
+			
+	<aop:config>
+		<!-- 读写分离切点 管理所有Service的方法 -->
+		<aop:pointcut
+			expression="execution(* com.duanrong.drpay.business.*.service.*Service.*(..))"
+			id="dynamicDataSourceCut" />					
+		
+		<!-- 账户检查切入点  -->
+		<aop:pointcut
+			expression="execution(* com.duanrong.drpay.trusteeship.service.TrusteeshipTradeService.sendReward(..))
+			or execution(* com.duanrong.drpay.trusteeship.service.TrusteeshipAccountService.demandOut(..)) 
+			or execution(* com.duanrong.drpay.trusteeship.service.TrusteeshipInvestService.createInvest(..))
+			or execution(* com.duanrong.drpay.trusteeship.service.TrusteeshipLoanService.createLoan(..))
+			or execution(* com.duanrong.drpay.trusteeship.service.TrusteeshipPaymentService.recharge(..))
+			or execution(* com.duanrong.drpay.trusteeship.service.TrusteeshipPaymentService.withdraw(..))"
+			
+			id="userAccountCut" />	
+				
+		<!-- 动态数据源aop,  aop:advisor配置一定要在  aop:aspect之前，否则报错    -->
+		<aop:aspect ref="dynamicDataSourceAOP">			
+			<aop:around method="dynamicDataSource" pointcut-ref="dynamicDataSourceCut" />		
+		</aop:aspect>
+		
+		<!-- 账户检查切面 -->
+		<aop:aspect ref="userAccountAOP">			
+			<aop:before method="checkAccount" pointcut-ref="userAccountCut" />		
+		</aop:aspect>
+	</aop:config>
+</beans>

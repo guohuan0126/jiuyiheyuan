@@ -1,0 +1,112 @@
+package com.duanrong.drpay.trusteeship.helper.model;
+
+import com.duanrong.drpay.trusteeship.service.TrusteeshipAccountService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipInvestService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipPaymentService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipRepayService;
+
+/**
+ * @author xiao
+ * @version 1.0.0
+ * @datetime 2016-12-8 11:38
+ */
+public enum NotifyURL {
+
+    /**
+     * 投标
+     */
+    INVE(TrusteeshipInvestService.class,"investCallback",GeneratorUserPreTransactionJSON.class),
+
+    /**
+     * 开户
+     * 1、回调接口类
+     * 2、回调方法 名
+     * 3、回调方法参数类型  ResponseGeneratorJSON 的子类
+     */
+	OPAC(TrusteeshipAccountService.class, "createAccountCallback", GeneratorUserAccountJSON.class),
+	/**
+	 * 绑定银行卡
+	 */
+	BYBC(TrusteeshipAccountService.class, "bindCardCallback", GeneratorUserAccountJSON.class),
+	/**
+	 * 修改密码
+	 */
+	RPWD(TrusteeshipAccountService.class, "resetPasswordCallback", GeneratorJSON.class),
+    /**
+     * 校验密码
+     */
+    CPWD(TrusteeshipAccountService.class, "checkPasswordCallback", GeneratorJSON.class),
+    /**
+     * 充值
+     */
+    RECH(TrusteeshipPaymentService.class, "rechargeCallback", GeneratorRechargeJSON.class),
+    /**
+     * 还款
+     */
+    REPAY(TrusteeshipRepayService.class);
+
+    /**
+     * callback 类
+     */
+    private Class<?> service;
+    
+    /**
+     * 
+     */
+    private Class<? extends GeneratorJSON> parameterType;
+    
+    /**
+     * callback 回调方法名
+     */
+    private String notifyMethod;
+    
+
+    /**
+     * 构建 notify
+     * 回调方法默认 notify
+     * 方法参数类型  默认 ResponseGeneratorJSON
+     * @param service
+     */
+    NotifyURL(Class<?> service) {
+        this.service = service;
+        this.notifyMethod = "notify";
+        this.parameterType = GeneratorJSON.class;
+    }
+    
+
+    /**
+     * 构建 notify
+     * 方法参数类型  默认 ResponseGeneratorJSON
+     * @param service
+     * @param notifyMethod
+     */
+	NotifyURL(Class<?> service, String notifyMethod) {
+        this.service = service;
+        this.notifyMethod = notifyMethod;
+        this.parameterType = GeneratorJSON.class;
+    }
+	
+	/**
+	 * 构建 notify
+	 * @param service
+	 * @param notifyMethod
+	 * @param paramterType
+	 */
+	NotifyURL(Class<?> service, String notifyMethod, Class<? extends GeneratorJSON> parameterType) {
+        this.service = service;
+        this.notifyMethod = notifyMethod;
+        this.parameterType = parameterType;
+    }
+
+    public Class<?> getService(){
+        return this.service;
+    }
+    
+    public String getNotifyMethod(){
+    	return this.notifyMethod;
+    }
+    
+    public Class<? extends GeneratorJSON> getParameterType(){
+    	return this.parameterType;
+    }
+}

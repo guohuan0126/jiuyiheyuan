@@ -1,0 +1,73 @@
+package com.duanrong.drpay.trusteeship.helper.model;
+
+/**
+ * 项目通用实体
+ * 
+ * @author xiao
+ * @datetime 2016年12月7日 下午12:22:47
+ */
+public class GeneratorLoanJSON extends GeneratorJSON {
+
+	// 项目金额
+	private double projectAmount;
+	// 项目名称
+	private String projectName;
+	// 项目类型
+	private ProjectType projectType;
+	// 年化利率
+	private double annnualInterestRate;
+	// 还款方式
+	private RepaymentWay repaymentWay;
+	
+	private ProjectStatus status;
+
+	public double getProjectAmount() {
+		return projectAmount;
+	}
+
+	public void setProjectAmount(double projectAmount) {
+		this.projectAmount = projectAmount;
+	}
+
+	public String getProjectName() {
+		return projectName;
+	}
+
+	public void setProjectName(String projectName) {
+		this.projectName = projectName;
+	}
+
+	public ProjectType getProjectType() {
+		return projectType == null ? ProjectType.STANDARDPOWDER : projectType;
+	}
+
+	public void setProjectType(ProjectType projectType) {
+		this.projectType = projectType;
+	}
+
+	public double getAnnnualInterestRate() {
+		return annnualInterestRate;
+	}
+
+	public void setAnnnualInterestRate(double annnualInterestRate) {
+		this.annnualInterestRate = annnualInterestRate;
+	}
+
+	public RepaymentWay getRepaymentWay() {
+		return repaymentWay;
+	}
+
+	public void setRepaymentWay(RepaymentWay repaymentWay) {
+		this.repaymentWay = repaymentWay;
+	}
+
+	public String getStatus() {
+		return status != null ? status.name() : "";
+	}
+
+	public void setStatus(ProjectStatus status) {
+		this.status = status;
+	}
+
+	
+}

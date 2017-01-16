@@ -1,0 +1,10 @@
+package com.duanrong.drpay.trusteeship.service;
+
+/**
+ * 活期宝业务
+ * @author xiao
+ * @datetime 2016年12月7日 上午9:16:45
+ */
+public interface TrusteeshipDemandService {
+
+}

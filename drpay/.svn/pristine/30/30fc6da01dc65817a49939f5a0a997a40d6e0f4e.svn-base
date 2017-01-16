@@ -1,0 +1,61 @@
+package com.duanrong.drpay.trusteeship.service;
+
+import base.exception.DataAlreadExistException;
+import base.exception.PlatformAccountException;
+import base.exception.TradeException;
+import base.exception.UserAccountException;
+
+import com.duanrong.drpay.config.BusinessEnum;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+
+/**
+ * 交易业务 单笔业务查询
+ * 
+ * @author xiao
+ * @datetime 2016年12月7日 上午9:15:16
+ */
+public interface TrusteeshipTradeService {
+
+	/**
+	 * 单笔业务查询
+	 * 
+	 * @param params
+	 * @throws TradeException
+	 * @throws UserAccountException
+	 */
+	Generator queryTransaction(String requestNo, String transactionType);
+
+	/**
+	 * 放款
+	 * 
+	 * @param userId
+	 * @param loanId
+	 * @return
+	 * @throws Exception
+	 */
+	String giveMoneyToBorrower(String userId, String loanId) throws Exception;
+
+	/**
+	 * 平台奖励（危险接口, 需谨慎使用）
+	 * 
+	 * @throws DataAlreadExistException
+	 * @throws UserAccountException
+	 * @throws PlatformAccountException
+	 */
+	public String sendReward(String userId, String requestNo,
+			double rewardMoney, BusinessEnum businessType, String loanId,
+			String info, String remarks) throws DataAlreadExistException,
+			UserAccountException, PlatformAccountException;
+
+	/**
+	 * 平台奖励确认（危险接口, 需谨慎使用）
+	 * 
+	 * @throws DataAlreadExistException
+	 * @throws UserAccountException
+	 * @throws PlatformAccountException
+	 * @throws TradeException 
+	 */
+	public String sendRewardConfirm(String requestNo, String info)
+			throws DataAlreadExistException, UserAccountException,
+			PlatformAccountException, TradeException;
+}

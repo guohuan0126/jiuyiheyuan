@@ -1,0 +1,373 @@
+package com.duanrong.drpay.trusteeship.service.impl;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.springframework.stereotype.Service;
+
+import util.ArithUtil;
+import util.Log;
+import base.error.ErrorCode;
+import base.exception.DataAlreadExistException;
+import base.exception.PlatformAccountException;
+import base.exception.TradeException;
+import base.exception.UserAccountException;
+
+import com.duanrong.drpay.business.account.PlatformAccountEnum;
+import com.duanrong.drpay.business.account.service.PlatformAccountService;
+import com.duanrong.drpay.business.account.service.UserAccountService;
+import com.duanrong.drpay.business.invest.InvestConstants;
+import com.duanrong.drpay.business.invest.model.Invest;
+import com.duanrong.drpay.business.invest.service.InvestService;
+import com.duanrong.drpay.business.loan.LoanConstants;
+import com.duanrong.drpay.business.loan.model.Loan;
+import com.duanrong.drpay.business.loan.service.LoanService;
+import com.duanrong.drpay.business.platformtransfer.model.PlatformTransfer;
+import com.duanrong.drpay.business.platformtransfer.service.PlatformTransferService;
+import com.duanrong.drpay.business.repay.service.RepayService;
+import com.duanrong.drpay.business.user.service.UserService;
+import com.duanrong.drpay.config.BusinessEnum;
+import com.duanrong.drpay.config.IdUtil;
+import com.duanrong.drpay.config.ToType;
+import com.duanrong.drpay.trusteeship.constants.TrusteeshipServer;
+import com.duanrong.drpay.trusteeship.helper.model.BizType;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorDetailJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorPlatformJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorPreTransactionJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorTradeJSON;
+import com.duanrong.drpay.trusteeship.helper.model.PlatformType;
+import com.duanrong.drpay.trusteeship.helper.service.TrusteeshipService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipLoanService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipTradeService;
+import com.duanrong.util.jedis.DRJedisDLock;
+
+@Service
+public class TrusteeshipTradeServiceImpl implements TrusteeshipTradeService {
+
+	@Resource
+	InvestService investService;
+
+	@Resource
+	LoanService loanService;
+
+	@Resource
+	RepayService repayService;
+
+	@Resource
+	UserAccountService userAccountService;
+
+	@Resource
+	PlatformAccountService platformAccountService;
+
+	@Resource
+	UserService userService;
+
+	@Resource
+	TrusteeshipService trusteeshipService;
+
+	@Resource
+	PlatformTransferService platformTransferService;
+
+	@Resource
+	TrusteeshipLoanService trusteeshipLoanService;
+
+	@Resource
+	Log log;
+
+	/**
+	 * 放款锁
+	 */
+	private static final String GIVE_MONEY_TO_BORROWER_LOCK = "giveMoneyToBorrower";
+
+	private static final String REWARD_LOCK = "reward";
+
+	/**
+	 * 单笔业务查询 流水号、类型
+	 */
+	@Override
+	public Generator queryTransaction(String requestNo, String transactionType) {
+		GeneratorJSON json = new GeneratorJSON();
+		json.setRequestNo(requestNo);
+		json.setTransactionType(transactionType);
+		return trusteeshipService.execute(json, TrusteeshipServer.CONFIRM_LOAN,
+				GeneratorJSON.class);
+	}
+
+	@Override
+	public void giveMoneyToBorrower(String loanId) throws TradeException {
+
+		if (DRJedisDLock.getDLock(GIVE_MONEY_TO_BORROWER_LOCK, loanId, 180)) {
+			try {
+				// 放款预处理
+				Loan loan = loanService.prepare(loanId);
+				double money = 0D;// 本次放款金额
+				double managementExpense = 0D; // 本次放款勾出管理费
+				List<Invest> invests = loan.getInvests();
+
+				GeneratorTradeJSON json = new GeneratorTradeJSON();
+				json.setRequestNo(IdUtil.generateId(ToType.GMTB));
+				json.setProjectNo(loanId);
+				List<GeneratorDetailJSON> details = new ArrayList<>();
+				for (Invest invest : invests) {
+					GeneratorDetailJSON detail = new GeneratorDetailJSON();
+					detail.setPreTransactionNo(invest.getId());
+					detail.setAmount(invest.getMoney());
+					details.add(detail);
+				}
+				Generator generator = trusteeshipService.execute(json,
+						TrusteeshipServer.CONFIRM_LOAN, GeneratorJSON.class);
+				if (generator.getRespData() != null
+						&& generator.getRespData().getCode().equals("1")) {
+					for (Invest invest : invests) {
+						if (InvestConstants.InvestStatus.BID_SUCCESS
+								.equals(invest.getStatus())) {
+							invest.setLoan(loan);
+							// 单笔放款
+							if (loanService.giveMoneyToBorrower(invest)) {
+								money += invest.getMoney();
+								managementExpense += invest
+										.getManagementExpense();
+							}
+						}
+					}
+				}
+
+				try {
+					//跟新存管通项目状态
+					GeneratorJSON generatorJson = trusteeshipLoanService
+							.modifyLoan(loanId,
+									LoanConstants.LoanStatus.REPAYING);
+					if (investService.getInvestSeccessByLoanId(loan.getId()) == 0
+							&& generatorJson != null
+							&& ("0").equals(generatorJson.getCode())) {
+						// 生成还款计划
+						repayService.saveRepay(loan);
+						loan.setStatus("还款中");
+					}
+					money = ArithUtil.sub(money, managementExpense);
+					loanService.update(loan);
+
+					// 用户放款
+					userAccountService.transferIn(loan.getBorrowMoneyUserID(),
+							money, BusinessEnum.give_money_to_borrower, "借款项目:"
+									+ loan.getName() + ",已经到账!",
+							"借款ID：" + loan.getId(), loan.getId());
+					if (managementExpense > 0) {
+						// 扣除借款管理费
+						userAccountService.transferOut(
+								loan.getBorrowMoneyUserID(), managementExpense,
+								BusinessEnum.give_money_to_borrower,
+								"借款成功，取出借款管理费", "借款ID：" + loan.getId(),
+								loan.getId());
+						platformAccountService.transferIn(
+								PlatformAccountEnum.PLATFORM_SYS,
+								managementExpense,
+								BusinessEnum.give_money_to_borrower, "借款管理费",
+								loan.getId());
+					}
+
+					/*
+					 * if (money > 0) { User user = userService
+					 * .get(loan.getBorrowMoneyUserID()); String sendContent =
+					 * user.getRealname() + "，您好！您融资的项目：" + loan.getName() +
+					 * "，现已放款，放款金额：" + money + "元，已经扣除借款管理费" + managementExpense
+					 * + "元。"; smsService.sendSms(loan.getBorrowMoneyUserID(),
+					 * sendContent, SmsConstants.GIVEMOENYTOBORROWER);
+					 * informationService.sendInformation(
+					 * loan.getBorrowMoneyUserID(), "放款通知", sendContent); }
+					 */
+				} catch (Exception e) {
+					log.errLog("放款异常", e);
+				}
+
+			} finally {
+				DRJedisDLock.releaseDLock(GIVE_MONEY_TO_BORROWER_LOCK, loanId);
+			}
+		}
+
+	}
+
+	@Override
+	public String sendReward(String userId, String requestNo,
+			double rewardMoney, BusinessEnum businessType, String loanId,
+			String title, String remarks) throws DataAlreadExistException,
+			UserAccountException, PlatformAccountException {
+		if (DRJedisDLock.getDLock(REWARD_LOCK + requestNo, requestNo)) {
+			try {
+				// 保存平台划款数据
+				businessType = businessType == null ? BusinessEnum.reward
+						: businessType;
+				title = StringUtils.isBlank(title) ? "平台奖励" : title;
+				PlatformTransfer platformTransfer = new PlatformTransfer();
+				try {
+					platformTransfer = platformTransferService.prepare(
+							requestNo, userId, rewardMoney,
+							businessType.toString(), loanId, remarks);
+					// 冻结本地营销账户
+					platformAccountService.freeze(
+							PlatformAccountEnum.PLATFORM_MARKETING,
+							rewardMoney, businessType, title, requestNo);
+				} catch (Exception e) {
+					platformTransfer.setStatus("平台划款失败");
+					platformTransferService.update(platformTransfer);
+					log.errLog("平台奖励发送失败", "userId: " + userId
+							+ ", rewardType: " + businessType.toString()
+							+ ", 奖励名称: " + title + ", requestNo: " + requestNo
+							+ "发送失败, 请及时处理\n" + ExceptionUtils.getMessage(e), 1);
+					throw e;
+				}
+				GeneratorPreTransactionJSON json = new GeneratorPreTransactionJSON();
+				json.setRequestNo(requestNo);
+				json.setPlatformUserNo(PlatformType.SYS_GENERATE_002.name());
+				json.setBizType(BizType.MARKETING);
+				json.setAmount(rewardMoney);
+				Generator generator = trusteeshipService.execute(json,
+						TrusteeshipServer.PLATFORM_PRE_TRANSACTION,
+						GeneratorJSON.class);
+				if (generator != null && generator.getRespData() != null) {
+					GeneratorJSON generatorJson = generator.getRespData();
+					if (generatorJson.getCode().equals("0")) {
+						if (sendRewardConfirm(platformTransfer, title)) {
+							return "success";
+						}
+						return "sended";
+					} else {
+						platformAccountService.unfreeze(
+								PlatformAccountEnum.PLATFORM_MARKETING,
+								rewardMoney, businessType, title, requestNo);
+						platformTransfer.setStatus("平台划款失败: "
+								+ generatorJson.getDescription());
+						platformTransferService.update(platformTransfer);
+						log.errLog("平台奖励发送失败", "userId: " + userId
+								+ ", rewardType: " + businessType.toString()
+								+ ", 奖励名称: " + title + ", requestNo: "
+								+ requestNo + "发送失败, 请及时处理\n 平台预处理返回"
+								+ generatorJson.getDescription(), 1);
+					}
+				} else {
+					platformAccountService.unfreeze(
+							PlatformAccountEnum.PLATFORM_MARKETING,
+							rewardMoney, businessType, title, requestNo);
+					platformTransfer.setStatus("平台划款失败");
+					platformTransferService.update(platformTransfer);
+					log.errLog("平台奖励发送失败", "userId: " + userId
+							+ ", rewardType: " + businessType.toString()
+							+ ", 奖励名称: " + title + ", requestNo: " + requestNo
+							+ "发送失败, 请及时处理\n 平台预处理返回null", 1);
+				}
+			} catch (Exception e) {
+				log.errLog("平台奖励发送失败", "userId: " + userId + ", rewardType: "
+						+ businessType.toString() + ", 奖励名称: " + title
+						+ ", requestNo: " + requestNo + "发送失败, 请及时处理\n"
+						+ ExceptionUtils.getMessage(e), 1);
+				throw e;
+			} finally {
+				DRJedisDLock.releaseDLock(REWARD_LOCK + requestNo, requestNo);
+			}
+		}
+		return "fail";
+	}
+
+	@Override
+	public String sendRewardConfirm(String requestNo, String info)
+			throws DataAlreadExistException, UserAccountException,
+			PlatformAccountException, TradeException {
+		PlatformTransfer platformTransfer = new PlatformTransfer();
+		platformTransfer.setOrderId(requestNo);
+		platformTransfer.setStatus("'等待平台划款'");
+		List<PlatformTransfer> pransfers = platformTransferService
+				.getPlatformTransfer(platformTransfer);
+		if (pransfers.isEmpty()) {
+			throw new TradeException(ErrorCode.RewardNoFind);
+		}
+		platformTransfer = pransfers.get(0);
+		if (sendRewardConfirm(platformTransfer, info)) {
+			return "success";
+		}
+		return "fail";
+	}
+
+	private boolean sendRewardConfirm(PlatformTransfer platformTransfer,
+			String title) throws UserAccountException, PlatformAccountException {
+		GeneratorPreTransactionJSON json = new GeneratorPreTransactionJSON();
+		json.setRequestNo(IdUtil.randomUUID());
+		json.setPreTransactionNo(platformTransfer.getOrderId());
+		List<GeneratorDetailJSON> details = new ArrayList<>(1);
+		GeneratorDetailJSON generatorDetailJSON = new GeneratorDetailJSON();
+		generatorDetailJSON.setAmount(platformTransfer.getActualMoney());
+		generatorDetailJSON.setPlatformUserNo(platformTransfer.getUsername());
+		details.add(generatorDetailJSON);
+		json.setDetails(details);
+		Generator generator = trusteeshipService.execute(json,
+				TrusteeshipServer.CONFIRM_PLATFORM_MARKETING,
+				GeneratorJSON.class);
+		if (generator != null && generator.getRespData() != null) {
+			GeneratorJSON generatorJson = generator.getRespData();
+			if (generatorJson.getCode().equals("0")) {
+				double rewardMoney = ArithUtil.round(
+						platformTransfer.getActualMoney(), 2);
+				platformTransfer.setStatus("平台划款成功");
+				platformTransferService.update(platformTransfer);
+
+				// 转出营销款
+				platformAccountService.tofreeze(
+						PlatformAccountEnum.PLATFORM_MARKETING, rewardMoney,
+						BusinessEnum.valueOf(platformTransfer.getType()),
+						title, platformTransfer.getOrderId());
+				// 发奖励
+				try {
+					userAccountService.ptTransferIn(
+							platformTransfer.getUsername(), rewardMoney,
+							BusinessEnum.valueOf(platformTransfer.getType()),
+							title, platformTransfer.getRemarks(),
+							platformTransfer.getOrderId());
+					return true;
+				} catch (Exception e) {
+					log.errLog(
+							"平台奖励发送失败",
+							"userId: " + platformTransfer.getUsername()
+									+ ", rewardType: "
+									+ platformTransfer.getType() + ", 奖励名称: "
+									+ title + ", requestNo: "
+									+ platformTransfer.getOrderId()
+									+ "发送失败, 请及时处理, 平台营销款确认失败\n"
+									+ ExceptionUtils.getMessage(e), 1);
+					throw e;
+				}
+
+			} else {
+				log.errLog(
+						"平台奖励发送失败",
+						"userId: " + platformTransfer.getUsername()
+								+ ", rewardType: " + platformTransfer.getType()
+								+ ", 奖励名称: " + title + ", requestNo: "
+								+ platformTransfer.getOrderId()
+								+ "发送失败, 请及时处理\n 平台营销款确认返回"
+								+ generatorJson.getDescription(), 1);
+			}
+		} else {
+			log.errLog("平台奖励发送失败",
+					"userId: " + platformTransfer.getUsername()
+							+ ", rewardType: " + platformTransfer.getType()
+							+ ", 奖励名称: " + title + ", requestNo: "
+							+ platformTransfer.getOrderId()
+							+ "发送失败, 请及时处理\n 平台营销款确认返回null", 1);
+		}
+		return false;
+	}
+
+	@Override
+	public GeneratorJSON queryPlatformInfo() {
+		GeneratorJSON json = new GeneratorJSON();
+		Generator generator = trusteeshipService.execute(json,
+				TrusteeshipServer.QUERY_PLATFORM_INFORMATION,
+				GeneratorPlatformJSON.class);
+		return generator.getRespData();
+	}
+}

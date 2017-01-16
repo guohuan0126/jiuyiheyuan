@@ -1,0 +1,160 @@
+package com.duanrong.drpay.trusteeship.service.impl;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
+import util.ArithUtil;
+import util.DateUtil;
+import util.Log;
+import base.exception.TradeException;
+import base.exception.UserAccountException;
+
+import com.duanrong.drpay.business.loan.LoanConstants;
+import com.duanrong.drpay.business.repay.model.Repay;
+import com.duanrong.drpay.business.repay.model.RepayInvest;
+import com.duanrong.drpay.business.repay.service.RepayService;
+import com.duanrong.drpay.config.BusinessEnum;
+import com.duanrong.drpay.config.IdUtil;
+import com.duanrong.drpay.config.ToType;
+import com.duanrong.drpay.jsonservice.handler.TerminalEnum;
+import com.duanrong.drpay.trusteeship.constants.TrusteeshipServer;
+import com.duanrong.drpay.trusteeship.helper.model.BizType;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorDetailJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorPreTransactionJSON;
+import com.duanrong.drpay.trusteeship.helper.model.NotifyURL;
+import com.duanrong.drpay.trusteeship.helper.service.TrusteeshipService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipRepayService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipTradeService;
+import com.duanrong.util.jedis.DRJedisDLock;
+
+@Service
+public class TrusteeshipRepayServiceImpl implements TrusteeshipRepayService {
+
+	@Resource
+	TrusteeshipService trusteeshipService;
+
+	@Resource
+	TrusteeshipTradeService trusteeshipTradeService;
+	
+	@Resource
+	RepayService repayService;
+
+	@Resource
+	Log log;
+	
+	/**
+	 * 放款锁
+	 */
+	private static final String REPAY_LOCK = "repay";
+
+	@Override
+	public Generator createRepay(String repayId,int beforeRepay, TerminalEnum terminalType) throws UserAccountException, TradeException {
+
+		// 本地创建还款记录
+		Repay repay = null;
+		//单笔业务查询是否执行过
+		Generator generator = trusteeshipTradeService.queryTransaction(repayId, BusinessEnum.repay.name());
+		GeneratorJSON data = generator.getRespData();
+		List<GeneratorDetailJSON> details = data.getRecords();
+		if ("0".equals(data.getCode()) && !CollectionUtils.isEmpty(details)) {
+			GeneratorDetailJSON detail = details.get(0);
+			if("FREEZED".equals(detail.getStatus())){
+				repay = repayService.get(repayId);
+			}else{
+				repay = new Repay();
+				repay.setId(repayId);
+				repay.setIsBeforeRepay(beforeRepay);
+				repay = repayService.createRepay(repay);
+			}
+		}else{
+			repay = new Repay();
+			repay.setId(repayId);
+			repay.setIsBeforeRepay(beforeRepay);
+			repay = repayService.createRepay(repay);
+		}
+		if(repay==null){
+			throw new TradeException("本地生成还款失败");
+		}
+		// 调用用户预处理，生成去银行存管的参数,返回前台跳转
+		GeneratorPreTransactionJSON json = new GeneratorPreTransactionJSON();
+		json.setRequestNo(repayId);
+		json.setCallbackUrl(NotifyURL.REPAY);
+		json.setPlatformUserNo(repay.getUserId());
+		json.setProjectNo(repay.getLoanId());
+		json.setAmount(ArithUtil.round(repay.getCorpus()+repay.getInterest(),2));
+		json.setBizType(BizType.REPAYMENT);
+		json.setExpired(DateUtil.addMinute(new Date(), 50));
+		json.setRemark("借款人还款");
+		json.setSource(terminalType);
+		return trusteeshipService.create(json,
+				TrusteeshipServer.USER_PRE_TRANSACTION, BusinessEnum.repay);
+	}
+
+	@Override
+	public void repayCallback(GeneratorPreTransactionJSON respData)throws UserAccountException, TradeException{
+		String code = respData.getCode();
+		String requestNo = respData.getRequestNo();
+		if (StringUtils.isBlank(code) || StringUtils.isBlank(requestNo) || null == respData.getBizType()) {
+			throw new TradeException("响应参数为空");
+		}
+		//用户预处理成功，进行还款确认
+		if (StringUtils.equals("0", code) && respData.getBizType() == BizType.REPAYMENT) {
+			confirmRepay(requestNo);
+		}else{
+			throw new TradeException("用户预处理失败，还款失败，requestNo"+requestNo+",code"+code);
+		}
+	}
+
+	
+	private void confirmRepay(String requestNo)throws UserAccountException, TradeException{
+		if (DRJedisDLock.getDLock(REPAY_LOCK, requestNo, 180)) {
+			try{
+				Repay repay = repayService.get(requestNo);
+				if(!LoanConstants.LoanStatus.REPAYING.equals(repay.getStatus())){
+					log.errLog("还款确认失败", "还款状态不处于还款中，还款ID："+requestNo);
+					throw new TradeException("还款状态不处于还款中，还款ID："+requestNo);
+				}
+				List<GeneratorDetailJSON> details = new ArrayList<GeneratorDetailJSON>();
+				//通过repayId 查询repay_invest;
+				List<RepayInvest> list = repayService.getRepayInvests(requestNo);
+				if (CollectionUtils.isEmpty(list)) {
+					log.errLog("还款确认", "本地未查询到repayInvest，流水号："+requestNo);
+					return ;
+				}else{
+					for (RepayInvest repayInvest : list) {
+						// 如果status = 0，正常还款，如果status = -1,不还款。
+						if(-1==repayInvest.getStatus())continue;
+						GeneratorDetailJSON detail = new GeneratorDetailJSON();
+						detail.setPlatformUserNo(repayInvest.getInvestUserId());
+						detail.setAmount(repayInvest.getCorpus()+repayInvest.getInterest());
+						details.add(detail);
+					}
+				}
+				GeneratorJSON json = new GeneratorJSON();
+				json.setRequestNo(IdUtil.generateId(ToType.REPA));
+				json.setPreTransactionNo(requestNo);
+				json.setProjectNo(repay.getLoanId());
+				json.setDetails(details);
+				Generator generator = trusteeshipService.execute(json, TrusteeshipServer.CONFIRM_REPAYMENT, GeneratorJSON.class, BusinessEnum.repay_confirm);
+				GeneratorJSON data = generator.getRespData();
+				if("0".equals(data.getCode())){
+					//还款确认成功后，本地还款操作是否加锁？
+					repayService.normalRepay(repay,list);
+				}else{
+					log.errLog("还款失败", "还款流水号："+requestNo+"返回参数："+data.toJSON());
+				}
+			} finally {
+				DRJedisDLock.releaseDLock(REPAY_LOCK, requestNo);
+			}
+		}
+	}
+}

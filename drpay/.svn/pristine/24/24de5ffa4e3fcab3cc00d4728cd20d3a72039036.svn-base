@@ -1,0 +1,78 @@
+package com.duanrong.drpay.business.invest.dao.impl;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Repository;
+
+import base.dao.impl.BaseDaoImpl;
+
+import com.duanrong.drpay.business.invest.dao.InvestDao;
+import com.duanrong.drpay.business.invest.model.Invest;
+import com.duanrong.drpay.business.invest.model.InvestRedpacket;
+
+@Repository
+public class InvestDaoImpl extends BaseDaoImpl<Invest> implements InvestDao {
+
+	public InvestDaoImpl() {
+		this.setMapperNameSpace("com.duanrong.drpay.business.invest.mapper.InvestMapper");
+	}
+
+	/**
+	 * 根据项目ID查询有效募集金额（排除流标）
+	 * @param loanId
+	 * @return
+	 */
+	@Override
+	public Double getInvestSumMoneyByLoan(String loanId) {
+		return this.getSqlSession().selectOne(
+				this.getMapperNameSpace() + ".getInvestSumMoneyByLoan", loanId);
+	}
+
+	/**
+	 * 根据项目ID、用户ID查询有效投资金额总和（排除流标）
+	 * 
+	 * @param userId  用户ID
+	 * @param loanId  项目ID
+	 * @return
+	 */
+	@Override
+	public Double getInvestSumMoneyByUser(String userId, String loanId) {
+		Map<String, Object> params = new HashMap<>();
+		params.put("userId", userId);
+		params.put("loanId", loanId);
+		return this.getSqlSession().selectOne(
+				this.getMapperNameSpace() + ".getInvestSumMoneyByUser", params);
+	}
+	
+	/**
+	 * 根据条件查询用户投资的项目
+	 * 
+	 * @return
+	 */
+	@Override
+	public List<Invest> getInvestLoan(Invest invest) {
+		return this.getSqlSession().selectList(
+				this.getMapperNameSpace() + ".getInvestLoan", invest);
+	}
+	
+	@Override
+	public void insertInvestRedpacket(InvestRedpacket investRedpacket) {
+		this.getSqlSession().insert(
+				getMapperNameSpace() + ".insertInvestRedpacket",
+				investRedpacket);
+	}
+	
+	@Override
+	public int getInvestSeccessByLoanId(String loanId) {
+		return getSqlSession().selectOne(
+				getMapperNameSpace() + ".getInvestSeccessByLoanId", loanId);
+	}
+
+	@Override
+	public long getInvestSuccessNotNewRecordByUserId(String userId) {
+		return this.getSqlSession().selectOne(
+				this.getMapperNameSpace() + ".getInvestSuccessNotNewRecordByUserId", userId);
+	}
+}

@@ -1,0 +1,185 @@
+package com.duanrong.drpay.trusteeship.service.impl;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.StringUtils;
+import org.quartz.JobKey;
+import org.quartz.SchedulerException;
+import org.quartz.impl.StdScheduler;
+import org.springframework.stereotype.Service;
+
+import util.DateUtil;
+import util.Log;
+import base.exception.AccountException;
+import base.exception.TradeException;
+import base.schedule.constants.ScheduleConstants;
+
+import com.duanrong.drpay.business.invest.InvestConstants;
+import com.duanrong.drpay.business.invest.model.Invest;
+import com.duanrong.drpay.business.invest.service.InvestService;
+import com.duanrong.drpay.business.user.model.User;
+import com.duanrong.drpay.business.user.service.UserService;
+import com.duanrong.drpay.config.BusinessEnum;
+import com.duanrong.drpay.config.IdUtil;
+import com.duanrong.drpay.config.ToType;
+import com.duanrong.drpay.jsonservice.param.InvestParameter;
+import com.duanrong.drpay.trusteeship.constants.TrusteeshipServer;
+import com.duanrong.drpay.trusteeship.helper.model.BizType;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorDetailJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorPreTransactionJSON;
+import com.duanrong.drpay.trusteeship.helper.model.NotifyURL;
+import com.duanrong.drpay.trusteeship.helper.service.TrusteeshipService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipInvestService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipTradeService;
+import com.duanrong.util.jedis.DRJedisMQ;
+import com.duanrong.util.json.FastJsonUtil;
+
+@Service
+public class TrusteeshipInvestServiceImpl implements TrusteeshipInvestService {
+
+	@Resource
+	TrusteeshipService trusteeshipService;
+	
+	@Resource
+	TrusteeshipTradeService trusteeshipTradeService;
+	
+	@Resource
+	InvestService investService;
+	
+	@Resource
+	UserService userService;
+	
+	@Resource
+	StdScheduler scheduler;
+	
+	@Resource
+	Log log;
+	
+	@Override
+	public Generator createInvest(InvestParameter params) throws TradeException,
+		AccountException,SchedulerException {
+		//本地创建投标记录,为等待支付
+		Invest invest  = new Invest();
+		invest.setMoney(params.getMoney());
+		invest.setInvestUserID(params.getUserId());
+		invest.setLoanId(params.getLoanId());
+		invest.setRedpacketId(params.getRedpacketId());
+		investService.createInvest(invest);
+		//调用用户预处理，生成去银行存管的参数,返回前台跳转
+		GeneratorPreTransactionJSON json = new GeneratorPreTransactionJSON();
+		json.setRequestNo(IdUtil.generateId(ToType.INVE));
+		json.setBizType(BizType.TENDER);
+		json.setCallbackUrl(NotifyURL.INVE);
+		json.setPlatformUserNo(params.getUserId());
+		json.setAmount(params.getMoney());
+		json.setProjectNo(invest.getLoanId());
+		json.setExpired(DateUtil.DateToString(DateUtil.addMinute(invest.getTime(), 5), "yyyyMMddHHmmss"));
+		json.setRemark("用户投资");
+		return trusteeshipService.create(json, TrusteeshipServer.USER_PRE_TRANSACTION, BusinessEnum.invest);
+	}
+
+	@Override
+	public Generator investAgain(String id) throws TradeException,AccountException {
+		//本地创建投标记录,为等待支付
+		Invest invest = investService.query(id);
+		// TODO超过五分钟，返回提示
+		/*Date expiredTime = DateUtil.addMinute(invest.getTime(), 5);// 投资时间
+		Date nowDate = new Date();*/
+//		Long timeInMillis = DateUtilPlus.getTimeInMillis(expiredTime, nowDate);
+//		if ("流标".equals(invest.getStatus()) || timeInMillis <= 0) {
+//			throw new TradeException("34101");
+//		} else if (!"等待确认".equals(invest.getStatus())) {
+//			throw new TradeException("34102");
+//		}
+		//单笔业务查询
+		Generator generator = trusteeshipTradeService.queryTransaction(invest.getId(), BizType.TENDER.toString());
+		GeneratorPreTransactionJSON respData = (GeneratorPreTransactionJSON)generator.getRespData();
+		if(StringUtils.equals("0", respData.getCode())){
+			GeneratorDetailJSON details = (GeneratorDetailJSON) respData.getDetails();
+			String status = details.getStatus();
+			if ("FREEZED".equals(status)||"INIT".equals(status)) {
+					invest.setStatus(InvestConstants.InvestStatus.BID_SUCCESS);
+					investService.update(invest);
+			}else if ("UNFREEZED".equals(status)||"FAIL".equals(status)) {
+					investService.failInvest(invest);
+			}else{//异常ERROR
+					investService.failInvest(invest);
+			}
+		}
+		//调用用户预处理，生成去银行存管的参数,返回前台跳转
+		GeneratorPreTransactionJSON json = new GeneratorPreTransactionJSON();
+		json.setRequestNo(id);
+		json.setBizType(BizType.TENDER);
+		json.setCallbackUrl(NotifyURL.INVE);
+		json.setPlatformUserNo(invest.getInvestUserID());
+		json.setAmount(invest.getMoney());
+		json.setProjectNo(invest.getLoanId());
+		json.setExpired(DateUtil.DateToString(DateUtil.addMinute(invest.getTime(), 5), "yyyyMMddHHmmss"));
+		json.setRemark("用户投资");
+		return trusteeshipService.create(json, TrusteeshipServer.USER_PRE_TRANSACTION);
+	}
+	@Override
+	public void investCallback(GeneratorPreTransactionJSON respData)
+			throws TradeException, AccountException, SchedulerException {
+		String code = respData.getCode();
+		String requestNo = respData.getRequestNo();
+		if (StringUtils.isBlank(code) || StringUtils.isBlank(requestNo) || null == respData.getBizType()) {
+			throw new TradeException("响应参数为空");
+		}
+		Invest invest = investService.query(requestNo);
+		if(invest==null){
+			log.errLog("投资回调失败", "未找到本地投资记录"+requestNo+"，存管返回数据"+respData.toString());
+			throw new TradeException("投资状态已更改,流水号："+requestNo);
+		}
+		if(!StringUtils.equals(invest.getStatus(),
+				InvestConstants.InvestStatus.WAIT_AFFIRM)){
+			log.errLog("投资失败", "状态不为等待确认" + invest.toString());
+			throw new TradeException("投资状态已更改,流水号："+requestNo+"，状态"+invest.getStatus());
+		}
+		/********** 投资成功（满标后再投资的用户会投资失败） **********/
+		if (StringUtils.equals("0", code) && respData.getBizType() == BizType.TENDER) {
+			// 删除掉投资时创建的Quartz调度任务
+			JobKey jobKey = JobKey.jobKey(invest.getId(),
+							ScheduleConstants.JobGroup.CHECK_INVEST_OVER_EXPECT_TIME);
+			scheduler.deleteJob(jobKey);
+			// 修改投资状态
+			invest.setStatus(InvestConstants.InvestStatus.BID_SUCCESS);
+			investService.update(invest);
+			// 修改用户投资金额，发送短信站内信
+			try {
+				String userId = invest.getInvestUserID();
+				//调用短信服务，投资短信模板
+//					smsService.sendSms(userId, content, SmsConstants.INVEST);
+				User user = userService.get(userId);
+				user.setInvestMoneyTotal(user.getInvestMoneyTotal() + invest.getMoney());
+				userService.update(user);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+			/************ 放入队列，用户第三方推送 ****************/
+			try {
+				Date nowTime = new Date();
+				Map<String, Object> map = new HashMap<>();
+				map.put("investId", invest.getId());
+				map.put("loanId", invest.getLoanId());
+				map.put("pushTime", nowTime);
+
+				DRJedisMQ.product("pushinvest", FastJsonUtil.objToJson(map));
+				DRJedisMQ.product("activity_invest", invest.getId());
+				Date endTime = new Date();
+				log.infoLog("队列插入时间","毫秒：" + (endTime.getTime() - nowTime.getTime()));
+			} catch (Exception e) {
+				log.errLog("投资放入队列失败",invest.toString()+ "==" + e);
+			}
+		}else{
+			investService.failInvest(invest);
+		}
+	}
+
+}

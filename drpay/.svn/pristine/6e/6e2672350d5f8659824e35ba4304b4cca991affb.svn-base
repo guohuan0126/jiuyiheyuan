@@ -1,0 +1,383 @@
+package com.duanrong.drpay.trusteeship.service.impl;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.quartz.SchedulerException;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
+import util.ArithUtil;
+import util.Log;
+import util.SmsHttpClient;
+import base.error.ErrorCode;
+import base.exception.AccountException;
+import base.exception.LoanException;
+import base.exception.TradeException;
+
+import com.duanrong.drpay.business.account.PlatformAccountEnum;
+import com.duanrong.drpay.business.account.service.PlatformAccountService;
+import com.duanrong.drpay.business.account.service.UserAccountService;
+import com.duanrong.drpay.business.invest.InvestConstants;
+import com.duanrong.drpay.business.invest.model.Invest;
+import com.duanrong.drpay.business.invest.service.InvestService;
+import com.duanrong.drpay.business.loan.LoanConstants;
+import com.duanrong.drpay.business.loan.model.Loan;
+import com.duanrong.drpay.business.loan.service.LoanService;
+import com.duanrong.drpay.business.repay.service.RepayService;
+import com.duanrong.drpay.config.BusinessEnum;
+import com.duanrong.drpay.config.IdUtil;
+import com.duanrong.drpay.config.ToType;
+import com.duanrong.drpay.trusteeship.constants.TrusteeshipServer;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorDetailJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorPlatformJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorPreTransactionJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorRechargeJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorTradeJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorWithdrawJSON;
+import com.duanrong.drpay.trusteeship.helper.model.TransactionType;
+import com.duanrong.drpay.trusteeship.helper.service.TrusteeshipService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipInvestService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipLoanService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipPaymentService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipTradeService;
+import com.duanrong.util.jedis.DRJedisDLock;
+
+@Service
+public class TrusteeshipTradeServiceImpl implements TrusteeshipTradeService {
+
+	@Resource
+	InvestService investService;
+
+	@Resource
+	LoanService loanService;
+
+	@Resource
+	RepayService repayService;
+
+	@Resource
+	UserAccountService userAccountService;
+
+	@Resource
+	PlatformAccountService platformAccountService;
+
+
+	@Resource
+	TrusteeshipService trusteeshipService;
+
+	@Resource
+	TrusteeshipLoanService trusteeshipLoanService;
+
+	@Resource
+	SmsHttpClient smsHttpClient;
+
+	@Resource
+	TrusteeshipPaymentService trusteeshipPaymentService;
+	
+	@Resource
+	TrusteeshipInvestService trusteeshipInvestService;
+
+	@Resource
+	Log log;
+
+	/**
+	 * 放款锁
+	 */
+	private static final String GIVE_MONEY_TO_BORROWER_LOCK = "giveMoneyToBorrower";
+
+	/**
+	 * 单笔业务查询 流水号、类型
+	 */
+	@Override
+	public Generator queryTransaction(String requestNo, String type) {
+		return queryTransaction(requestNo, type, "no");
+	}
+
+	/**
+	 * 单笔业务查询 流水号、类型
+	 */
+	@Override
+	public Generator queryTransaction(String requestNo, String type,
+			String handle) {
+		GeneratorJSON json = new GeneratorJSON();
+		json.setRequestNo(requestNo);
+		String transactionType = null;
+		if (type.equals(BusinessEnum.recharge.name())) {
+			transactionType = TransactionType.RECHARGE.name();
+		} else if (type.equals(BusinessEnum.withdraw_cash.name())) {
+			transactionType = TransactionType.WITHDRAW.name();
+		} else if (type.equals(BusinessEnum.invest.name())
+				|| type.equals(BusinessEnum.repay.name())) {
+			transactionType = TransactionType.PRETRANSACTION.name();
+		}
+		json.setTransactionType(transactionType);
+		Generator generator = trusteeshipService.execute(json,
+				TrusteeshipServer.QUERY_TRANSACTION, GeneratorJSON.class);
+		if("yes".equals(handle)){
+			handleLocalBusiness(generator,requestNo,type);
+		}
+		return generator;
+	}
+
+	private void handleLocalBusiness(Generator generator, String requestNo,
+			String type) {
+		GeneratorJSON data = generator.getRespData();
+		List<GeneratorDetailJSON> details = data.getRecords();
+		if ("0".equals(data.getCode()) && !CollectionUtils.isEmpty(details)) {
+			GeneratorDetailJSON detail = details.get(0);
+			if (type.equals(BusinessEnum.recharge.name())) {
+				GeneratorRechargeJSON json = new GeneratorRechargeJSON();
+				json.setStatus(detail.getStatus());
+				json.setRequestNo(requestNo);
+				json.setCode("0");
+				trusteeshipPaymentService.rechargeCallback(json);
+			} else if (type.equals(BusinessEnum.withdraw_cash.name())) {
+				GeneratorWithdrawJSON json = new GeneratorWithdrawJSON();
+				json.setStatus(detail.getStatus());
+				json.setRequestNo(requestNo);
+				json.setCode("0");
+				trusteeshipPaymentService.withdrawCallback(json);
+			}else if(type.equals(BusinessEnum.invest.name())){
+				GeneratorPreTransactionJSON json = new GeneratorPreTransactionJSON();
+				json.setStatus(detail.getStatus());
+				json.setRequestNo(requestNo);
+				json.setCode("0");
+				try {
+					trusteeshipInvestService.investCallback(json);
+				} catch (TradeException e) {
+					e.printStackTrace();
+				} catch (AccountException e) {
+					e.printStackTrace();
+				} catch (SchedulerException e) {
+					e.printStackTrace();
+				}
+			}
+		} else {
+			log.errLog("查询状态不为0",
+					"流水号：" + requestNo + ",respData:" + data.toJSON());
+		}
+	}
+
+	@Override
+	public void giveMoneyToBorrower(String loanId) throws TradeException {
+
+		if (DRJedisDLock.getDLock(GIVE_MONEY_TO_BORROWER_LOCK, loanId, 180)) {
+			try {
+				// 放款预处理
+				Loan loan = loanService.prepare(loanId);
+				double money = 0D;// 本次放款金额
+				double managementExpense = 0D; // 本次放款勾出管理费
+				List<Invest> invests = loan.getInvests();
+
+				GeneratorTradeJSON json = new GeneratorTradeJSON();
+				json.setRequestNo(IdUtil.generateId(ToType.GMTB));
+				json.setProjectNo(loanId);
+				List<GeneratorDetailJSON> details = new ArrayList<>();
+				for (Invest invest : invests) {
+					GeneratorDetailJSON detail = new GeneratorDetailJSON();
+					detail.setPreTransactionNo(invest.getId());
+					detail.setAmount(invest.getMoney());
+					details.add(detail);
+				}
+				json.setDetails(details);
+				Generator generator = trusteeshipService.execute(json,
+						TrusteeshipServer.CONFIRM_LOAN, GeneratorJSON.class,
+						BusinessEnum.give_money_to_borrower);
+				if (generator.getRespData() != null
+						&& generator.getRespData().getCode().equals("0")) {
+					for (Invest invest : invests) {
+						if (InvestConstants.InvestStatus.BID_SUCCESS
+								.equals(invest.getStatus())) {
+							invest.setLoan(loan);
+							// 单笔放款
+							if (loanService.giveMoneyToBorrower(invest)) {
+								money += invest.getMoney();
+								managementExpense += invest
+										.getManagementExpense();
+							}
+						}
+					}
+				}
+
+				try {
+
+					if (investService.getInvestSeccessByLoanId(loan.getId()) == 0) {
+
+						// 跟新存管通项目状态
+						trusteeshipLoanService.modifyLoan(loanId,
+								LoanConstants.LoanStatus.REPAYING);
+						// 生成还款计划
+						repayService.saveRepay(loan);
+						loan.setStatus("还款中");
+						loanService.update(loan);
+
+					}
+					money = ArithUtil.sub(money, managementExpense);
+
+					// 用户放款
+					userAccountService.transferIn(loan.getBorrowMoneyUserID(),
+							money, BusinessEnum.give_money_to_borrower, "借款项目:"
+									+ loan.getName() + ",已经到账!",
+							"借款ID：" + loan.getId(), loan.getId());
+					if (managementExpense > 0) {
+						// 扣除借款管理费
+						userAccountService.transferOut(
+								loan.getBorrowMoneyUserID(), managementExpense,
+								BusinessEnum.give_money_to_borrower,
+								"借款成功，取出借款管理费", "借款ID：" + loan.getId(),
+								loan.getId());
+						platformAccountService.transferIn(
+								PlatformAccountEnum.PLATFORM_SYS,
+								managementExpense,
+								BusinessEnum.give_money_to_borrower, "借款管理费",
+								loan.getId());
+					}
+
+					/*
+					 * if (money > 0) { User user = userService
+					 * .get(loan.getBorrowMoneyUserID()); String sendContent =
+					 * user.getRealname() + "，您好！您融资的项目：" + loan.getName() +
+					 * "，现已放款，放款金额：" + money + "元，已经扣除借款管理费" + managementExpense
+					 * + "元。"; smsService.sendSms(loan.getBorrowMoneyUserID(),
+					 * sendContent, SmsConstants.GIVEMOENYTOBORROWER);
+					 * informationService.sendInformation(
+					 * loan.getBorrowMoneyUserID(), "放款通知", sendContent); }
+					 */
+				} catch (Exception e) {
+					e.printStackTrace();
+					log.errLog("放款异常", e);
+				}
+
+			} finally {
+				DRJedisDLock.releaseDLock(GIVE_MONEY_TO_BORROWER_LOCK, loanId);
+			}
+		}
+
+	}
+
+	
+
+	@Override
+	public GeneratorJSON queryPlatformInfo() {
+		GeneratorJSON json = new GeneratorJSON();
+		Generator generator = trusteeshipService.execute(json,
+				TrusteeshipServer.QUERY_PLATFORM_INFORMATION,
+				GeneratorPlatformJSON.class);
+		return generator.getRespData();
+	}
+
+	
+
+	@Override
+	public void bidders(String loanId, String investId, String type)
+			throws Exception {
+		// 项目流标
+		if (type.equals("loan")) {
+			Loan loan = loanService.get(loanId);
+			if (loan == null) {
+				log.errLog("流标失败", "loanId: " + loanId + ", 不存在");
+				throw new LoanException(ErrorCode.LoanNotFind);
+			}
+
+			if (loan.getStatus().equals(LoanConstants.LoanStatus.DQGS)
+					|| loan.getStatus()
+							.equals(LoanConstants.LoanStatus.RAISING)
+					|| loan.getStatus()
+							.equals(LoanConstants.LoanStatus.RECHECK)) {
+				Invest invest = new Invest();
+				invest.setLoanId(loanId);
+				invest.setStatus("还款中");
+				List<Invest> invests = investService.getInvestLoan(invest);
+				if (!invests.isEmpty()) {
+					log.errLog("流标失败", "loanId: " + loanId + ", 存在还款中投资记录");
+					throw new LoanException(ErrorCode.LoanStatusError);
+				}
+
+				invest.setStatus("等待确认,投标成功");
+				invests = investService.getInvestLoan(invest);
+				for (Invest i : invests) {
+					try {
+						i.setLoan(loan);
+						this.bidders(i);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+				invests = investService.getInvestLoan(invest);
+				if (invests.isEmpty()) {
+					GeneratorJSON generatorJSON = trusteeshipLoanService
+							.modifyLoan(loanId, LoanConstants.LoanStatus.CANCEL);
+					if (generatorJSON.getCode().equals("0")) {
+						loan.setStatus(LoanConstants.LoanStatus.CANCEL);
+						loanService.update(loan);
+					} else {
+						log.errLog("流标失败", "investId: " + invest.getId()
+								+ "存管返回信息" + generatorJSON.getDescription(), 1);
+					}
+				}
+			} else {
+				log.errLog("流标失败", "loanId: " + loan.getId()
+						+ ", 项目状态不正确， loanStatus: " + loan.getStatus());
+				throw new LoanException(ErrorCode.LoanStatusError);
+			}
+		} else if (type.equals("invest")) {
+			Invest invest = investService.query(investId);
+			if (invest == null) {
+				log.errLog("流标失败", "investId: " + investId + ", 不存在");
+				throw new LoanException(ErrorCode.InvestNotFind);
+			}
+			if (invest.getStatus().equals(
+					InvestConstants.InvestStatus.BID_SUCCESS)) {
+				this.bidders(invest);
+			} else if(invest.getStatus().equals(
+					InvestConstants.InvestStatus.WAIT_AFFIRM)){
+				try {
+					investService.failInvest(invest);
+				} catch (Exception e) {
+					log.errLog("流标失败", "investId: " + invest.getId()
+							+ ExceptionUtils.getMessage(e), 1);
+					throw e;
+				}
+			}else{
+				log.errLog("流标失败", "investId: " + investId
+						+ ", 状态不正确, investStatus: " + invest.getStatus());
+				throw new LoanException(ErrorCode.InvestNotFind);
+			}
+
+		}
+	}
+
+	/**
+	 * 单笔流标
+	 * 
+	 * @param invest
+	 * @throws Exception
+	 */
+	private void bidders(Invest invest) throws Exception {
+		GeneratorJSON json = new GeneratorJSON();
+		json.setRequestNo(IdUtil.randomUUID());
+		json.setAmount(invest.getMoney());
+		json.setPreTransactionNo(invest.getId());
+		Generator generator = trusteeshipService.execute(json,
+				TrusteeshipServer.CANCEL_PRE_TRANSACTION, GeneratorJSON.class);
+		if (generator.getRespData() != null
+				&& generator.getRespData().getCode().equals("0")) {
+			try {
+				investService.failInvest(invest);
+			} catch (Exception e) {
+				log.errLog("流标失败", "investId: " + invest.getId()
+						+ ExceptionUtils.getMessage(e), 1);
+				throw e;
+			}
+		} else {
+			log.errLog("流标失败", "investId: " + invest.getId() + "存管返回信息"
+					+ generator.getRespData().getDescription(), 1);
+		}
+
+	}
+}

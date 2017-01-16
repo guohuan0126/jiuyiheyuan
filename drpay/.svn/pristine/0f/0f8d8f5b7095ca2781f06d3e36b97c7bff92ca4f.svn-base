@@ -1,0 +1,16 @@
+package com.duanrong.drpay.business.platformtransfer.dao;
+
+import java.util.List;
+
+import base.dao.BaseDao;
+
+import com.duanrong.drpay.business.platformtransfer.model.PlatformTransfer;
+
+public interface PlatformTransferDao extends BaseDao<PlatformTransfer> {
+	/**
+	 * 批量添加
+	 * 
+	 * @param list
+	 */
+	public void insertBatch(List<PlatformTransfer> list);
+}

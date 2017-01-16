@@ -1,0 +1,34 @@
+package com.duanrong.drpay.business.trusteeship.service.impl;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+
+import util.Log;
+
+import com.duanrong.drpay.business.trusteeship.dao.TrusteeshipOperationDao;
+import com.duanrong.drpay.business.trusteeship.model.TrusteeshipOperation;
+import com.duanrong.drpay.business.trusteeship.service.TrusteeshipOperationService;
+
+@Service
+public class TrusteeshipOperationServiceImpl implements
+		TrusteeshipOperationService {
+
+	@Resource
+	TrusteeshipOperationDao trusteeshipOperationDao;
+	@Resource
+	Log log;
+
+	@Override
+	public TrusteeshipOperation insert(TrusteeshipOperation to) {
+		if (StringUtils.isBlank(to.getType())
+				|| StringUtils.isBlank(to.getMarkId())
+				|| StringUtils.isBlank(to.getOperator())
+				|| StringUtils.isBlank(to.getTrusteeship())) {
+			return null;
+		}
+		trusteeshipOperationDao.insert(to);
+		return to;
+	}
+}

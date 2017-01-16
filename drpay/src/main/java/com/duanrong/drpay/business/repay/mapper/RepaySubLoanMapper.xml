@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.repay.mapper.RepaySubLoanMapper">
+	<resultMap type="RepaySubLoan" id="repaySubLoanRM">
+		<id property="id" column="id" />
+		<result property="repaySubLoanId" column="repay_subloan_id" />
+		<result property="subloanId" column="subloan_id" />
+		<result property="repayId" column="repay_id" />
+		<result property="period" column="period" />
+		<result property="corpus" column="corpus" />
+		<result property="interest" column="interest" />
+		<result property="status" column="status" />
+		<result property="userId" column="user_id" />
+		<result property="startTime" column="start_time" />
+		<result property="endTime" column="end_time" />
+		<result property="operationTime" column="operation_time" />
+		<result property="isBeforeRepay" column="is_before_repay" />
+		<result property="handleStatus" column="handle_status" />
+		<result property="operator" column="operator" />
+	</resultMap>
+
+	<!-- 生成还款计划 -->
+	<insert id="insert" parameterType="RepaySubLoan">
+		INSERT INTO repay_subloan
+		(repay_subloan_id, subloan_id, repay_id, period, corpus, interest,
+		start_time, status, end_time, operation_time,
+		user_id)
+		VALUES
+		(#{repaySubLoanId},#{subloanId}, #{repayId}, #{period}, #{corpus},
+		#{interest},
+		#{startTime},#{status},#{endTime},#{operationTime},
+		#{userId})
+	</insert>
+
+	<select id="get" parameterType="string" resultMap="repaySubLoanRM">
+		SELECT * FROM repay_subloan WHERE repay_subloan_id = #{repaySubLoanId}
+	</select>
+
+
+	<select id="getRepaySubLoans" parameterType="string" resultMap="repaySubLoanRM">
+		SELECT * FROM repay_subloan WHERE repay_id = #{repayId}
+	</select>
+
+	<select id="getRepaySubLoansBySubloanId" parameterType="string"
+		resultMap="repaySubLoanRM">
+		SELECT * FROM repay_subloan WHERE subloan_id = #{subloanId}
+	</select>
+
+	<select id="update" parameterType="RepaySubLoan">
+		UPDATE REPAY_SUBLOAN
+		<set>
+			<if test="corpus != 0">corpus=#{corpus},</if>
+			<if test="interest != 0">interest=#{interest},</if>
+			<if test="status != null">status=#{status},</if>
+			<if test="operationTime != null">operation_time=#{operationTime},</if>
+			<if test="handleStatus != null">handle_status=#{handleStatus},</if>
+			<if test="isBeforeRepay!=0">is_before_repay=#{isBeforeRepay},</if>
+			<if test="operator!=null">operator=#{operator},</if>
+		</set>
+		WHERE repay_subloan_id = #{repaySubLoanId}
+	</select>
+
+	<!-- 查询子标还款计划每期的本息 -->
+	<select id="getSumMoneyRepayVehicle" parameterType="RepaySubLoan"
+		resultMap="repaySubLoanRM">
+		SELECT IFNULL(SUM(rs.corpus), 0) as corpus,
+		IFNULL(SUM(rs.interest), 0) as interest FROM repay_subloan rs JOIN
+		loan_vehicle sl ON rs.subloan_id = sl.subloan_id WHERE sl.loan_id =
+		#{loanId}
+		AND rs.period = #{period}
+	</select>
+
+	<select id="getSumMoneyRepayAgriculture" parameterType="RepaySubLoan"
+		resultMap="repaySubLoanRM">
+		SELECT IFNULL(SUM(rs.corpus), 0) as corpus,
+		IFNULL(SUM(rs.interest), 0) as interest FROM repay_subloan rs JOIN
+		agriculture_fork_loans sl ON rs.subloan_id = sl.subloan_id WHERE
+		sl.loan_id =
+		#{loanId}
+		AND rs.period = #{period}
+	</select>
+
+	<!-- 更新子标还款计划 repayId -->
+	<update id="updateRepaySubloanByAgriculture" parameterType="RepaySubLoan">
+		UPDATE
+		repay_subloan rs JOIN
+		agriculture_fork_loans sl ON rs.subloan_id
+		=
+		sl.subloan_id
+		SET rs.repay_id = #{repayId} WHERE sl.loan_id =
+		#{loanId}
+		AND rs.period = #{period}
+	</update>
+
+	<update id="updateRepaySubloanByVehicle" parameterType="RepaySubLoan">
+		UPDATE
+		repay_subloan rs JOIN
+		loan_vehicle sl ON rs.subloan_id
+		= sl.subloan_id
+		SET rs.repay_id = #{repayId} WHERE sl.loan_id = #{loanId}
+		AND rs.period
+		= #{period}
+	</update>
+
+
+	<!-- 查询子标还款计划数量 -->
+	<select id="getSumRepayVehicle" parameterType="string"
+		resultType="int">
+		SELECT COUNT(*) FROM repay_subloan rs LEFT JOIN
+		loan_vehicle sl ON rs.subloan_id = sl.subloan_id WHERE sl.loan_id =
+		#{loanId}
+	</select>
+
+	<select id="getSumRepayAgriculture" parameterType="string"
+		resultType="int">
+		SELECT COUNT(*) FROM repay_subloan rs JOIN
+		agriculture_fork_loans sl ON rs.subloan_id = sl.subloan_id WHERE
+		sl.loan_id = #{loanId}
+	</select>
+
+</mapper>

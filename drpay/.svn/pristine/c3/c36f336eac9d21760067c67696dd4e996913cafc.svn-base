@@ -1,0 +1,146 @@
+package com.duanrong.drpay.business.loan.service.impl;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+
+import util.ArithUtil;
+import base.exception.ErrorCodeException;
+
+import com.duanrong.drpay.business.invest.dao.InvestDao;
+import com.duanrong.drpay.business.invest.model.Invest;
+import com.duanrong.drpay.business.loan.LoanConstants;
+import com.duanrong.drpay.business.loan.dao.LoanDao;
+import com.duanrong.drpay.business.loan.model.Loan;
+import com.duanrong.drpay.business.loan.service.LoanService;
+import com.duanrong.drpay.business.repay.dao.RepayDao;
+import com.duanrong.drpay.business.user.model.User;
+
+/**
+ * Copyright : duanrong.com.cn All Rights Reserved Company : 久亿财富（北京）投资有限公司
+ * 
+ * @Author : 孙铮
+ * @CreateTime : 2014-8-28 下午12:34:09
+ * @Description : drsoa com.duanrong.business.loan.service.impl
+ *              LoanServiceImpl.java
+ * 
+ */
+@Service
+public class LoanServiceImpl implements LoanService {
+	@Resource
+	LoanDao loanDao;
+
+	@Resource
+	InvestDao investDao;
+	@Resource
+	RepayDao repayDao;
+
+	/**
+	 * 
+	 * @description 查询所有借款记录
+	 * @author 孙铮
+	 * @time 2014-8-28 下午12:36:56
+	 * @param loan
+	 * @return
+	 */
+	@Override
+	public List<Loan> findAll() {
+		return loanDao.findAll();
+	}
+
+	/**
+	 * 
+	 * @description 根据id查询单条借款记录
+	 * @author 孙铮
+	 * @time 2014-8-28 下午12:37:14
+	 * @param id
+	 * @return
+	 */
+	@Override
+	public Loan get(String id) {
+		return loanDao.get(id);
+	}
+
+	/**
+	 * 
+	 * @description 根据组合条件查询所有借款记录
+	 * @author 孙铮
+	 * @time 2014-8-28 下午5:29:29
+	 * @param userID
+	 * @return
+	 */
+	@Override
+	public List<Loan> getLoansByGroupCondition(Loan loan) {
+		if (loan == null) {
+			return null;
+		} else {
+			return loanDao.getLoansByGroupCondition(loan);
+		}
+	}
+
+	/**
+	 * 
+	 * @description 根据loanID查询对应借款人信息
+	 * @author 孙铮
+	 * @time 2014-8-28 下午5:40:44
+	 * @param loanID
+	 * @return
+	 */
+	public User getUserByLoanID(String loanID) {
+		User user = loanDao.getUserByLoanID(loanID);
+		return user;
+	}
+
+
+	public void update(Loan loan) {
+		loanDao.update(loan);
+	}
+
+	public void dealRaiseComplete(String loanId)
+			throws ErrorCodeException {
+		if (calculateMoneyNeedRaised(loanId) <= 0) {
+			// 项目募集完成
+			Loan loan = get(loanId);
+			if (StringUtils.equals(loan.getStatus(),
+					LoanConstants.LoanStatus.RAISING)) {
+				loan.setStatus(LoanConstants.LoanStatus.RECHECK);
+				update(loan);
+			}
+		}
+	}
+
+	public double calculateMoneyNeedRaised(String loanId) {
+		Loan loan = get(loanId);
+		if (loan == null) {
+			return 0;
+		}
+
+		// 统计所有的此借款的投资信息，求和做减法，得出尚未募集到的金额。
+		double validSumMoney = investDao.getInvestSumMoneyByLoan(loanId);
+		
+		double remain = ArithUtil.sub(loan.getTotalmoney(), validSumMoney);
+		return remain < 0 ? 0 : remain;
+	}
+
+
+	/**
+	 * 
+	 * @description 根据组合条件查询所有借款记录
+	 * @author 孙铮
+	 * @time 2014-9-1 下午12:02:28
+	 * @param invest
+	 * @return
+	 */
+	@Override
+	public List<Invest> getInvestsByGroupCondition(Invest invest) {
+		if (invest == null) {
+			return null;
+		} else {
+			List<Invest> invests = loanDao.getInvestsByGroupCondition(invest);
+			return invests;
+		}
+	}
+
+}

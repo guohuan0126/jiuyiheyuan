@@ -1,0 +1,105 @@
+package com.duanrong.drpay.jsonservice.controller;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.StringUtils;
+import org.quartz.SchedulerException;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import base.error.ErrorCode;
+import base.exception.TradeException;
+import base.exception.UserAccountException;
+
+import com.duanrong.drpay.jsonservice.handler.RequestParameter;
+import com.duanrong.drpay.jsonservice.handler.View;
+import com.duanrong.drpay.jsonservice.param.InvestParameter;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipInvestService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipRepayService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipTradeService;
+
+/**
+ * 交易服务
+ * 
+ * @author xiao
+ * @datetime 2016年12月9日 下午2:09:12
+ */
+@Controller
+@RequestMapping(value = "/trade", method = RequestMethod.POST)
+public class TradeController extends BaseController {
+
+	@Resource
+	TrusteeshipTradeService trusteeshipTradeService;
+	
+	@Resource
+	TrusteeshipInvestService trusteeshipInvestService;
+	
+	@Resource
+	TrusteeshipRepayService trusteeshipRepayService;
+	
+	@RequestMapping(value = "/query")
+	@ResponseBody
+	public View query(@RequestParameter String requestNo,@RequestParameter String type)
+			throws UserAccountException, TradeException, SchedulerException {
+		View view = getView();
+		if (StringUtils.isEmpty(requestNo)
+				|| StringUtils.isEmpty(type)){
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator data = trusteeshipTradeService.queryTransaction(requestNo, type);
+			view.setData(data);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+	
+	@RequestMapping(value = "/invest")
+	@ResponseBody
+	public View createInvest(@RequestParameter InvestParameter params)
+			throws UserAccountException, TradeException, SchedulerException {
+		View view = getView();
+		if (params == null || StringUtils.isEmpty(params.getUserId())
+				|| StringUtils.isEmpty(params.getLoanId())
+				|| params.getMoney() <= 0) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator data = trusteeshipInvestService.createInvest(params);
+			view.setData(data);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+	
+	@RequestMapping(value = "/giveMoneyToBorrower")
+	@ResponseBody
+	public View giveMoneyToBorrower(@RequestParameter String userId, 
+			@RequestParameter String loanId)throws Exception {
+		View view = getView();
+		if (StringUtils.isEmpty(userId)
+				|| StringUtils.isEmpty(loanId)) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			String data = trusteeshipTradeService.giveMoneyToBorrower(userId,loanId);
+			view.setData(data);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+	
+	@RequestMapping(value = "/repay")
+	@ResponseBody
+	public View repay(@RequestParameter String id) throws UserAccountException, TradeException{
+		View view = getView();
+		if (StringUtils.isEmpty(id)) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator data = trusteeshipRepayService.createRepay(id);
+			view.setData(data);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+}

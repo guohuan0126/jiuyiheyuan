@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.trade.demand.mapper.DemandTreasureLoanMapper">
+	<resultMap type="DemandTreasureLoan" id="DemandTreasureLoanRM">
+		<id property="id" column="id" />
+		<result property="loanName" column="loan_name" />
+		<result property="loanType" column="loan_type" />
+		<result property="loanStatus" column="loan_status" />
+		<result property="totalMoney" column="total_money" />
+		<result property="startTime" column="start_time" />
+		<result property="finishTime" column="finish_time" />
+		<result property="display" column="display" />
+		<result property="creator" column="creator" />
+		<result property="createTime" column="create_time" />
+		<result property="modifyPerson" column="modify_person" />
+		<result property="modifyTime" column="modify_time" />
+		<result property="operationType" column="operation_type" />
+		<result property="month" column="month" />
+		<result property="day" column="day" />
+		<result property="borrower" column="borrower" />
+		<result property="idCard" column="id_card" />
+		<result property="brand" column="brand" />
+		<result property="licensePlateNumber" column="license_plate_number" />
+		<result property="kilometreAmount" column="kilometre_amount" />
+		<result property="buyTime" column="buy_time" />
+		<result property="assessPrice" column="assess_price" />
+		<result property="guaranteeType" column="guarantee_type" />
+		<result property="guaranteeRate" column="guarantee_rate" />
+	</resultMap>
+	<select id="pageLite" parameterType="DemandTreasureLoan" resultMap="DemandTreasureLoanRM" >
+		select * from demand_treasure_loan t
+		<where>
+				AND t.display = 1
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(loanStatus)">
+				AND t.loan_status = #{loanStatus}
+			</if>
+		</where>
+		order by start_time DESC
+	</select>
+	
+	<select id="getSumTotalMoneyByStatus" parameterType="String" resultType="double" >
+		select sum(total_money)  from demand_treasure_loan t 
+		where  t.display = 1 AND t.loan_status = #{loanStatus}
+	</select>
+</mapper>

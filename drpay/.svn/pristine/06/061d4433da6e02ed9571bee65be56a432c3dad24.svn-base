@@ -1,0 +1,20 @@
+package com.duanrong.drpay.business.trusteeship.dao.impl;
+
+import org.springframework.stereotype.Repository;
+
+import base.dao.impl.BaseDaoImpl;
+
+import com.duanrong.drpay.business.trusteeship.dao.TrusteeshipOperationDao;
+import com.duanrong.drpay.business.trusteeship.model.TrusteeshipOperation;
+
+@Repository
+public class TrusteeshipOperationDaoImpl extends
+		BaseDaoImpl<TrusteeshipOperation> implements TrusteeshipOperationDao {
+
+	public TrusteeshipOperationDaoImpl() {
+		this.setMapperNameSpace("com.duanrong.drpay.business.trusteeship.mapper.TrusteeshipOperationMapper");
+	}
+
+
+
+}

@@ -1,0 +1,9 @@
+package com.duanrong.drpay.business.trusteeship.dao;
+
+import base.dao.BaseDao;
+
+import com.duanrong.drpay.business.trusteeship.model.TrusteeshipOperation;
+
+public interface TrusteeshipOperationDao extends BaseDao<TrusteeshipOperation> {
+
+}

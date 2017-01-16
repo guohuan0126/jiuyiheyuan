@@ -1,0 +1,352 @@
+package com.duanrong.drpay.business.demand.service.impl;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import util.ArithUtil;
+import util.Log;
+import base.error.ErrorCode;
+import base.exception.TradeException;
+import base.exception.UserAccountException;
+import base.pagehelper.PageInfo;
+
+import com.duanrong.drpay.business.account.dao.UserAccountDao;
+import com.duanrong.drpay.business.account.service.UserAccountBusinessService;
+import com.duanrong.drpay.business.account.service.UserAccountService;
+import com.duanrong.drpay.business.demand.DemandtreasureConstants;
+import com.duanrong.drpay.business.demand.DemandtreasureConstants.DemandBillStatus;
+import com.duanrong.drpay.business.demand.dao.DemandTreasureBillDao;
+import com.duanrong.drpay.business.demand.dao.DemandtreasureGuOutDao;
+import com.duanrong.drpay.business.demand.dao.DemandtreasureGuOutDetailDao;
+import com.duanrong.drpay.business.demand.dao.DemandtreasureTransferOutDao;
+import com.duanrong.drpay.business.demand.model.DemandTreasureBill;
+import com.duanrong.drpay.business.demand.model.DemandtreasureGuOut;
+import com.duanrong.drpay.business.demand.model.DemandtreasureGuOutDetail;
+import com.duanrong.drpay.business.demand.model.DemandtreasureTransferOut;
+import com.duanrong.drpay.business.demand.service.DemandTreasureBillService;
+import com.duanrong.drpay.business.demand.service.DemandtreasureTransferOutService;
+import com.duanrong.drpay.config.BusinessEnum;
+import com.duanrong.util.jedis.DRJedisDLock;
+
+@Service
+public class DemandtreasureTransferOutServiceImpl implements
+		DemandtreasureTransferOutService {
+
+	@Resource
+	DemandtreasureTransferOutDao demandtreasureTransferOutDao;
+
+	@Resource
+	DemandtreasureGuOutDetailDao demandtreasureGuOutDetailDao;
+
+	@Resource
+	DemandtreasureGuOutDao demandtreasureGuOutDao;
+
+	@Resource
+	UserAccountService userAccountService;
+
+	@Resource
+	DemandTreasureBillDao demandTreasureBillDao;
+
+	@Resource
+	UserAccountBusinessService userAccountBusinessService;
+
+	@Resource
+	DemandTreasureBillService demandTreasureBillService;
+
+	@Resource
+	UserAccountDao userAccountDao;
+	
+	@Resource
+	Log log;
+
+	private static final String DEMANDTREASURE_TRANSFEROUT_DLOCK = "demandtreasure_transferout";
+
+	@Override
+	public void insert(DemandtreasureTransferOut demandOut) {
+		demandtreasureTransferOutDao.insert(demandOut);
+	}
+
+	@Override
+	public void update(DemandtreasureTransferOut demandOut) {
+		demandtreasureTransferOutDao.update(demandOut);
+
+	}
+
+	@Override
+	public Double queryOutMoneySumByStatus(String userId, String status) {
+		return ArithUtil.round(demandtreasureTransferOutDao
+				.getOutMoneySumByStatus(userId, status), 2);
+	}
+
+	@Override
+	public Integer queryValidOutCount(String userId) {
+		return demandtreasureTransferOutDao.getValidOutCount(userId);
+	}
+
+	@Override
+	public PageInfo<DemandtreasureTransferOut> pageLite(int pageNo,
+			int pageSize, DemandtreasureTransferOut out) {
+
+		return demandtreasureTransferOutDao.pageLite(pageNo, pageSize, out);
+	}
+
+	@Override
+	public Double getOutInterestSumByStatus(String userId, String status) {
+		return ArithUtil.round(demandtreasureTransferOutDao
+				.getOutInterestSumByStatus(userId, status), 2);
+	}
+
+	@Override
+	public double queryValidOutSumMoney(String userId) {
+		return demandtreasureTransferOutDao.queryValidOutSumMoney(userId);
+	}
+
+	@Override
+	public void transferOut(String password, String requestNo)
+			throws UserAccountException, TradeException {
+		if (DRJedisDLock.getDLock(DEMANDTREASURE_TRANSFEROUT_DLOCK, password)) {/*
+			try {
+				String userIdGu = LoadConstantProterties2
+						.getValueByDefaultPro("USER");
+				if (userIdGu == null || userIdGu == "") {
+					throw new UserAccountException("未配置平台活期宝账户");
+				}
+				if (userAccountBusinessService.isPassword(userIdGu, password)) {
+					DemandtreasureTransferOut d = demandtreasureTransferOutDao
+							.gettotal();
+					UserAccount guAccount = userAccountDao
+							.get(userIdGu);
+					if (guAccount == null) {
+						throw new UserAccountException(
+								ErrorCode.UserAccountNoOpened);
+					} else {
+						if (d == null) {
+							log.infoLog("活期宝转出", "没有可转出的用户");
+							throw new TradeException(
+									ErrorCode.DemandTreasureOutNoUsers);
+						} else {
+							if (requestNo == null || requestNo == "") {
+								double num = demandtreasureGuOutDao
+										.getGuCount();
+								if (num > 0) {
+									throw new TradeException(
+											ErrorCode.DemandTreasureOutNoComplete);
+								}
+							}
+							if (guAccount.getAvailableBalance() < d
+									.getSummoney()) {
+								throw new TradeException(
+										ErrorCode.DemandTreasureOutGuMoneyToMany);
+							} else {
+								List<DemandtreasureTransferOut> trOut = demandtreasureTransferOutDao
+										.gettotalUser();
+								for (DemandtreasureTransferOut t : trOut) {
+									double money = demandTreasureBillService
+											.getDemandTreasureMoney(t
+													.getUserId());
+									if (t.getSummoney() > money) {
+										throw new TradeException(
+												ErrorCode.DemandTreasureOutMoneyToMany);
+									}
+								}
+								if (requestNo == null || requestNo == "") {
+									requestNo = IdUtil.randomUUID();
+									insertGuoutAndDetail(userIdGu, requestNo);
+								}
+								DemandtreasureGuOut guOut = demandtreasureGuOutDao
+										.get(requestNo);
+								if (guOut != null
+										&& guOut.getStatus().equals("sended")) {
+									DemandtreasureGuOutDetail detail = new DemandtreasureGuOutDetail();
+									detail.setGuOutId(requestNo);
+									List<DemandtreasureGuOutDetail> deList = demandtreasureGuOutDetailDao
+											.findGuOutDetails(detail);
+									for (DemandtreasureGuOutDetail guOutDetail : deList) {
+										transferOutLocal(guOutDetail);
+									}
+									List<DemandtreasureGuOutDetail> deListAll = demandtreasureGuOutDetailDao
+											.findGuOutDetails(detail);
+									if (deListAll == null || deListAll.size() == 0) {
+										DemandtreasureGuOut out = new DemandtreasureGuOut();
+										out.setStatus(DemandtreasureConstants.TransferInStatus.CONFIRM);
+										out.setId(requestNo);
+										out.setConfirmTime(new Date());
+										demandtreasureGuOutDao.update(out);
+									}
+								} else {
+									throw new TradeException(
+											ErrorCode.DemandTreasureOutStatusError);
+								}
+							}
+						}
+					}
+				} else {
+					throw new UserAccountException(ErrorCode.PASSWORD_ERROR);
+				}
+			} catch (Exception e) {
+				throw e;
+			} finally {
+				DRJedisDLock.releaseDLock(DEMANDTREASURE_TRANSFEROUT_DLOCK,
+						password);
+			}
+		*/}
+	}
+
+	@Transactional
+	private void insertGuoutAndDetail(String userId, String requestNo)
+			throws TradeException {
+		List<DemandtreasureTransferOut> list = demandtreasureTransferOutDao
+				.findAll();
+		if (list != null && list.size() != 0) {
+			List<DemandtreasureGuOutDetail> details = new ArrayList<DemandtreasureGuOutDetail>();
+			double totalMoney = 0D;
+			for (DemandtreasureTransferOut tad : list) {
+				DemandtreasureGuOutDetail detail = new DemandtreasureGuOutDetail();
+				detail.setSendedTime(new Date());
+				detail.setId(requestNo);
+				detail.setGuOutId(requestNo);
+				detail.setTransferOutId(tad.getId());
+				detail.setStatus(DemandtreasureConstants.TransferInStatus.SENDED);
+				detail.setMoney(tad.getMoney());
+				detail.setUserId(tad.getUserId());
+				detail.setInterest(tad.getInterest());
+				detail.setPrincipal(tad.getPrincipal());
+				details.add(detail);
+				totalMoney += tad.getMoney();
+			}
+			DemandtreasureGuOut guOut = new DemandtreasureGuOut();
+			guOut.setId(requestNo);
+			guOut.setMoney(ArithUtil.round(totalMoney, 2));
+			guOut.setRequestXml("");
+			guOut.setSendedTime(new Date());
+			guOut.setUserId(userId);
+			guOut.setStatus(DemandtreasureConstants.TransferInStatus.SENDED);
+			demandtreasureGuOutDao.insert(guOut);
+			demandtreasureGuOutDetailDao.insertBatch(details);
+
+		} else {
+			log.infoLog("活期宝转出", "没有可转出的用户");
+//			throw new TradeException(ErrorCode.DemandTreasureOutNoUsers);
+		}
+	}
+
+	@Transactional
+	private void transferOutLocal(DemandtreasureGuOutDetail guOutDetail) {
+		if ("sended".equals(guOutDetail.getStatus())) {
+			DemandtreasureGuOutDetail dg = new DemandtreasureGuOutDetail();
+			dg.setId(guOutDetail.getId());
+			dg.setConfirmTime(new Date());
+			dg.setStatus(DemandtreasureConstants.TransferInStatus.CONFIRM);
+			demandtreasureGuOutDetailDao.update(dg);
+
+			DemandtreasureTransferOut tOut = demandtreasureTransferOutDao
+					.get(guOutDetail.getTransferOutId());
+			if (guOutDetail.getInterest() != null
+					&& guOutDetail.getInterest() > 0) {
+				DemandTreasureBill bill = new DemandTreasureBill();
+				bill.setCreateTime(new Date());
+				bill.setDetail("用户：" + guOutDetail.getUserId() + "天天赚转让利息成功!");
+				bill.setId(UUID.randomUUID().toString().replaceAll("-", ""));
+				bill.setMoney(guOutDetail.getInterest());
+				bill.setType(DemandBillStatus.OUTINTEREST);
+				bill.setTranferWay(tOut.getTransferWay());
+				bill.setUserId(guOutDetail.getUserId());
+				demandTreasureBillDao.insert(bill);
+			}
+			if (guOutDetail.getPrincipal() != null
+					&& guOutDetail.getPrincipal() > 0) {
+				DemandTreasureBill bill = new DemandTreasureBill();
+				bill.setCreateTime(new Date());
+				bill.setDetail("用户：" + guOutDetail.getUserId() + "天天赚转让本金成功!");
+				bill.setId(UUID.randomUUID().toString().replaceAll("-", ""));
+				bill.setMoney(guOutDetail.getPrincipal());
+				bill.setType(DemandBillStatus.TRANOUT);
+				bill.setTranferWay(tOut.getTransferWay());
+				bill.setUserId(guOutDetail.getUserId());
+				demandTreasureBillDao.insert(bill);
+			}
+			tOut.setStatus(DemandBillStatus.SUCCESS);
+			tOut.setSuccessTime(new Date());
+			demandtreasureTransferOutDao.update(tOut);
+
+			DemandtreasureGuOut guOut = demandtreasureGuOutDao.get(guOutDetail
+					.getGuOutId());
+			try {
+				userAccountService.transferIn(guOutDetail.getUserId(),
+						guOutDetail.getMoney(), BusinessEnum.demand_out,
+						"天天赚转让到账", "转账ID：" + guOutDetail.getId(),
+						guOutDetail.getId());
+				userAccountService.transferOut(guOut.getUserId(),
+						guOutDetail.getMoney(), BusinessEnum.demand_out, "用户："
+								+ guOut.getUserId() + "活期宝转出转账确认成功!转出金额："
+								+ guOutDetail.getMoney(),
+						"转账ID：" + guOutDetail.getId(), guOutDetail.getId());
+			} catch (UserAccountException e) {
+				log.errLog(
+						"DemandtreasureTransferOutServiceImpl->transferOutLocal()失败",
+						"userId：" + guOutDetail.getUserId() + "，Money："
+								+ guOutDetail.getMoney() + "，转账ID："
+								+ guOutDetail.getId());
+			}
+			// 发短信
+			try {
+//				String smsText = "您在天天赚账户中申请转让的" + guOutDetail.getMoney()
+//						+ "元，已发放至您的资金托管账户";
+				/*String smsText = smsService
+						.operateTemplate(SmsConstants.DEMANDOUT);
+				smsText = StringUtils.replace(smsText, "#{money}",
+						Double.toString(guOutDetail.getMoney()));
+				String informationTitle = "天天赚转让到账通知";
+				if (tOut.getTransferWay() != null
+						&& tOut.getTransferWay().equals("expires")) {
+					smsText = "您的天天赚账户部分项目到期未成功续投，退还本息共计"
+							+ ArithUtil.round(guOutDetail.getMoney(), 2)
+							+ "元，已发放至您的资金托管账户。";
+//					informationTitle = "天天赚转让到账通知";
+				} else {
+//					smsText = "您在天天赚账户中申请转让的"
+//							+ ArithUtil.round(guOutDetail.getMoney(), 2)
+//							+ "元，已发放至您的资金托管账户";
+					smsText = StringUtils.replace(smsText, "#{money}",
+							Double.toString(ArithUtil.round(guOutDetail.getMoney(), 2)));
+					informationTitle = "天天赚退出到账通知";
+				}
+				smsService.sendSms(guOutDetail.getUserId(), smsText,
+						SmsConstants.DEMANDOUT);
+				informationService.sendInformation(guOutDetail.getUserId(),
+						informationTitle, smsText);
+				*/
+				
+			} catch (Exception e) {
+				log.errLog("活期宝赎回短信发送异常", e.getMessage());
+			}
+		} else {
+			log.errLog(
+					"DemandtreasureTransferOutServiceImpl->transferOutLocal",
+					"活期宝单个用户转出状态异常，userId：" + guOutDetail.getUserId());
+		}
+	}
+
+	@Override
+	public void enhanceValidateTransferOut() throws TradeException {
+		List<DemandtreasureTransferOut> trOut = demandtreasureTransferOutDao
+				.gettotalUser();
+		for (DemandtreasureTransferOut t : trOut) {
+			double money = demandTreasureBillService.getDemandTreasureMoney(t
+					.getUserId());
+			// 第一步验证用户转出资金是否超过该用户的活期宝账户资金
+			if (t.getSummoney() > money) {
+				log.errLog("活期宝转出增强型校验", "用户：" + t.getUserId() + "转出金额："
+						+ t.getSummoney() + "，超过他活期宝当前账户资金：" + money);
+				throw new TradeException(ErrorCode.DemandtreasureBalanceToLow);
+			}
+		}
+	}
+}

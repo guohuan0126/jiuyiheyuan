@@ -1,0 +1,346 @@
+package com.duanrong.drpay.jsonservice.controller;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import base.error.ErrorCode;
+import base.exception.BankCardException;
+import base.exception.ParameterException;
+import base.exception.UserAccountException;
+import base.exception.UserInfoException;
+
+import com.duanrong.drpay.business.account.model.CgtUserAccount;
+import com.duanrong.drpay.business.account.model.UserAccount;
+import com.duanrong.drpay.jsonservice.handler.RequestParameter;
+import com.duanrong.drpay.jsonservice.handler.View;
+import com.duanrong.drpay.jsonservice.param.AutoInvestParamter;
+import com.duanrong.drpay.jsonservice.param.UserAccountParameter;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipAccountService;
+
+/**
+ * 用户账户服务
+ * 
+ * @author xiao
+ * @datetime 2016年12月7日 下午6:42:06
+ */
+@Controller
+@RequestMapping(value = "/account", method = RequestMethod.POST)
+public class UserAccountController extends BaseController {
+
+	@Resource
+	TrusteeshipAccountService trusteeshipAccountService;
+
+	/**
+	 * 开户（绑卡注册）
+	 * 
+	 * @param params
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 * @throws ParameterException
+	 * @throws BankCardException
+	 */
+	@RequestMapping(value = "/createAccount")
+	@ResponseBody
+	public View createAccount(@RequestParameter UserAccountParameter params, String source)
+			throws UserInfoException, UserAccountException, ParameterException,
+			BankCardException {
+		View view = getView(source);
+		if (params == null || StringUtils.isEmpty(params.getUserId())
+				|| StringUtils.isEmpty(params.getRealName())
+				|| StringUtils.isEmpty(params.getIdCardType().toString())
+				|| StringUtils.isEmpty(params.getUserRole().toString())
+				|| StringUtils.isEmpty(params.getIdCardNo())
+				|| StringUtils.isEmpty(params.getBankcardNo())
+				|| StringUtils.isEmpty(params.getBankCode())
+				|| StringUtils.isEmpty(params.getMobile())) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator reqData = trusteeshipAccountService.createAccount(params);
+			if (reqData != null) {
+				reqData.setUserDevice(sourceToUserDevice(source));
+			}
+			view.setData(reqData);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+
+	/**
+	 * 查询存管通用户信息
+	 * 
+	 * @param userId
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 */
+	@RequestMapping(value = "/queryCgtUserInfo")
+	@ResponseBody
+	public View queryCgtUserInfo(@RequestParameter String userId)
+			throws UserInfoException, UserAccountException {
+		View view = getPcView();
+		if (StringUtils.isEmpty(userId)) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			CgtUserAccount data = trusteeshipAccountService
+					.queryCgtUserInfo(userId);
+			view.setData(data);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+
+	/**
+	 * 查询本地用户账户信息
+	 * 
+	 * @param userId
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 */
+	@RequestMapping(value = "/queryLocalUserInfo")
+	@ResponseBody
+	public View queryLocalUserInfo(@RequestParameter String userId, String source)
+			throws UserInfoException, UserAccountException {
+		View view = getView(source);
+		if (StringUtils.isEmpty(userId)) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			UserAccount account = trusteeshipAccountService
+					.queryLocalUserInfo(userId);
+			view.setData(account);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+
+	/**
+	 * 存管通交易密码校验
+	 * 
+	 * @param userId
+	 * @param templateType
+	 *            提示信息（或信息模板类型）
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 */
+	@RequestMapping(value = "/checkPassword")
+	@ResponseBody
+	public View checkPassword(@RequestParameter String userId,
+			@RequestParameter String templateType, String source) throws UserAccountException,
+			UserInfoException {
+		View view = getView(source);
+		if (StringUtils.isEmpty(userId) || StringUtils.isEmpty(templateType)) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator reqData = trusteeshipAccountService.checkPassword(userId,
+					templateType);
+			if (reqData != null) {
+				reqData.setUserDevice(sourceToUserDevice(source));
+			}
+			view.setData(reqData);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+
+	/**
+	 * 个人绑卡
+	 * 
+	 * @param parameter
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 * @throws ParameterException 
+	 * @throws BankCardException 
+	 */
+	@RequestMapping(value = "/bindCard")
+	@ResponseBody
+	public View bindCard(@RequestParameter UserAccountParameter parameter, String source)
+			throws UserInfoException, UserAccountException, ParameterException, BankCardException {
+		View view = getView(source);
+		if (parameter == null || StringUtils.isEmpty(parameter.getUserId())
+				|| StringUtils.isEmpty(parameter.getMobile())
+				|| StringUtils.isEmpty(parameter.getBankcardNo())) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator reqData = trusteeshipAccountService.bindCard(
+					parameter.getUserId(), parameter.getMobile(),
+					parameter.getBankcardNo());
+			if (reqData != null) {
+				reqData.setUserDevice(sourceToUserDevice(source));
+			}
+			view.setData(reqData);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+
+	/**
+	 * 修改密码
+	 * 
+	 * @param userId
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 */
+	@RequestMapping("/resetPassword")
+	@ResponseBody
+	public View resetPassword(@RequestParameter String userId, String source)
+			throws UserAccountException, UserInfoException {
+		View view = getView(source);
+		if (StringUtils.isEmpty(userId)) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator reqData = trusteeshipAccountService.resetPassword(userId);
+			if (reqData != null) {
+				reqData.setUserDevice(sourceToUserDevice(source));
+			}
+			view.setData(reqData);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+
+	/**
+	 * 校验密码解绑卡
+	 * 
+	 * @param userId
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 */
+	@RequestMapping("/unBindCard")
+	@ResponseBody
+	public View unBindCard(@RequestParameter String userId,
+			@RequestParameter String templateType, String source) throws UserAccountException,
+			UserInfoException {
+		View view = getView(source);
+		if (StringUtils.isEmpty(userId) || StringUtils.isEmpty(templateType)) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator reqData = trusteeshipAccountService.unBindCard(userId,
+					templateType);
+			if (reqData != null) {
+				reqData.setUserDevice(sourceToUserDevice(source));
+			}
+			view.setData(reqData);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+
+	/**
+	 * 修改手机号
+	 * 
+	 * @param userId
+	 * @param modifyType
+	 * @param mobile
+	 * @return
+	 * @throws UserInfoException 
+	 * @throws UserAccountException 
+	 */
+	@RequestMapping("/modifyMobile")
+	@ResponseBody
+	public View modifyMobile(@RequestParameter String userId, @RequestParameter String mobile, String source) throws UserInfoException, UserAccountException {
+		View view = getView(source);
+		if (StringUtils.isEmpty(userId) || StringUtils.isEmpty(mobile)) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator reqData = trusteeshipAccountService.modifyMobile(userId, mobile);
+			if (reqData != null) {
+				reqData.setUserDevice(sourceToUserDevice(source));
+			}
+			view.setData(reqData);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+	
+	/**
+	 * 冻结用户资金
+	 * @param userId
+	 * @param money
+	 * @return
+	 */
+	@RequestMapping("/freeze")
+	@ResponseBody
+	public View freeze(@RequestParameter String userId, @RequestParameter Double money) {
+		View view = getView();
+		if (StringUtils.isEmpty(userId) || money == null) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			trusteeshipAccountService.freezeMoney(userId, money);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+	
+	/**
+	 * 解冻用户资金
+	 * @param userId
+	 * @param money
+	 * @return
+	 */
+	@RequestMapping("/unfreeze")
+	@ResponseBody
+	public View unfreeze(@RequestParameter String userId, @RequestParameter Double money)  {
+		View view = getView();
+		if (StringUtils.isEmpty(userId) || money == null) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			trusteeshipAccountService.unfreezeMoney(userId, money);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+	
+	
+	/**
+	 * 设置自动投标
+	 * @param AutoInvest 
+	 * @return
+	 * @throws ParameterException 
+	 */
+	@RequestMapping("/settingAutoInvest")
+	@ResponseBody
+	public View createAutoInvest(@RequestParameter AutoInvestParamter paramter) throws ParameterException {
+		View view = getView();
+		if (StringUtils.isBlank(paramter.getUserId())
+				|| StringUtils.isBlank(paramter.getLoanType())
+				|| StringUtils.isBlank(paramter.getMaxDeadline().toString())
+				|| StringUtils.isBlank(paramter.getMaxMoney().toString())
+				|| StringUtils.isBlank(paramter.getMaxRate().toString())
+				|| StringUtils.isBlank(paramter.getMinDeadline().toString())
+				|| StringUtils.isBlank(paramter.getMinMoney().toString())
+				|| StringUtils.isBlank(paramter.getMinRate().toString())) {
+			view.setError(ErrorCode.ParametersError);
+			return view;
+		}
+		trusteeshipAccountService.settingAutoInvest(paramter);
+		view.setError(ErrorCode.SUCCESS);
+		return view;
+	}
+	
+	/**
+	 * 关闭自动投标
+	 */
+	@RequestMapping("/cancelAutoInvest.do")
+	@ResponseBody
+	public View cancelAutoInvest(@RequestParameter AutoInvestParamter paramter) {
+		View view = getView();
+		if (StringUtils.isBlank(paramter.getUserId())) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			trusteeshipAccountService.cancelAutoInvest(paramter.getUserId());
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+}

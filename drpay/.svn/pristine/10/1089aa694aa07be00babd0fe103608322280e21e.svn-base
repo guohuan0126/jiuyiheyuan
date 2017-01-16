@@ -1,0 +1,60 @@
+package com.duanrong.drpay.trusteeship.service;
+
+import org.quartz.SchedulerException;
+
+import base.exception.AccountException;
+import base.exception.TradeException;
+import base.exception.UserAccountException;
+
+import com.duanrong.drpay.jsonservice.handler.TerminalEnum;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorPreTransactionJSON;
+
+/**
+ * 投资业务 投标 自动投标 债权转让.....
+ * 
+ * @author xiao
+ * @datetime 2016年12月7日 上午9:15:16
+ */
+public interface TrusteeshipInvestService {
+
+	/**
+	 * 创建投标记录
+	 * 
+	 * @param params
+	 * @throws TradeException
+	 * @throws UserAccountException
+	 */
+	public Generator createInvest(String userId, String loanId, double money,
+			int redpacketId, int isAutoInvest, TerminalEnum terminalType)
+			throws TradeException, AccountException, SchedulerException;
+
+	/**
+	 * 创建投标记录
+	 * 
+	 * @param params
+	 * @throws TradeException
+	 * @throws UserAccountException
+	 */
+	public Generator investAgain(String id, TerminalEnum terminalType)
+			throws TradeException, AccountException, SchedulerException;
+
+	/**
+	 * Callback
+	 * 
+	 * @param requestNo
+	 *            请求流水号
+	 * @throws TrusteeshipReturnException
+	 */
+	public void investCallback(GeneratorPreTransactionJSON respData);
+
+	/**
+	 * Callback
+	 * 
+	 * @param requestNo
+	 *            请求流水号
+	 * @throws TrusteeshipReturnException
+	 */
+	public void investCallback(GeneratorPreTransactionJSON respData,
+			String RequestNo) ;
+}

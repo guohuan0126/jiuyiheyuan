@@ -1,0 +1,779 @@
+package com.duanrong.drpay.business.repay.service.impl;
+
+import java.text.ParseException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import util.ArithUtil;
+import util.DateUtil;
+import util.Log;
+import base.exception.TradeException;
+import base.exception.UserAccountException;
+
+import com.duanrong.drpay.business.account.service.UserAccountService;
+import com.duanrong.drpay.business.invest.InvestConstants;
+import com.duanrong.drpay.business.invest.dao.InvestDao;
+import com.duanrong.drpay.business.invest.model.Invest;
+import com.duanrong.drpay.business.loan.LoanConstants;
+import com.duanrong.drpay.business.loan.dao.LoanDao;
+import com.duanrong.drpay.business.loan.model.Loan;
+import com.duanrong.drpay.business.repay.RepayDate;
+import com.duanrong.drpay.business.repay.RepayHelper;
+import com.duanrong.drpay.business.repay.dao.RepayDao;
+import com.duanrong.drpay.business.repay.dao.RepayInvestDao;
+import com.duanrong.drpay.business.repay.model.Repay;
+import com.duanrong.drpay.business.repay.model.RepayInvest;
+import com.duanrong.drpay.business.repay.service.RepayService;
+import com.duanrong.drpay.config.BusinessEnum;
+import com.duanrong.drpay.config.RedisCacheKey;
+import com.duanrong.util.InterestUtil;
+import com.duanrong.util.jedis.DRJedisCacheUtil;
+import com.duanrong.util.jedis.DRJedisMQ;
+import com.duanrong.util.json.FastJsonUtil;
+
+@Service
+public class RepayServiceImpl implements RepayService {
+
+	@Resource
+	RepayDao repayDao;
+	
+	@Resource
+	UserAccountService userAccountService;
+
+	@Resource
+	InvestDao investDao;
+
+	@Resource
+	LoanDao loanDao;
+
+	@Resource
+	Log log;
+
+	@Resource
+	RepayInvestDao repayInvestDao;
+
+	@Override
+	public Repay prepare(String repayId) throws TradeException, UserAccountException {
+		Repay repay = repayDao.get(repayId);
+		Loan loan = repay.getLoan();
+		List<Invest> invests = loan.getInvests();
+		String loanId = repay.getLoanId();
+		double balance = userAccountService.getUserAccount(repay.getUserId()).getAvailableBalance();
+		String repayStatus = repay.getStatus();
+		// 还款中，投资人不为空
+		String repaying = LoanConstants.LoanStatus.REPAYING;
+		if (!invests.isEmpty() && StringUtils.equals(repayStatus, repaying)) {
+			String operationType = loan.getOperationType();
+			// 查询上一期是否已还款完成
+			if (repay.getPeriod() > 1) {
+				Repay repayLast = new Repay();
+				repayLast.setPeriod(repay.getPeriod() - 1);
+				repayLast.setLoanId(loan.getId());
+				repayLast = repayDao.getByCondition(repayLast).get(0);
+				if (StringUtils.equals(repaying, repayLast.getStatus())) {
+					throw new TradeException("上一期还款还未完成，项目ID:" + loanId);
+				}
+			}
+			// 按天计息 按月付息 到期还本付息 可提现还款
+			if (StringUtils.equals("天", operationType)) {
+				// 一次性到期还本付息，可提前还款（天标），主要是为了判断用户账户余额是否充足
+				Date repayDay = repay.getRepayDay();
+				Date repayTime = repay.getTime();
+				int dayInterval = DateUtil.getIntervalDaysNoABS(repayTime,
+						repayDay);
+				if (StringUtils.equals(loan.getRepayType(),
+						LoanConstants.RepayType.DQHBFX)) {
+					dayInterval = loan.getDay();
+				}
+				repay.setInterest(getRepayInterestByPeriod(loan, 1, dayInterval));
+			}
+			// 余额不足
+			if (balance < ArithUtil.addRound(repay.getCorpus(),
+					repay.getInterest())) {
+				throw new UserAccountException("您的账户余额不足，请先进行充值然后再还款。项目ID:" + loanId);
+			}
+			return repay;
+		} else {
+			log.errLog("还款异常", this.getClass() + "-->prepare" + "repayid-->"
+					+ repayId);
+			throw new TradeException("还款异常，项目ID:" + loanId);
+		}
+	}
+
+	@Override
+	public Double queryRepayMoney(Invest invest, Repay repay, Date now,
+			boolean isBeforeRepay) {
+		RepayInvest repayInvest = new RepayInvest();
+		repayInvest.setRepayId(repay.getId());
+		repayInvest.setInvestUserId(invest.getInvestUserID());
+		repayInvest.setInvestId(invest.getId());
+		// 根据条件查询RepayInvest
+		repayInvest = repayInvestDao.getByCondition(repayInvest);
+		// 本息和
+		Double repayMoney;
+
+		if (repayInvest == null) {
+			Integer deadline = repay.getLoan().getDeadline();
+			Integer period = repay.getPeriod();
+
+			// 利息
+			Double paidInterest;
+			// 本金
+			Double paidCorpus;
+			// 计息方式（按天或按月）
+			String operationType = invest.getLoan().getOperationType();
+
+			// 一次性到期还本付息，可提前还款（天标）
+			String repayType = invest.getLoan().getRepayType();
+
+			Integer day = invest.getLoan().getDay();
+			// 计算应还利息
+			if (StringUtils.equals(operationType, "天")) {
+				// 计算天差
+				Integer dayInterval = DateUtil.getIntervalDaysNoABS(
+						repay.getTime(), repay.getRepayDay());
+				if (LoanConstants.RepayType.DQHBFX.equals(repayType)) {
+					// 在项目初始借款天数内还款，还款的天数为项目初始借款天数
+					dayInterval = day;
+				}
+				paidInterest = getInterest(invest, period, dayInterval);
+			} else {
+				paidInterest = getInterest(invest, period, deadline);
+			}
+
+			// 获得该笔投资的本金
+			paidCorpus = getCorpus(invest, period, deadline, isBeforeRepay);
+			// 本+息的和
+			repayMoney = ArithUtil.addRound(paidInterest, paidCorpus);
+
+			// 记录还款金额
+			repayInvest = new RepayInvest();
+			repayInvest.setRepayId(repay.getId());
+			repayInvest.setInvestId(invest.getId());
+			repayInvest.setInvestUserId(invest.getInvestUserID());
+			repayInvest.setCorpus(paidCorpus);
+			repayInvest.setInterest(ArithUtil.round(paidInterest, 2));
+			repayInvest.setInvestAllowanceInterest(0D);
+			repayInvest.setRewardMoney(0);
+			repayInvestDao.insert(repayInvest);
+			// 记录日志
+			log.infoLog("项目还款",
+					"投资人：" + invest.getInvestUserID() + "，利息:" + paidInterest + "，本金:" +
+					paidCorpus + "，利息+本金=" + repayMoney);
+		} else {
+			repayMoney = ArithUtil.round(
+					repayInvest.getCorpus() + repayInvest.getInterest(), 2);
+		}
+		return repayMoney;
+	}
+
+	public double calculateInvestInterset(String repayType, int deadline,
+			double rate, double money) {
+		double sum = 0D;
+		if (repayType.equals(LoanConstants.RepayType.DQHBFX)) {
+			sum = getDQHBFXInterestByPeriod(money, rate, deadline);
+		} else {
+			for (int i = 1; i <= deadline; i++) {
+				sum = ArithUtil
+						.add(sum,
+								getInterestByPeriod(repayType, rate, money, i,
+										deadline));
+			}
+		}
+		sum = ArithUtil.round(sum, 2);
+		return sum;
+	}
+
+	public double getDQHBFXInterestByPeriod(double money, double rate, int month) {
+		double interest = ArithUtil.round(money * rate / 12 * month, 2);
+		return interest;
+	}
+
+	public double getInterestByPeriod(String repayType, double rate,
+			double money, int period, int deadline) {
+		if (repayType.equals(LoanConstants.RepayType.DQHBFX)) {
+			return getDQHBFXInterestByPeriod(money, rate, deadline);
+		} else if (repayType.equals(LoanConstants.RepayType.RFCL)) {
+			return getRFCLInterestByPeriod(null, null, null, money, rate,
+					period, deadline);
+		}
+		throw new RuntimeException("未知还款方式：" + repayType);
+	}
+
+	/**
+	 * 获取先息后本还款某一期应得的利息 constant payment mortgage（CPM）
+	 * 
+	 * @param money
+	 *            投资金额
+	 * @param rate
+	 *            投资利率
+	 */
+	private double getRFCLInterestByPeriod(String loanType, Date investTime,
+			Date giveMoneyTime, double money, double rate, int period,
+			int deadline) {
+		return ArithUtil.round(money * rate / 12, 2);
+
+	}
+
+
+	/**
+	 * 
+	 * @description 获取按天计息请款下:一次性到期还本付息,某一期的利息计算
+	 * @author 孙铮
+	 * @time 2014-8-8 下午3:24:01
+	 * @param money
+	 *            投资金额
+	 * @param rate
+	 *            利率
+	 * @param period
+	 *            项目多少天
+	 * @return
+	 */
+	public double getDQHBFXInterestByPeriodDay(double money, double rate,
+			int dayTotal) {
+		double interest = ArithUtil.round(money * rate / 365 * dayTotal, 2);
+		return interest;
+	}
+
+	/**
+	 * 
+	 * @description 获得按月计算情况下:一次性到期还本付息,某一期的利息计算
+	 * @author 孙铮
+	 * @time 2014-9-16 下午2:38:57
+	 * @param money
+	 * @param rate
+	 * @param deadline
+	 * @return
+	 */
+	public double getDQHBFXInterestByPeriodMonth(double money, double rate,
+			Integer deadline) {
+		double interest = ArithUtil.round(money * rate / 12 * deadline, 2);
+		return interest;
+	}
+
+	@Override
+	public Repay get(String id) {
+		return repayDao.get(id);
+	}
+
+	/********************** 利息相关 **********************/
+	/**
+	 * 应还利息
+	 * 
+	 * @param loan
+	 *            借款项目
+	 * @param period
+	 *            期数
+	 * @param deadline
+	 *            截止时间
+	 * @return
+	 */
+	public double getRepayInterestByPeriod(Loan loan, int period, int deadline) {
+		double money = 0;
+		List<Invest> invests = loan.getInvests();
+		for (Invest invest : invests) {
+			invest.setLoan(loan);
+			// 计算应还利息总和，避免使用项目总金额来计算利息
+			money = ArithUtil.addRound(money,
+					getInterest(invest, period, deadline));
+		}
+		return money;
+	}
+
+	/**
+	 * 获得利息
+	 * 
+	 * @param invest
+	 * @param period
+	 * @param deadline
+	 * @return
+	 */
+	public double getInterest(Invest invest, int period, int deadline) {
+		Loan loan = invest.getLoan();
+		Double money = invest.getMoney();
+		Double rate = loan.getRate();
+
+		// 按月付息到期还本
+		if (StringUtils.equals(loan.getRepayType(),
+				LoanConstants.RepayType.RFCL)) {
+			if ("天".equals(loan.getOperationType())) {
+				return getRFCLInterestByPeriodDay(money, rate, deadline);
+			} else {
+				return getRFCLInterestByPeriod(loan.getType(),
+						invest.getTime(), loan.getGiveMoneyTime(),
+						invest.getMoney(), invest.getRate(), period, deadline);
+			}
+		}
+
+		// 一次性到期还本付息
+		if (loan.getRepayType().equals(LoanConstants.RepayType.DQHBFX)) {
+			if ("天".equals(loan.getOperationType())) {
+				return getDQHBFXInterestByPeriodDay(money, rate, deadline);
+			} else {
+				return getDQHBFXInterestByPeriod(invest.getMoney(),
+						invest.getRate(), loan.getDeadline());
+			}
+		}
+
+		if (loan.getRepayType().equals(LoanConstants.RepayType.CPM)) {
+			return InterestUtil.interest(money, rate, deadline, period);
+		}
+		return 0;
+	}
+
+	/**
+	 * 
+	 * @description 获得按天计算情况下:按月付息到期还本,某一期的利息计算
+	 * @author 孙铮
+	 * @time 2014-8-8 下午3:24:01
+	 * @param money
+	 *            投资金额
+	 * @param rate
+	 *            利率
+	 * @param period
+	 *            项目多少天
+	 * @return
+	 */
+	public double getRFCLInterestByPeriodDay(double money, double rate,
+			int period) {
+		double interest = ArithUtil.round(money * rate / 365 * period, 2);
+		return interest;
+	}
+
+	/**
+	 * 获得按月计算情况下:按月付息到期还本,某一期的利息计算
+	 * 
+	 * @param money
+	 *            投资金额
+	 * @param rate
+	 * @param period
+	 * @param deadline
+	 * @return
+	 */
+	public double getRFCLInterestByPeriodMonth(double money, double rate) {
+		double interest = ArithUtil.round(money * rate / 12, 2);
+		return interest;
+	}
+
+	/********************** 本金相关 **********************/
+	/**
+	 * 应还本金
+	 * 
+	 * @param loan
+	 *            借款项目
+	 * @param period
+	 *            期数
+	 * @param deadline
+	 *            截止时间
+	 * @return
+	 */
+	public double getRepayCorpusByPeriod(Loan loan, int period, int deadline) {
+		List<Invest> invests = loan.getInvests();
+		double sumMoney = 0;
+		for (Invest invest : invests) {
+			invest.setLoan(loan);
+			sumMoney = ArithUtil.addRound(sumMoney,
+					getCorpus(invest, period, deadline, false));
+		}
+		return sumMoney;
+	}
+
+	/**
+	 * 获得本金
+	 * 
+	 * @param invest
+	 * @param period
+	 * @param deadline
+	 * @return
+	 */
+	public double getCorpus(Invest invest, int period, int deadline,
+			boolean isBeforeRepay) {
+		Double money = invest.getMoney();
+
+		if (invest.getLoan().getRepayType()
+				.equals(LoanConstants.RepayType.RFCL)) {
+			return period == deadline ? money : 0;
+		} else if (invest.getLoan().getRepayType()
+				.equals(LoanConstants.RepayType.DQHBFX)) {
+			return money;
+		} else if (invest.getLoan().getRepayType()
+				.equals(LoanConstants.RepayType.CPM)) {
+			if (isBeforeRepay) {
+				return InterestUtil.corpus(money, invest.getRate(), deadline,
+						period)
+						+ InterestUtil.surplusCorpus(money, invest.getRate(),
+								deadline, period);
+			}
+			return InterestUtil.corpus(money, invest.getRate(), deadline,
+					period);
+		}
+
+		return 0;
+	}
+
+	/**
+	 * 单笔还款
+	 * 
+	 * @param repayId
+	 * @param invest
+	 * @throws NoOpenAccountException
+	 */
+	@Transactional
+	private void repay(RepayInvest repayInvest, Repay repay, Invest invest,
+			String beforeRepay) throws UserAccountException {
+		Loan loan = invest.getLoan();
+		Double corpus = repayInvest.getCorpus();
+		Double interest = repayInvest.getInterest();
+		Double money = ArithUtil.addRound(corpus, interest);
+		// 利息
+		Double interestAddAllowance = interest;
+		invest.setPaidInterest(ArithUtil.addRound(invest.getPaidInterest(),
+				interest));
+		// 投资表已还本金
+		invest.setPaidMoney(ArithUtil.addRound(invest.getPaidMoney(), corpus));
+
+		if ("true".equals(beforeRepay)) {
+			invest.setInterest(invest.getPaidInterest());
+		}
+
+		// 最后一期更新投资状态
+		if (loan.getDeadline() == repay.getPeriod()
+				|| "true".equals(beforeRepay)
+				|| LoanConstants.RepayType.DQHBFX.equals(loan.getRepayType())) {
+			invest.setStatus(InvestConstants.InvestStatus.COMPLETE);
+			try {
+				Map<String, Object> map = new HashMap<>();
+				map.put("investId", invest.getId());
+				map.put("loanId", invest.getLoanId());
+				map.put("pushTime", new Date());
+				DRJedisMQ.product("pushinvest", FastJsonUtil.objToJson(map));
+			} catch (Exception e) {
+				log.errLog("还款加入队列", e);
+			}
+		}
+
+		// 更新投资记录已换金额
+		investDao.update(invest);
+		// 更新repayinvest还款状态
+		repayInvest.setStatus(1);
+		repayInvest.setRepayTime(new Date());
+		repayInvestDao.update(repayInvest);
+
+		// 更新投资人账户
+		userAccountService.transferIn(invest.getInvestUserID(), money,
+				BusinessEnum.repay, "项目还款：" + loan.getName(), "还款ID:" + repay.getId() + "  借款ID:" +
+								loan.getId() + "  本金：" +  corpus + "  利息：" +
+								interestAddAllowance + repay.getId(), repay.getId());
+		// 发送短信和站内信
+		try {
+			if (money >= 0.01) {
+				//FIXME //站内信和短信移到基础服务
+				
+				/*UserAccount userAccount = userAccountService.getUserAccount(invest
+									.getInvestUserID());
+				double balance = userAccount.getAvailableBalance();
+				String content = smsService.operateTemplate(SmsConstants.REPAY);
+				content = StringUtils.replace(content, "#{loanName}",
+						loan.getName());
+				content = StringUtils.replace(content, "#{money}",
+						money.toString());
+				content = StringUtils.replace(content, "#{balance}", "" + balance);
+				if ("true".equals(beforeRepay)) {
+					content = "您收到"
+							+ loan.getName()
+							+ "项目还款，共计"
+							+ money.toString()
+							+ "元，当前可用余额"
+							+ balance
+							+ "元。人生需要规划，财富需要打理，短融带您开启财富之门。";
+				}
+				smsService.sendSms(investUserID, content, SmsConstants.REPAY);
+				informationService.sendInformation(investUserID, "还款通知", "您收到"
+						+ loan.getName() + "项目还款，共计金额" + money.toString()
+						+ "元,请查收");*/
+			}
+		} catch (Exception ex) {
+			log.errLog("还款短信和站内信发送失败", ex);
+		}
+	}
+
+	@Override
+	public void normalRepay(Repay repay, String beforeRepay) throws UserAccountException{
+			String repayId = repay.getId();
+			Loan loan = repay.getLoan();
+			// 实际还款的本金和利息
+			double repayInterest = 0D;
+			double repayCorpus = 0D;
+
+			// 真实还款的本金和利息
+			double realInterest = 0D;
+			double realCorpus = 0D;
+			repay.setStatus(LoanConstants.LoanStatus.COMPLETE);
+			repay.setOperationTime(new Date());
+			List<Invest> invests = loan.getInvests();
+			if (!invests.isEmpty()) {
+				for (Invest invest : invests) {
+					RepayInvest repayInvest = new RepayInvest();
+					repayInvest.setRepayId(repay.getId());
+					repayInvest.setInvestUserId(invest.getInvestUserID());
+					repayInvest.setInvestId(invest.getId());
+					// 根据条件查询RepayInvest
+					repayInvest = repayInvestDao.getByCondition(repayInvest);
+					repayCorpus += repayInvest.getCorpus();
+					repayInterest += repayInvest.getInterest();
+					// 投资状态还款中，并且repayinvest未还款，执行单笔还款操作
+					if (InvestConstants.InvestStatus.REPAYING.equals(invest
+							.getStatus()) && repayInvest.getStatus() == 0) {
+						invest.setLoan(loan);
+						try {
+							this.repay(repayInvest, repay, invest, beforeRepay);
+							realCorpus += repayInvest.getCorpus();
+							realInterest+= repayInvest.getInterest();
+						} catch (Exception e) {
+							log.errLog("单笔还款失败loanId：" + loan.getId()
+									+ "-- investId : " + invest.getId(), e);
+						}
+					}
+
+				}
+			} else {
+				log.errLog(this.getClass().getName() + ".normalRepay(..)",
+						"投资人为空");
+				return;
+			}
+			repayInterest = ArithUtil.round(repayInterest, 2);
+
+			realInterest = ArithUtil.round(realInterest, 2);
+			realCorpus = ArithUtil.round(realCorpus, 2);
+			// 融资人的账户，扣除还款。
+			if (ArithUtil.addRound(repayCorpus, realInterest) > 0) {
+				userAccountService.transferOut(loan.getBorrowMoneyUserID(),
+						ArithUtil.addRound(realCorpus, realInterest),
+						BusinessEnum.repay, "借款：" + loan.getName() + "正常还款",
+						"还款ID：" + repayId + "，本金：" +
+								realCorpus + "，利息：" + realInterest, repayId);
+			}
+			repay.setCorpus(ArithUtil.round(repayCorpus, 2));
+			repay.setInterest(repayInterest);
+
+			// 当前投资人还款记录全部成功，更新repay和loan
+			if (repayInvestDao.getRepayInvestCountByRepayIdAndStatus(repay
+					.getId()) == 0) {
+				// 修改所有repay中除了repayId之外未还款的数据
+				if ("true".equals(beforeRepay)) {
+					repay.setIsBeforeRepay(1);
+					updateOtherRepay(repay);
+					loan.setIsBeforeRepay(1);
+				}
+				repayDao.update(repay);
+
+				// 对项目状态和投资状态进行更新
+				if (loan.getDeadline() == repay.getPeriod()
+						|| "true".equals(beforeRepay)
+						|| LoanConstants.RepayType.DQHBFX.equals(loan
+								.getRepayType())) {
+
+					loan.setStatus(LoanConstants.LoanStatus.COMPLETE);
+					loanDao.update(loan);
+					/**
+					 * 最后一期还款完成，清除项目缓存
+					 */
+				}
+			}
+			try {
+				DRJedisCacheUtil.hdel(RedisCacheKey.LOAN + repay.getLoanId(),
+						RedisCacheKey.LOAN_INFO, RedisCacheKey.LOAN_PROCESS,
+						RedisCacheKey.LOAN_INVESTOR);
+			} catch (Exception e) {
+				log.infoLog("还款加入队列", e);
+			}
+	}
+
+	private void updateOtherRepay(Repay repay) {
+		repayDao.updateOtherRepay(repay);
+	}
+
+	
+	@Override
+	@Transactional
+	public void saveRepay(Loan loan) {
+		if ("天".equals(loan.getOperationType())) {
+			// 一次性到期还本付息
+			if (loan.getRepayType().equals(LoanConstants.RepayType.DQHBFX)) {
+				Repay rm = new Repay();
+				rm.setPeriod(1);
+				rm.setInterest(getRepayInterestByPeriod(loan, 1, loan.getDay()));
+				rm.setCorpus(getRepayCorpusByPeriod(loan, 1, loan.getDeadline()));
+				rm.setLoan(loan);
+				rm.setLoanId(loan.getId());
+				rm.setTime(loan.getGiveMoneyTime());
+				rm.setStatus(LoanConstants.LoanStatus.REPAYING);
+				rm.setRepayDay(DateUtil.addDay(loan.getGiveMoneyTime(),
+						loan.getDay() - 1));
+				rm.setUserId(loan.getBorrowMoneyUserID());
+				rm.setId(RepayHelper.generateRepayId(loan.getId(), 1));
+				rm.setRepayAllowanceInterest(loan.getLoanAllowanceInterest());
+				repayDao.insert(rm);
+			} else {
+				// 按月付息到期还本付息
+				// 天标
+				Date d = loan.getGiveMoneyTime();
+				HashMap<Integer, RepayDate> loopMap = null;
+				try {
+					loopMap = RepayHelper.Loop(d, loan.getDay());
+				} catch (ParseException e) {
+					e.printStackTrace();
+				}
+				Integer loop = loopMap.keySet().size();
+				for (int i = 1; i <= loop; i++) {
+					RepayDate repayDate = loopMap.get(i);
+					int dayDifference = repayDate.getDayAmount();
+					double interest = 0D;
+					if (i <= loop - 1) {
+						interest = getRepayInterestByPeriodDay(loan, dayDifference, loan.getRate());
+						saveRepay(loan, i, d, repayDate.getRepayDate(), 0D,
+								interest);
+						d = DateUtil.addDay(repayDate.getRepayDate(), 1);
+					} else {
+						Double money = loan.getTotalmoney();						
+						interest = getRepayInterestByPeriodDay(loan, dayDifference, loan.getRate());
+						saveRepay(loan, i, d, repayDate.getRepayDate(), money,
+								interest);
+						loan.setDeadline(loop);
+						loanDao.update(loan);
+					}
+				}				
+			}
+		} else {
+			if (loan.getRepayType().equals(LoanConstants.RepayType.DQHBFX)) {
+				Repay rm = new Repay();
+				rm.setPeriod(1);
+				rm.setInterest(getRepayInterestByPeriod(loan, 1,
+						loan.getDeadline()));
+				rm.setCorpus(getRepayCorpusByPeriod(loan, 1, loan.getDeadline()));
+				rm.setLoan(loan);
+				rm.setLoanId(loan.getId());
+				rm.setTime(loan.getGiveMoneyTime());
+				rm.setStatus(LoanConstants.LoanStatus.REPAYING);
+				rm.setRepayDay(DateUtil.addMonth(loan.getGiveMoneyTime(),
+						loan.getDeadline()));
+				rm.setUserId(loan.getBorrowMoneyUserID());
+				rm.setId(RepayHelper.generateRepayId(loan.getId(), 1));
+				rm.setRepayAllowanceInterest(loan.getLoanAllowanceInterest());
+				repayDao.insert(rm);
+			}else if(loan.getRepayType().equals(LoanConstants.RepayType.CPM)){
+				for (int i = 1; i <= loan.getDeadline(); i++) {
+			        Repay rm = new Repay();
+					if (i == 1) {
+						rm.setRepayAllowanceInterest(loan
+								.getLoanAllowanceInterest());
+					}
+					rm.setPeriod(i);
+					rm.setInterest(getRepayInterestByPeriod(loan, i,loan.getDeadline()));
+					rm.setCorpus(getRepayCorpusByPeriod(loan, i,
+							loan.getDeadline()));
+					rm.setLoan(loan);
+					rm.setLoanId(loan.getId());
+					rm.setTime(loan.getGiveMoneyTime());
+					rm.setStatus(LoanConstants.LoanStatus.REPAYING);
+					rm.setRepayDay(DateUtil.addMonth(loan.getGiveMoneyTime(), i));
+					rm.setUserId(loan.getBorrowMoneyUserID());
+					rm.setId(RepayHelper.generateRepayId(loan.getId(), i));
+					repayDao.insert(rm);
+				}
+				
+			}else {
+				for (int i = 1; i <= loan.getDeadline(); i++) {
+					// 产生还款信息
+					Repay rm = new Repay();
+					if (i == 1) {
+						rm.setRepayAllowanceInterest(loan
+								.getLoanAllowanceInterest());
+					}
+					rm.setPeriod(i);
+					rm.setInterest(getRepayInterestByPeriod(loan, i,
+							loan.getDeadline()));
+					rm.setCorpus(getRepayCorpusByPeriod(loan, i,
+							loan.getDeadline()));
+					rm.setLoan(loan);
+					rm.setLoanId(loan.getId());
+					rm.setTime(loan.getGiveMoneyTime());
+					rm.setStatus(LoanConstants.LoanStatus.REPAYING);
+					rm.setRepayDay(DateUtil.addMonth(loan.getGiveMoneyTime(), i));
+					rm.setUserId(loan.getBorrowMoneyUserID());
+					rm.setId(RepayHelper.generateRepayId(loan.getId(), i));
+					repayDao.insert(rm);
+				}
+			}
+		}
+		
+	}
+	
+	
+	/**
+	 * 获取应还利息
+	 * @param loan
+	 * @param period
+	 * @param rate
+	 * @return
+	 */
+	private double getRepayInterestByPeriodDay(Loan loan,
+			int period, double rate) {
+		List<Invest> invests = loan.getInvests();
+		double sumMoney = 0D;
+		for (Invest im : invests) {
+			sumMoney = ArithUtil.add(sumMoney,
+					getDQHBFXInterestByPeriodDay(im.getMoney(), rate, period));
+		}
+		return sumMoney;
+	}
+	
+	
+	/**
+	 * 
+	 * @description TODO
+	 * @author 孙铮
+	 * @time 2015-3-20 下午5:13:41
+	 * @param loan
+	 *            主要获得借款人id和借款项目id
+	 * @param i
+	 *            当前第几期
+	 * @param d
+	 *            repay表中的time字段 天标下,某一期的开始时间
+	 * @param repayDate
+	 *            repay表中的repayDate字段 天标下,某一期的开始时间
+	 * @param corpus
+	 *            本金
+	 * @param interest
+	 *            利息
+	 */
+	private void saveRepay(Loan loan, Integer i, Date time, Date repayDate,
+			Double corpus, Double interest) {
+		Repay rm = new Repay();
+		if (i == 1) {
+			rm.setRepayAllowanceInterest(loan.getLoanAllowanceInterest());
+		}
+		rm.setPeriod(i);
+		// 金额*利率/365*天数
+		rm.setInterest(interest);
+		rm.setCorpus(corpus);
+		rm.setLoan(loan);
+		rm.setLoanId(loan.getId());
+		// 项目开始放款的时候，需要保存该项目既定的还款信息，状态全是"等待还款"
+		rm.setStatus(LoanConstants.LoanStatus.REPAYING);
+		// 放款日就是还款日
+		rm.setRepayDay(repayDate);
+		rm.setUserId(loan.getBorrowMoneyUserID());
+		rm.setTime(time);
+		rm.setId(RepayHelper.generateRepayId(loan.getId(), i));
+		repayDao.insert(rm);
+	}
+}

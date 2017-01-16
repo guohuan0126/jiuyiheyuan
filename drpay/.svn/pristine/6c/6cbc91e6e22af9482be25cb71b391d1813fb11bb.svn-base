@@ -1,0 +1,140 @@
+package com.duanrong.drpay.trusteeship.service.impl;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
+import util.ArithUtil;
+import util.DateUtil;
+import util.Log;
+import base.exception.TradeException;
+import base.exception.UserAccountException;
+
+import com.duanrong.drpay.business.invest.InvestConstants;
+import com.duanrong.drpay.business.invest.model.Invest;
+import com.duanrong.drpay.business.repay.model.Repay;
+import com.duanrong.drpay.business.repay.service.RepayService;
+import com.duanrong.drpay.config.BusinessEnum;
+import com.duanrong.drpay.config.IdUtil;
+import com.duanrong.drpay.config.ToType;
+import com.duanrong.drpay.trusteeship.constants.TrusteeshipServer;
+import com.duanrong.drpay.trusteeship.helper.model.BizType;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorDetailJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorPreTransactionJSON;
+import com.duanrong.drpay.trusteeship.helper.model.NotifyURL;
+import com.duanrong.drpay.trusteeship.helper.service.TrusteeshipService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipRepayService;
+
+@Service
+public class TrusteeshipRepayServiceImpl implements TrusteeshipRepayService {
+
+	@Resource
+	TrusteeshipService trusteeshipService;
+
+	@Resource
+	RepayService repayService;
+
+	@Resource
+	Log log;
+
+	@Override
+	public Generator createRepay(String repayId) throws UserAccountException, TradeException {
+		boolean flag = false;
+		// 本地创建还款记录
+		Repay repay = repayService.prepare(repayId);
+		double repayMoney = 0.0;
+		List<Invest> invests = repay.getLoan().getInvests();
+		if (!CollectionUtils.isEmpty(invests)) {
+			for (Invest invest : invests) {
+				if (invest.getStatus().equals(
+						InvestConstants.InvestStatus.REPAYING)) {
+					Double money = ArithUtil.round(repayService
+							.queryRepayMoney(invest, repay, new Date(),
+									flag), 2);
+					repayMoney += money;
+					if (money < 0.01) {
+						log.infoLog("还款利息小于0.01", "投资ID" + invest.getId()
+								+ "，金额" + money.toString());
+						continue;
+					}
+				}
+			}
+		}
+		// 调用用户预处理，生成去银行存管的参数,返回前台跳转
+		GeneratorPreTransactionJSON json = new GeneratorPreTransactionJSON();
+		json.setRequestNo(IdUtil.generateId(ToType.REPA));
+		json.setCallbackUrl(NotifyURL.REPAY);
+		json.setPlatformUserNo(repay.getUserId());
+		json.setProjectNo(repay.getLoanId());
+		json.setAmount(repayMoney);
+		json.setBizType(BizType.REPAYMENT);
+		json.setExpired(DateUtil.DateToString(
+				DateUtil.addMinute(new Date(), 5), "yyyy-MM-dd HH:mm:ss"));
+		json.setRemark("借款人还款");
+		return trusteeshipService.create(json,
+				TrusteeshipServer.USER_PRE_TRANSACTION, BusinessEnum.repay);
+	}
+
+	@Override
+	public void repayCallback(GeneratorPreTransactionJSON respData)throws UserAccountException, TradeException{
+		String code = respData.getCode();
+		String requestNo = respData.getRequestNo();
+		if (StringUtils.isBlank(code) || StringUtils.isBlank(requestNo) || null == respData.getBizType()) {
+			throw new TradeException("响应参数为空");
+		}
+		//用户预处理成功，进行还款确认
+		if (StringUtils.equals("0", code) && respData.getBizType() == BizType.REPAYMENT) {
+			confirmRepay(requestNo);
+		}else{
+			throw new TradeException("用户预处理失败，还款失败，requestNo"+requestNo+",code"+code);
+		}
+	}
+
+	
+	private void confirmRepay(String requestNo)throws UserAccountException, TradeException{
+		boolean flag = false;
+		Repay repay = repayService.prepare(requestNo);
+		List<GeneratorDetailJSON> details = new ArrayList<GeneratorDetailJSON>();
+		List<Invest> invests = repay.getLoan().getInvests();
+		if (!CollectionUtils.isEmpty(invests)) {
+			for (Invest invest : invests) {
+				if (invest.getStatus().equals(
+						InvestConstants.InvestStatus.REPAYING)) {
+					Double money = ArithUtil.round(repayService
+							.queryRepayMoney(invest, repay, new Date(),
+									flag), 2);
+					if (money < 0.01) {
+						log.infoLog("还款利息小于0.01", "投资ID" + invest.getId()
+								+ "，金额" + money.toString());
+						continue;
+					}
+					GeneratorDetailJSON detail = new GeneratorDetailJSON();
+					detail.setAmount(money);
+					detail.setPreTransactionNo(invest.getInvestUserID());
+					details.add(detail);
+				}
+			}
+		}
+		GeneratorJSON json = new GeneratorJSON();
+		json.setRequestNo(IdUtil.generateId(ToType.REPA));
+		json.setPreTransactionNo(requestNo);
+		json.setProjectNo(repay.getLoanId());
+		json.setDetails(details);
+		Generator generator = trusteeshipService.execute(json, TrusteeshipServer.CONFIRM_REPAYMENT, GeneratorJSON.class, BusinessEnum.repay_confirm);
+		GeneratorJSON data = generator.getRespData();
+		if("0".equals(data.getCode())){
+			//本地还款操作
+			repayService.normalRepay(repay,"");
+		}else{
+			
+		}
+	}
+}

@@ -1,0 +1,48 @@
+package com.duanrong.drpay.trusteeship.service;
+
+import base.exception.BankCardException;
+import base.exception.ParameterException;
+import base.exception.UserAccountException;
+
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorRechargeJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorWithdrawJSON;
+
+/**
+ * 充值提现业务
+ * @author xiao
+ * @datetime 2016年12月7日 上午9:16:08
+ */
+public interface TrusteeshipPaymentService {
+
+	/**
+	 * 充值
+	 * @param parameter
+	 * @return
+	 * @throws ParameterException
+	 * @throws BankCardException 
+	 */
+	Generator recharge(String userId, Double money, String rechargeWay, String authtradeType, Double authtenderAmount, String projectNo, String source) throws ParameterException, BankCardException;
+
+	/**
+	 * 充值回调
+	 * @param respData
+	 */
+	void rechargeCallback(GeneratorRechargeJSON respData);
+	
+	/**
+	 * 提现
+	 * @param userId
+	 * @param money
+	 * @return
+	 * @throws UserAccountException
+	 */
+	Generator withdraw(String userId, Double money)throws UserAccountException;
+	
+	/**
+	 * 提现回调
+	 * @param respData
+	 * @throws UserAccountException
+	 */
+	void withdrawCallback(GeneratorWithdrawJSON respData)throws UserAccountException;
+}

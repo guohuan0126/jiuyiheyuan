@@ -1,0 +1,37 @@
+package com.duanrong.drpay.business.transaction.service;
+
+import java.io.IOException;
+import com.duanrong.drpay.business.transaction.model.TransactionAuthorization;
+import com.duanrong.drpay.business.transaction.model.TransactionAuthorizationDetail;
+
+/**
+ * 通用转账
+ * 
+ * @author Lin Zhiming
+ * @version May 27, 2015 11:00:34 AM
+ */
+public interface GeneralTransactionService {
+	
+	/**
+	 * 转账预处理
+	 * @return
+	 */
+	TransactionAuthorization prepare(String userId, String targetUserId, double money);
+	
+	/**
+	 * 添加新的通用转账数据
+	 * @param model
+	 */
+	void insertGeneralTransaction(TransactionAuthorization model);
+	
+	public void authConfirm(String tranid, String flag) throws IOException;
+	
+	
+	
+	public void updateTA(TransactionAuthorization transactionAuthorization);
+
+	public void updateTAD(
+			TransactionAuthorizationDetail transactionAuthorizationDetail);
+	
+	public TransactionAuthorization readTA(String id);
+}

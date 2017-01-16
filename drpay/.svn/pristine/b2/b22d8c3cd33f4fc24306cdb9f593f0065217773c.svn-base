@@ -1,0 +1,526 @@
+package com.duanrong.drpay.trusteeship.service.impl;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import util.Log;
+import base.error.ErrorCode;
+import base.exception.BankCardException;
+import base.exception.ParameterException;
+import base.exception.PlatformAccountException;
+import base.exception.UserAccountException;
+import base.exception.UserInfoException;
+
+import com.duanrong.drpay.business.account.BankName;
+import com.duanrong.drpay.business.account.PaymentEnum;
+import com.duanrong.drpay.business.account.dao.BankCardDao;
+import com.duanrong.drpay.business.account.model.BankCard;
+import com.duanrong.drpay.business.account.model.CgtUserAccount;
+import com.duanrong.drpay.business.account.model.UserAccount;
+import com.duanrong.drpay.business.account.service.BankCardService;
+import com.duanrong.drpay.business.account.service.PlatformAccountService;
+import com.duanrong.drpay.business.account.service.UserAccountBusinessService;
+import com.duanrong.drpay.business.account.service.UserAccountService;
+import com.duanrong.drpay.business.payment.BankMapUtil;
+import com.duanrong.drpay.business.user.model.TrusteeshipUserInfo;
+import com.duanrong.drpay.business.user.model.User;
+import com.duanrong.drpay.business.user.service.UserService;
+import com.duanrong.drpay.config.BusinessEnum;
+import com.duanrong.drpay.config.IdUtil;
+import com.duanrong.drpay.config.ToType;
+import com.duanrong.drpay.jsonservice.param.UserAccountParameter;
+import com.duanrong.drpay.trusteeship.constants.TrusteeshipServer;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorUserAccountJSON;
+import com.duanrong.drpay.trusteeship.helper.model.NotifyURL;
+import com.duanrong.drpay.trusteeship.helper.service.TrusteeshipService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipAccountService;
+
+@Service
+public class TrusteeshipAccountServiceImpl implements TrusteeshipAccountService {
+
+	@Resource
+	TrusteeshipService trusteeshipService;
+
+	@Resource
+	UserService userService;
+
+	@Resource
+	BankCardService bankCardService;
+
+	@Resource
+	PlatformAccountService platformAccountService;
+
+	@Resource
+	Log log;
+
+	@Resource
+	UserAccountService userAccountService;
+
+	@Resource
+	UserAccountBusinessService userAccountBusinessService;
+
+	@Resource
+	BankCardDao bankCardDao;
+
+	@Override
+	public Generator createAccount(UserAccountParameter params)
+			throws UserInfoException, UserAccountException, ParameterException,
+			BankCardException {
+
+		// 校验用户是否注册
+		User user = userService.get(params.getUserId());
+		if (user == null) {
+			log.errLog("绑卡开户", "userId:" + params.getUserId() + "没有注册");
+			throw new UserInfoException(ErrorCode.UserNoRegist);
+		}
+		// 身份证号已存在， 您填写的身份证号已存在
+		if (userService.getIdCard(params.getUserId(), params.getIdCardNo())) {
+			log.errLog("绑卡开户", "userId:" + params.getUserId() + "的身份证号："
+					+ params.getIdCardNo() + "已被使用");
+			throw new UserAccountException("身份证号已被使用，请重新输入");
+		}
+		// 判断投资或者借款角色
+		if (userService.hasRoleByUserId(params.getUserId(), "INVESTOR")
+				|| userService.hasRoleByUserId(params.getUserId(), "LOANER")) {
+			log.errLog("绑卡开户", "userId:" + params.getUserId()
+					+ "已开户，拥有投资或者借款权限");
+			throw new UserAccountException(ErrorCode.UserAccountOpened);
+		}
+
+		Map<String, Object> cardInfoMap = BankMapUtil.findBankInfo(params
+				.getBankcardNo());
+		if (cardInfoMap.get("status").equals("error")) {
+			log.errLog("绑卡开户", "userId:" + params.getUserId() + "输入的银行卡号:"
+					+ params.getBankcardNo() + "不正确");
+			throw new ParameterException("请输入正确的银行卡号");
+		} else if (cardInfoMap.get("cardType").equals("贷记卡")) {
+			log.errLog("绑卡开户", "userId:" + params.getUserId() + "输入的是信用卡号:"
+					+ params.getBankcardNo());
+			throw new BankCardException("暂不支持使用信用卡，请重新输入");
+		}
+		String cardName = (String) cardInfoMap.get("name");
+		String bankCode = BankName.getBankCode(cardName);// 银行简称
+		// 查询出存管通支持的所有银行卡
+		// TODO 存管通支持银行查询sql未完善
+		List<String> bankList = bankCardService.getBankCardUsableByCgt();
+		boolean flag = false;
+		for (String string : bankList) {
+			if (string.equals(bankCode)) {
+				flag = true;
+				break;
+			}
+		}
+		if (!flag) {
+			log.errLog("绑卡开户", "userId:" + params.getUserId() + "，存管通不支持该行"
+					+ bankCode + "绑卡");
+			throw new BankCardException("存管通不支持该行绑卡");
+		}
+		// 查询存管通用户审核状态
+		CgtUserAccount cgtUserAccount = queryCgtUserInfo(params.getUserId());
+		if (cgtUserAccount != null) {
+			/* AUDIT 审核中;PASSED 审核通过;BACK 审核回退;REFUSED 审核拒绝 */
+			if ("AUDIT".equals(cgtUserAccount.getCgtAuditStatus())
+					|| "REFUSED".equals(cgtUserAccount.getCgtAuditStatus())) {
+				log.errLog(this.getClass().getName() + ".createAccount()",
+						"userId：" + params.getUserId() + "的存管通审核状态为："
+								+ cgtUserAccount.getCgtAuditStatus()
+								+ "，不能再次申请开户");
+				throw new UserAccountException("userId：" + params.getUserId()
+						+ "的存管通审核状态为：" + cgtUserAccount.getCgtAuditStatus()
+						+ "，不能再次申请开户");
+			} else if ("PASSED".equals(cgtUserAccount.getCgtAuditStatus())) {
+				UserAccount userAccount = userAccountService
+						.getUserAccount(params.getUserId());
+				TrusteeshipUserInfo userInfo = userService
+						.getTrusteeshipUserInfo(params.getUserId(), null);
+				// 开户
+				if (userAccount == null) {
+					createAccountLocal(params.getUserId(),
+							cgtUserAccount.getCgtName(), userInfo.getIdCardNo());
+				}
+				// 绑卡
+				bindCardLocal(params.getUserId(), userInfo.getBankCardNo(),
+						cgtUserAccount.getCgtMobile(),
+						IdUtil.generateId(ToType.BYBC));
+				// 增加用户角色
+				if (cgtUserAccount.getCgtUserRole().name().equals("INVESTOR")) {
+					if (! userService.hasRoleByUserId(params.getUserId(), "INVESTOR")) {
+						userService.addRole(params.getUserId(), "INVESTOR");
+					}
+				} else if (cgtUserAccount.getCgtUserRole().name().equals("BORROWERS")) {
+					if (! userService.hasRoleByUserId(params.getUserId(), "LOANER")) {
+						userService.addRole(params.getUserId(), "LOANER");
+					}
+				}
+				log.errLog(this.getClass().getName() + ".createAccount()",
+						"userId:" + params.getUserId() + "存管通开户成功");
+				throw new UserAccountException("userId:" + params.getUserId()
+						+ "存管通开户成功");
+			}
+		}
+
+		String requestNo = IdUtil.generateId(ToType.OPAC);
+		// 扣取鉴权手续费
+		try {
+			platformAccountService.transferOut(1, BusinessEnum.create_account,
+					"鉴权手续费", requestNo);
+		} catch (PlatformAccountException e) {
+			log.errLog("绑卡开户", "userId:" + params.getUserId()
+					+ "，平台余额不足，鉴权手续费扣取失败");
+		}
+		userService.insertTrusteeshipUserInfo(params.getUserId(),
+				params.getIdCardNo(), params.getBankcardNo(), requestNo);
+		GeneratorUserAccountJSON json = new GeneratorUserAccountJSON();
+		json.setRequestNo(requestNo);
+		json.setCallbackUrl(NotifyURL.OPAC);
+		json.setPlatformUserNo(params.getUserId());
+		json.setRealName(params.getRealName());
+		json.setIdCardType(params.getIdCardType());
+		json.setUserRole(params.getUserRole());
+		json.setIdCardNo(params.getIdCardNo());
+		json.setMobile(params.getMobile());
+		json.setBankcardNo(params.getBankcardNo());
+		if (params.getAuthList() != null && params.getAuthList().length != 0) {
+			json.setAuthList(params.getAuthList());
+		}
+		return trusteeshipService.create(json,
+				TrusteeshipServer.PERSONAL_REGISTER);
+	}
+
+	@Override
+	public void createAccountCallback(GeneratorUserAccountJSON respData) {
+		try {
+			if (respData == null) {
+				throw new UserAccountException("响应参数为空");
+			}
+			if (respData.getCode().equals("0")) {
+				/* AUDIT 审核中;PASSED 审核通过;BACK 审核回退;REFUSED 审核拒绝 */
+				if (respData.getAuditStatus().equals("PASSED")) {
+					UserAccount userAccount = userAccountService
+							.getUserAccount(respData.getPlatformUserNo());
+					TrusteeshipUserInfo userInfo = userService
+							.getTrusteeshipUserInfo(
+									respData.getPlatformUserNo(),
+									respData.getRequestNo());
+					// 开户
+					if (userAccount == null) {
+						createAccountLocal(respData.getPlatformUserNo(),
+								respData.getName(), userInfo.getIdCardNo());
+					}
+					// 绑卡
+					bindCardLocal(respData.getPlatformUserNo(),
+							userInfo.getBankCardNo(), respData.getMobile(),
+							IdUtil.generateId(ToType.BYBC));
+					// 增加用户角色
+					if (respData.getUserRole().name().equals("INVESTOR")) {
+						if (! userService.hasRoleByUserId(respData.getPlatformUserNo(), "INVESTOR")) {
+							userService.addRole(respData.getPlatformUserNo(), "INVESTOR");
+						}
+					} else if (respData.getUserRole().name().equals("BORROWERS")) {
+						if (! userService.hasRoleByUserId(respData.getPlatformUserNo(), "LOANER")) {
+							userService.addRole(respData.getPlatformUserNo(), "LOANER");
+						}
+					}
+				} else {
+					log.errLog(this.getClass().getName()+".createAccountCallback", "userId:"+respData.getPlatformUserNo()+"审核状态为："+respData.getAuditStatus());
+				}
+			} else {
+				log.errLog(this.getClass().getName()
+						+ ".createAccountCallback()", respData.toJSON());
+			}
+		} catch (Exception e) {
+			log.errLog(this.getClass().getName() + ".createAccountCallback()",
+					"userId:" + respData.getPlatformUserNo() + ",异常：" + e);
+		}
+	}
+
+	@Transactional
+	private void createAccountLocal(String userId, String realName,
+			String idCardNo) throws UserAccountException, BankCardException {
+		User user = userService.get(userId);
+		// 本地实名
+		user.setRealname(realName);
+		user.setIdCard(idCardNo);
+		userService.update(user);
+		// 本地开户
+		userAccountService.createUserAccount(userId, "");
+	}
+
+	@Override
+	public CgtUserAccount queryCgtUserInfo(String userId)
+			throws UserInfoException, UserAccountException {
+		// 判断本地用户信息是否存在
+		User user = userService.get(userId);
+		if (user == null) {
+			log.errLog("查询存管通用户信息", "userId:" + userId + "没有注册");
+			throw new UserInfoException(ErrorCode.UserNoRegist);
+		}
+		UserAccount account = userAccountService.getUserAccount(userId);
+		/*
+		 * if (account == null) { log.errLog("查询存管通用户信息", "userId:" + userId +
+		 * "未开户"); throw new
+		 * UserAccountException(ErrorCode.UserAccountNoOpened); }
+		 */
+		// 查询存管通用户信息
+		GeneratorJSON json = new GeneratorJSON();
+		json.setPlatformUserNo(userId);
+		Generator generator = trusteeshipService.execute(json,
+				TrusteeshipServer.QUERY_USER_INFORMATION,
+				GeneratorUserAccountJSON.class);
+		GeneratorUserAccountJSON data = (GeneratorUserAccountJSON) generator
+				.getRespData();
+		CgtUserAccount cgtUserAccount = new CgtUserAccount();
+		if (account == null && data == null) {
+			log.errLog(this.getClass().getName() + "queryCgtUserInfo()",
+					"userId:" + userId + "未开户");
+		}
+		if (account != null) {
+			cgtUserAccount.setAutoInvest(account.getAutoInvest());
+			cgtUserAccount.setAutoRepay(account.getAutoRepay());
+			cgtUserAccount.setAvailableBalance(account.getAvailableBalance());
+			cgtUserAccount.setBalance(account.getBalance());
+			cgtUserAccount.setFreezeAmount(account.getFreezeAmount());
+			cgtUserAccount.setId(account.getId());
+			cgtUserAccount.setPassword(account.getPassword());
+			cgtUserAccount.setStatus(account.getStatus());
+			cgtUserAccount.setTime(account.getTime());
+			cgtUserAccount.setUserId(account.getUserId());
+		}
+		if (data != null) {
+			cgtUserAccount.setCgtAccessType(data.getAccessType());
+			cgtUserAccount.setCgtActiveStatus(data.getActiveStatus());
+			cgtUserAccount.setCgtAuditStatus(data.getAuditStatus());
+			cgtUserAccount.setCgtAuthlist(data.getAuthList());
+			cgtUserAccount.setCgtAvailableAmount(data.getAvailableAmount());
+			cgtUserAccount.setCgtBalance(data.getBalance());
+			cgtUserAccount.setCgtBankcardNo(data.getBankcardNo());
+			cgtUserAccount.setCgtBankcode(data.getBankcode());
+			cgtUserAccount.setCgtFreezeAmount(data.getFreezeAmount());
+			cgtUserAccount.setCgtIdCardNo(data.getIdCardNo());
+			cgtUserAccount.setCgtIdCardType(data.getIdCardType());
+			cgtUserAccount.setCgtIsImportUserActivate(data
+					.getIsImportUserActivate());
+			cgtUserAccount.setCgtMobile(data.getMobile());
+			cgtUserAccount.setCgtName(data.getName());
+			cgtUserAccount.setCgtUserId(data.getPlatformUserNo());
+			cgtUserAccount.setCgtUserRole(data.getUserRole());
+			cgtUserAccount.setCgtUserType(data.getUserType());
+		}
+		return cgtUserAccount;
+	}
+
+	@Override
+	public UserAccount queryLocalUserInfo(String userId)
+			throws UserInfoException, UserAccountException {
+
+		// 查询本地用户信息与本地用户账户信息
+		User user = userService.get(userId);
+		if (user == null) {
+			log.errLog("查询本地用户信息", "userId:" + userId + "没有注册");
+			throw new UserInfoException(ErrorCode.UserNoRegist);
+		}
+		UserAccount account = userAccountService.getUserAccount(userId);
+		if (account == null) {
+			log.errLog("查询本地用户信息", "userId:" + userId + "未开户");
+			throw new UserAccountException(ErrorCode.UserAccountNoOpened);
+		}
+		return account;
+	}
+
+	@Override
+	public Generator checkPassword(String userId, String templateType)
+			throws UserInfoException, UserAccountException {
+		User user = userService.get(userId);
+		if (user == null) {
+			log.errLog("存管通校验密码", "userId:" + userId + "没有注册");
+			throw new UserInfoException(ErrorCode.UserNoRegist);
+		}
+		UserAccount account = userAccountService.getUserAccount(userId);
+		if (account == null) {
+			log.errLog("存管通校验密码", "userId:" + userId + "未开户");
+			throw new UserAccountException(ErrorCode.UserAccountNoOpened);
+		}
+		GeneratorJSON json = new GeneratorJSON();
+		json.setPlatformUserNo(userId);
+		json.setRequestNo(IdUtil.generateId(ToType.CPWD));
+		// TODO 提示信息，或者根据模板类型去 获取模板信息
+		json.setBizTypeDescription(templateType);
+		json.setCallbackUrl(NotifyURL.CPWD);
+		return trusteeshipService
+				.create(json, TrusteeshipServer.CHECK_PASSWORD);
+	}
+
+	@Override
+	public void checkPasswordCallback(GeneratorJSON respData) {
+		try {
+			if (respData == null) {
+				throw new UserAccountException("响应参数为空");
+			}
+			if ("0".equals(respData.getCode())) {
+				// 无本地数据处理
+			} else {
+				log.errLog(this.getClass().getName()
+						+ ".checkPasswordCallback()", respData.toJSON());
+			}
+		} catch (Exception e) {
+			log.errLog(this.getClass().getName() + ".checkPasswordCallback()",
+					"userId:" + respData.getPlatformUserNo() + "," + e);
+		}
+	};
+
+	@Override
+	public Generator bindCard(String userId, String mobile, String bankcardNo)
+			throws UserInfoException, UserAccountException {
+		// 校验用户是否注册
+		User user = userService.get(userId);
+		if (user == null) {
+			log.errLog("绑定银行卡", "userId:" + userId + "没有注册");
+			throw new UserInfoException(ErrorCode.UserNoRegist);
+		}
+		UserAccount account = userAccountService.getUserAccount(userId);
+		if (account == null) {
+			log.errLog("绑定银行卡", "userId:" + userId + "未开户");
+			throw new UserAccountException(ErrorCode.UserAccountNoOpened);
+		}
+		// 判断投资或者借款角色
+		/*
+		 * if (!userService.hasRoleByUserId(userId, "INVESTOR") &&
+		 * !userService.hasRoleByUserId(userId, "LOANER")) { log.errLog("绑定银行卡",
+		 * "userId:"+userId+"没有投资或借款权限"); throw new
+		 * UserAccountException(ErrorCode.UserAccountNoOpened); }
+		 */
+		String requestNo = IdUtil.generateId(ToType.BYBC);
+		userService
+				.insertTrusteeshipUserInfo(userId, "", bankcardNo, requestNo);
+		GeneratorUserAccountJSON json = new GeneratorUserAccountJSON();
+		json.setBankcardNo(bankcardNo);
+		json.setMobile(mobile);
+		json.setPlatformUserNo(userId);
+		json.setRequestNo(requestNo);
+		json.setCallbackUrl(NotifyURL.BYBC);
+		return trusteeshipService.create(json,
+				TrusteeshipServer.PERSONAL_BIND_BANKCARD);
+	}
+
+	@Override
+	public void bindCardCallback(GeneratorUserAccountJSON respData) {
+		try {
+			if (respData == null) {
+				throw new UserAccountException("响应参数为空");
+			}
+			if (respData.getCode().equals("0")) {
+				TrusteeshipUserInfo userInfo = userService
+						.getTrusteeshipUserInfo(respData.getPlatformUserNo(),
+								respData.getRequestNo());
+				bindCardLocal(respData.getPlatformUserNo(),
+						userInfo.getBankCardNo(), respData.getMobile(),
+						respData.getRequestNo());
+			} else {
+				log.errLog(this.getClass().getName() + ".bindCardCallback()",
+						"userId:" + respData.getPlatformUserNo() + ","
+								+ respData);
+			}
+		} catch (Exception e) {
+			log.errLog(this.getClass().getName() + ".bindCardCallback()",
+					"userId:" + respData.getPlatformUserNo() + "," + e);
+		}
+	};
+
+	@Transactional
+	private void bindCardLocal(String userId, String bankCardNo, String mobile,
+			String requestNo) throws BankCardException {
+		// 本地绑卡
+		List<BankCard> selectList = (List<BankCard>) bankCardDao
+				.getValidBankCardByUserId(userId, false);
+		if (selectList.size() > 0){
+			log.errLog(this.getClass().getName() + ".bindCardLocal()", "userId:"+userId+"已绑卡");
+		} else {
+			Map<String, Object> cardInfoMap = BankMapUtil.findBankInfo(bankCardNo);
+			String cardName = (String) cardInfoMap.get("name");
+			userAccountBusinessService.bindingCard(userId, bankCardNo, cardName,
+					mobile, PaymentEnum.CGT.toString(), "VERIFIED", requestNo);
+		}
+	}
+
+	@Override
+	public Generator resetPassword(String userId) throws UserInfoException,
+			UserAccountException {
+		// 校验用户是否注册
+		User user = userService.get(userId);
+		if (user == null) {
+			log.errLog("修改密码", "userId:" + userId + "没有注册");
+			throw new UserInfoException(ErrorCode.UserNoRegist);
+		}
+		UserAccount account = userAccountService.getUserAccount(userId);
+		if (account == null) {
+			log.errLog("修改密码", "userId:" + userId + "未开户");
+			throw new UserAccountException(ErrorCode.UserAccountNoOpened);
+		}
+		GeneratorJSON json = new GeneratorJSON();
+		json.setRequestNo(IdUtil.generateId(ToType.RPWD));
+		json.setPlatformUserNo(userId);
+		json.setCallbackUrl(NotifyURL.RPWD);
+		return trusteeshipService
+				.create(json, TrusteeshipServer.RESET_PASSWORD);
+	}
+
+	@Override
+	public void resetPasswordCallback(GeneratorJSON respData) {
+		try {
+			if (respData == null) {
+				throw new UserAccountException("响应数据为空");
+			}
+			if ("0".equals(respData.getCode())) {
+				// 无本地数据处理
+			} else {
+				log.errLog(this.getClass().getName()
+						+ ".resetPasswordCallback()", respData.toJSON());
+			}
+		} catch (Exception e) {
+			log.errLog(this.getClass().getName() + ".resetPasswordCallback()",
+					"userId:" + respData.getPlatformUserNo() + "," + e);
+		}
+	};
+
+	@Override
+	public Generator unBindCard(String userId) throws UserInfoException,
+			UserAccountException {
+		// 校验用户是否注册
+		User user = userService.get(userId);
+		if (user == null) {
+			log.errLog("解绑银行卡", "userId:" + userId + "没有注册");
+			throw new UserInfoException(ErrorCode.UserNoRegist);
+		}
+		UserAccount account = userAccountService.getUserAccount(userId);
+		if (account == null) {
+			log.errLog("解绑银行卡", "userId:" + userId + "未开户");
+			throw new UserAccountException(ErrorCode.UserAccountNoOpened);
+		}
+		GeneratorJSON json = new GeneratorJSON();
+		json.setRequestNo(IdUtil.generateId(ToType.TUBC));
+		json.setPlatformUserNo(userId);
+
+		Generator respData = trusteeshipService.execute(json,
+				TrusteeshipServer.UNBIND_BANKCARD_DIRECT, GeneratorJSON.class);
+		if (respData != null && "0".equals(respData.getRespData().getCode())) {
+			BankCard bankCard = new BankCard();
+			bankCard.setUserId(userId);
+			bankCard.setDeleteBankCard("delete");
+			bankCard.setCancelStatus("解绑完成");
+			bankCard.setCancelBandDingTime(new SimpleDateFormat(
+					"yyyy-MM-dd HH:mm:ss").format(new Date()));
+			bankCardService.updateAllValidCard(bankCard);
+		}
+		return respData;
+	}
+
+}

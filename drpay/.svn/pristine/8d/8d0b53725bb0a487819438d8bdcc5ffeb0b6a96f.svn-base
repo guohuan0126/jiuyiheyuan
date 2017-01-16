@@ -1,0 +1,58 @@
+package com.duanrong.drpay.trusteeship.helper.model;
+
+/**
+ * 存管通请求实体类 所有存管通实体衍生类需继承此类
+ * 
+ * @author xiao
+ * @datetime 2016年12月6日 下午4:49:19
+ */
+public class GeneratorDetailJSON {
+
+	//预处理业务流水号
+	private String preTransactionNo;
+	
+	//收款人编号
+	private String platformUserNo;
+	
+	//放款金额
+	private double amount;
+	
+	//用户使用平台营销款金额投标，要求与各类预处理的预备使用的红包金额一致
+	private String marketingAmount;
+	
+	//平台商户自定义参数，平台交易时传入的自定义参数
+	private String customDefine;
+	
+	public String getPreTransactionNo() {
+		return preTransactionNo;
+	}
+	public void setPreTransactionNo(String preTransactionNo) {
+		this.preTransactionNo = preTransactionNo;
+	}
+	public double getAmount() {
+		return amount;
+	}
+	public void setAmount(double amount) {
+		this.amount = amount;
+	}
+	public String getMarketingAmount() {
+		return marketingAmount;
+	}
+	public void setMarketingAmount(String marketingAmount) {
+		this.marketingAmount = marketingAmount;
+	}
+	public String getCustomDefine() {
+		return customDefine;
+	}
+	public void setCustomDefine(String customDefine) {
+		this.customDefine = customDefine;
+	}
+	public String getPlatformUserNo() {
+		return platformUserNo;
+	}
+	public void setPlatformUserNo(String platformUserNo) {
+		this.platformUserNo = platformUserNo;
+	}
+	
+	
+}

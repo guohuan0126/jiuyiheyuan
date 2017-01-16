@@ -1,0 +1,42 @@
+package com.duanrong.drpay.business.demand.service;
+
+import org.springframework.transaction.annotation.Transactional;
+
+import base.exception.ErrorCodeException;
+import base.pagehelper.PageInfo;
+
+import com.duanrong.drpay.business.demand.model.DemandtreasureTransferIn;
+
+/**
+ * @Description: 活期宝转入
+ * @Author: 赵磊
+ * @CreateDate: 2015-07-17
+ */
+
+public interface DemandtreasureTransferInService {
+	
+	/**
+	 * 按条件分页查询转入
+	 * @param pageNo
+	 * @param pageSize
+	 * @param entity
+	 * @return
+	 */
+	public PageInfo<DemandtreasureTransferIn> findPageInfo
+	(int pageNo, int pageSize, DemandtreasureTransferIn entity);
+	
+	public void insert(DemandtreasureTransferIn demandIn);
+
+	public void update(DemandtreasureTransferIn demandIn);
+
+	public void create(DemandtreasureTransferIn demandIn)
+			throws ErrorCodeException;
+
+	@Transactional(rollbackFor = Exception.class)
+	public void syncDemandIn(DemandtreasureTransferIn demandIn, String type) throws Exception;
+
+	public DemandtreasureTransferIn get(String id);
+
+	public PageInfo<DemandtreasureTransferIn> pageLite(int pageNo,
+													   int pageSize, DemandtreasureTransferIn in);
+}

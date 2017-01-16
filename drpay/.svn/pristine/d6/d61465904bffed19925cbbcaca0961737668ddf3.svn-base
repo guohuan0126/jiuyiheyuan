@@ -1,0 +1,121 @@
+package com.duanrong.drpay.trusteeship.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import org.springframework.stereotype.Service;
+
+import util.Log;
+import base.error.ErrorCode;
+import base.exception.ParameterException;
+
+import com.duanrong.drpay.business.account.BankName;
+import com.duanrong.drpay.business.account.model.BankCard;
+import com.duanrong.drpay.business.account.service.BankCardService;
+import com.duanrong.drpay.business.payment.BankMapUtil;
+import com.duanrong.drpay.business.payment.model.Recharge;
+import com.duanrong.drpay.business.payment.service.ChannelMatchingService;
+import com.duanrong.drpay.business.payment.service.RechargeService;
+import com.duanrong.drpay.business.user.UserConstants;
+import com.duanrong.drpay.config.IdUtil;
+import com.duanrong.drpay.config.ToType;
+import com.duanrong.drpay.jsonservice.param.PaymentParameter;
+import com.duanrong.drpay.trusteeship.constants.TrusteeshipServer;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorRechargeJSON;
+import com.duanrong.drpay.trusteeship.helper.model.NotifyURL;
+import com.duanrong.drpay.trusteeship.helper.model.RechargeWay;
+import com.duanrong.drpay.trusteeship.helper.service.TrusteeshipService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipPaymentService;
+
+@Service
+public class TrusteeshipPaymentServiceImpl implements TrusteeshipPaymentService {
+
+	@Resource
+	Log log;
+	@Resource
+	RechargeService rechargeService;
+	@Resource
+	ChannelMatchingService channelMatchingService;
+	@Resource
+	TrusteeshipService trusteeshipService;
+	@Resource
+	BankCardService bankCardService;
+
+	@Override
+	public Generator recharge(PaymentParameter parameter)
+			throws ParameterException {
+		if ("TENDER".equals(parameter.getAuthtradeType())) {
+			if (parameter.getAuthtenderAmount() == null
+					|| parameter.getProjectNo() == null) {
+				log.errLog(this.getClass().getName() + ".recharge()", "userId:"
+						+ parameter.getUserId() + "选择充值投标时，授权投标金额或标的号不能为空");
+				throw new ParameterException(ErrorCode.ParametersError);
+			}
+		}
+		if (parameter.getAmount() < 1) {
+			log.errLog(this.getClass().getName() + ".recharge()", "userId:"
+					+ parameter.getUserId() + "的充值金额小于1块");
+			throw new ParameterException("充值金额不能低于1元");
+		}
+		// 查询用户绑定的银行卡
+		List<BankCard> bankCards = bankCardService.getValidBankCardByUserId(
+				parameter.getUserId(), false);
+		Map<String, Object> cardInfoMap = BankMapUtil.findBankInfo(bankCards
+				.get(0).getCardNo());
+		String cardName = (String) cardInfoMap.get("name");
+		String bankCode = BankName.getBankCode(cardName);
+
+		// 根据充值金额获取支付公司
+		Map<String, Object> channel = channelMatchingService
+				.findChannelByMoney(parameter.getUserId(),
+						parameter.getAmount(), "");
+		// 增加充值记录
+		Recharge recharge = new Recharge();
+		recharge.setActualMoney(parameter.getAmount());
+		recharge.setUserId(parameter.getUserId());
+		recharge.setType(parameter.getRechargeWay().toString());
+		String id = IdUtil.generateId(ToType.RECH);
+		recharge.setId(id);
+		// 等待付款
+		recharge.setStatus(UserConstants.RechargeStatus.WAIT_PAY);
+		recharge.setFee(0D);
+		recharge.setPaymentId(channel.get("channelType").toString());
+		rechargeService.insert(recharge);
+		// 封装请求存管通参数
+		GeneratorRechargeJSON json = new GeneratorRechargeJSON();
+		json.setPlatformUserNo(parameter.getUserId());
+		json.setRequestNo(id);
+		json.setAmount(parameter.getAmount());
+		json.setExpectPayCompany(channel.get("channelType").toString());
+		json.setRechargeWay(parameter.getRechargeWay());
+		if (RechargeWay.SWIFT.equals(parameter.getRechargeWay())) {
+			json.setBankcode(bankCode);
+		}
+		if ("TENDER".equals(parameter.getAuthtradeType())) {
+			json.setAuthtradeType("TENDER");
+			json.setAuthtenderAmount(parameter.getAuthtenderAmount());
+			json.setProjectNo(parameter.getProjectNo());
+		}
+		json.setCallbackUrl(NotifyURL.RECH);
+		return trusteeshipService.create(json, TrusteeshipServer.RECHARGE);
+	}
+	
+	@Override
+	public void rechargeCallback(GeneratorRechargeJSON respData){
+		 if (respData.getCode().equals("0")) {
+			 //SUCCESS 表示支付成功， FAIL 表示支付失败，PENDDING 表示支付中
+			if (respData.getStatus().equals("SUCCESS")) {
+				rechargeService.rechargeSuccess(respData.getRequestNo(), respData.getRechargeWay().toString());
+			} else {
+				Recharge recharge = rechargeService.get(respData.getRequestNo());
+				recharge.setType(respData.getRechargeWay().toString());
+				recharge.setStatus(respData.getStatus());
+				rechargeService.update(recharge);
+			}
+		} else {
+			log.errLog(this.getClass().getName() + ".rechargeCallback()", respData.toJSON());
+		}
+	}
+}

@@ -1,0 +1,187 @@
+package com.duanrong.drpay.business.payment.service.impl;
+
+import base.exception.UserAccountException;
+
+import com.duanrong.drpay.business.account.PlatformAccountEnum;
+import com.duanrong.drpay.business.account.dao.BankCardDao;
+import com.duanrong.drpay.business.account.model.BankCard;
+import com.duanrong.drpay.business.account.service.PaymentAccountService;
+import com.duanrong.drpay.business.account.service.PlatformAccountService;
+import com.duanrong.drpay.business.account.service.UserAccountService;
+import com.duanrong.drpay.business.payment.dao.WithdrawCashDao;
+import com.duanrong.drpay.business.payment.model.WithdrawCash;
+import com.duanrong.drpay.business.payment.service.WithdrawCashService;
+import com.duanrong.drpay.business.user.UserConstants;
+import com.duanrong.drpay.config.BusinessEnum;
+import com.duanrong.drpay.config.IdUtil;
+import com.duanrong.drpay.config.ToType;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import util.Log;
+
+import javax.annotation.Resource;
+
+import java.util.Date;
+import java.util.List;
+
+/**
+ * @Description: 提现（易宝）
+ * @Author: 林志明
+ * @CreateDate: Oct 9, 2014
+ */
+@Service
+public class WithdrawCashBO {
+
+	@Resource
+	WithdrawCashDao withdrawCashDao;
+
+	@Resource
+	BankCardDao bankCardDao;
+
+	@Resource
+	Log log;
+
+	@Resource
+	UserAccountService userAccountService;
+
+	@Resource
+	PlatformAccountService platformAccountService;
+
+	@Resource
+	PaymentAccountService paymentAccountService;
+
+	@Resource
+	WithdrawCashService withdrawCashService;
+
+	/**
+	 * 申请提现
+	 * 
+	 * @param withdraw
+	 * @throws UserAccountException 
+	 * @throws 
+	 */
+	public void applyWithdrawCash(WithdrawCash withdraw) throws UserAccountException {
+
+		String userId = withdraw.getUserId();
+		Double balance = 0D;
+		try {
+			balance = userAccountService.getUserAccount(userId).getAvailableBalance();
+		} catch (UserAccountException e) {
+			log.errLog(this.getClass().getName() + ".applyWithdrawCash",
+					"用户ID：" + userId + "未开户");
+			e.printStackTrace();
+		}
+		/*
+		 * if (balance < 100) { // FIXME：需要抛异常或其他处理 // 不能提现 }
+		 */
+		if (balance < withdraw.getActualMoney()) {
+			log.errLog(this.getClass().getName() + ".applyWithdrawCash",
+					"提现金额大于账户余额，用户ID：" + userId);
+			throw new UserAccountException("33002");
+		}
+
+		BankCard bankCard = null;
+
+		// 查询银行卡有问题，应该是状态是认证成功
+		List<BankCard> bankcards = bankCardDao.getValidBankCardByUserId(userId,
+				false);
+
+		if (!bankcards.isEmpty()) {
+			bankCard = bankcards.get(0);
+		} else {
+			// 没有找到有效的银行卡，需要抛异常，由于定义新异常会造成开发难度并且没有银行卡的机率很低，所以使用
+			// 1 / 0的方式结束提现的操作，不使用return是因为不让其他代码继续执行
+			log.errLog("提现", "没有找到有效的银行卡，withdraw：" + withdraw);
+			throw new UserAccountException("31002");
+		}
+		withdraw.setCashFine(0D);
+		withdraw.setAccount("借款账户");
+		withdraw.setBankCard(bankCard);
+
+		withdraw.setId(IdUtil.generateId(ToType.WICA));
+		withdraw.setTime(new Date());
+		// 等待审核
+		withdraw.setStatus(UserConstants.WithdrawStatus.WAIT_VERIFY);
+	}
+
+	@Transactional(rollbackFor = Exception.class)
+	public void passWithdrawCashApply(String withdrawCashId) throws Exception {
+
+		/*if (DRJedisDLock.getDLock("withdraw" + withdrawCashId, withdrawCashId)) {*/
+			try {
+				WithdrawCash withdrawCash = withdrawCashDao.getWithLock(withdrawCashId);
+				if (StringUtils.equals(withdrawCash.getStatus(),
+						UserConstants.WithdrawStatus.WAIT_VERIFY)) {
+					// 从余额中取，系统账户也要记录
+					withdrawCash
+							.setStatus(UserConstants.WithdrawStatus.SUCCESS);
+					// 更新withdraw_cash表，放在user_bill插入操作之后，以免出现事物不同步的问题
+					withdrawCashDao.update(withdrawCash);
+					String userId = withdrawCash.getUserId();
+					Double actualMoney = withdrawCash.getActualMoney();
+					// FIXME 新账户提现
+					userAccountService.transferOut(userId, actualMoney,
+							BusinessEnum.withdraw_cash, "提现成功", "提现成功",
+							withdrawCashId);
+					// 计算手续费
+					if (StringUtils.isBlank(withdrawCash.getPaymentId())|| withdrawCash.getPaymentId().equals("Yeepay")) {	
+						if ("URGENT".equals(withdrawCash.getWithdrawType())) {
+							userAccountService.transferOut(userId,
+									withdrawCash.getFee(),
+									BusinessEnum.fee, "加急提现手续费",
+									"提现ID:" + withdrawCashId, withdrawCashId);
+						} else {
+							platformAccountService.transferOut(PlatformAccountEnum.PLATFORM_SYS, 2,
+									BusinessEnum.fee, "提现手续费",
+									withdrawCashId);
+						}
+						
+					}
+
+					try {
+						if ("URGENT".equals(withdrawCash.getWithdrawType())) {
+							
+							//FIXME 短信站内信调用基础服务
+							
+							/*String content = smsService
+									.operateTemplate(SmsConstants.WITHDRAWCASHURGENT);
+							content = StringUtils.replace(content, "#{money}",
+									actualMoney.toString());
+							content = StringUtils.replace(content, "#{fee}",
+									withdrawCash.getFee().toString());
+							smsService.sendSms(userId, content,
+									SmsConstants.WITHDRAWCASHURGENT);*/
+						} else {
+							/*Date date = withdrawCashService
+									.getArrivalDate(new Date());
+							String dateStr = DateUtil
+									.DateToString(date, "M月d日");*/
+							/*String content = smsService
+									.operateTemplate(SmsConstants.WITHDRAWCASH);
+							content = "尊敬的用户您好，您申请的提现金额#{money}元，预计在#{date}内到账，若超时未到账，请联系客服：400-062-1008 。";
+							content = StringUtils.replace(content, "#{money}",
+									actualMoney.toString());
+							content = StringUtils.replace(content, "#{date}",
+									dateStr);
+							smsService.sendSms(userId, content,
+									SmsConstants.WITHDRAWCASH);*/
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+						log.errLog("发送短信或跟投", e);
+					}
+				}
+			} catch (Exception ex) {
+				log.errLog("处理提现失败", ex);
+				throw ex;
+			}/* finally {
+				DRJedisDLock.releaseDLock("withdraw" + withdrawCashId,
+						withdrawCashId);
+			}
+		}*/
+	}
+
+}

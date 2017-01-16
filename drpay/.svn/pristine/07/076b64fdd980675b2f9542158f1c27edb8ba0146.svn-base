@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.repay.mapper.RepayMapper">
+	<resultMap type="Repay" id="repayRM">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="period" column="period" />
+		<result property="time" column="time" />
+		<result property="repayDay" column="repay_day" />
+		<result property="corpus" column="corpus" />
+		<result property="interest" column="interest" />
+		<result property="defaultInterest" column="default_interest" />
+		<result property="status" column="status" />
+		<result property="operationTime" column="operation_time" />
+		<result property="loanId" column="loan_id" />
+		<result property="repayAllowanceInterest" column="repay_allowance_interest" />
+		<result property="isBeforeRepay" column="is_before_repay"/>
+		<association property="loan" javaType="Loan">
+			<result property="totalmoney" column="loan_money" />
+			<result property="borrowMoneyUserID" column="loan_user_id" />
+			<result property="rate" column="loan_rate" />
+			<result property="commitTime" column="loan_commit_time" />
+			<result property="status" column="loan_status" />
+			<result property="expectTime" column="expect_time" />
+			<result property="name" column="loan_name" />
+			<result property="loanType" column="loan_type" />
+			<result property="repayType" column="loan_repay_type" />
+			<result property="day" column="loan_day" />
+			<result property="operationType" column="operation_type" />
+			<result property="beforeRepay" column="before_repay" />
+			<result property="giveMoneyTime" column="give_money_time" />
+			<result property="deadline" column="loan_deadline" />
+			<result property="newbieEnjoy" column="newbieEnjoy" />
+			<result property="interestRule" column="interest_rule" />
+			<result property="giveMoneyOperationTime" column="give_money_operation_time" />
+			<result property="loanAllowanceInterest" column="loan_allowance_interest" />
+
+			<collection property="invests" ofType="Invest">
+				<id property="id" column="invest_id" />
+				<result property="money" column="invest_money" />
+				<result property="status" column="invest_status" />
+				<result property="type" column="invest_type" />
+				<result property="interest" column="invest_interest" />
+				<result property="paidInterest" column="paid_interest" />
+				<result property="paidMoney" column="paid_money" />
+				<result property="time" column="invest_time" />
+				<result property="isAutoInvest" column="is_auto_invest" />
+				<result property="userSource" column="user_source" />
+				<result property="investUserID" column="invest_user_id" />
+				<result property="returnPondMoney" column="maxInvestMoney" />
+				<result property="returnPond" column="return_pond" />
+				<result property="redpacketId" column="redpacket_id" />
+				<result property="investAllowanceInterest" column="invest_allowance_interest" />
+			</collection>
+		</association>
+	</resultMap>
+
+	<!-- 生成还款计划 -->
+	<insert id="insert" parameterType="repay">
+		INSERT INTO repay
+		(id,corpus,interest,repay_day,status,time,
+		loan_id,user_id,default_interest,period,operation_time,repay_allowance_interest)
+		VALUES
+		(#{id},#{corpus},#{interest},#{repayDay},#{status},#{time},
+		#{loanId},#{userId},#{defaultInterest},#{period},#{operationTime},#{repayAllowanceInterest})
+	</insert>
+
+	<!-- 根据id查询repay -->
+	<select id="get" parameterType="string" resultMap="repayRM">
+		SELECT * FROM
+		repay
+		LEFT JOIN (
+		SELECT
+		invest.id AS invest_id,
+		invest.money AS
+		invest_money,
+		invest.`status` AS invest_status,
+		invest.type AS
+		invest_type,
+		invest.interest AS
+		invest_interest,
+		invest.paid_interest,
+		invest.paid_money,
+		invest.time AS invest_time,
+		invest.is_auto_invest,
+		invest.user_source,
+		invest.user_id AS invest_user_id,
+		invest.maxInvestMoney,
+		invest.return_pond,
+		invest.invest_allowance_interest,
+		loan.id,
+		loan.money AS
+		loan_money,
+		loan.user_id AS loan_user_id,
+		loan.rate AS
+		loan_rate,
+		loan.commit_time AS loan_commit_time,
+		loan.`status` AS
+		loan_status,
+		loan.expect_time AS expect_time,
+		loan.`name` AS
+		loan_name,
+		loan.loan_type,
+		loan.repay_type AS
+		loan_repay_type,
+		loan. DAY AS
+		loan_day,
+		loan.operation_type AS operation_type,
+		loan.before_repay,
+		loan.give_money_time,
+		loan.deadline AS loan_deadline,
+		loan.newbieEnjoy,
+		loan.interest_rule,
+		loan.give_money_operation_time,
+		loan.loan_allowance_interest,
+		red_packet_detail.id as redpacket_id, red_packet_detail.rate AS red_rate,red_packet_detail.money AS red_money 
+		FROM loan
+		LEFT JOIN
+		invest
+		ON loan.id = invest.loan_id
+		LEFT JOIN red_packet_detail ON invest.redpacket_id = red_packet_detail.id
+		WHERE
+		invest.`status` ='还款中'
+		) loan
+		ON repay.loan_id = loan.id
+		WHERE repay.id = #{id}
+	</select>
+
+	<!-- 根据条件进行组合查询 -->
+	<select id="getByCondition" parameterType="repay" resultMap="repayRM">
+		SELECT * FROM repay
+		<where>
+			<if test="id != null and id != ''">
+				AND id = #{id}
+			</if>
+			<if test="userId != null and userId != ''">
+				AND user_id = #{userId}
+			</if>
+			<if test="loanId != null and loanId != ''">
+				AND loan_id = #{loanId}
+			</if>
+			<if test="period != null">
+				AND period = #{period}
+			</if>
+			<if test="time != null">
+				AND time = #{time}
+			</if>
+			<if test="repayDay != null">
+				AND repay_day = #{repayDay}
+			</if>
+			<if test="corpus != null">
+				AND corpus = #{corpus}
+			</if>
+			<if test="interest != null">
+				AND interest = #{interest}
+			</if>
+			<if test="defaultInterest != null">
+				AND default_interest = #{defaultInterest}
+			</if>
+			<if test="status != null and status != ''">
+				AND status = #{status}
+			</if>
+			<!-- 其他条件根据需求添加 -->
+		</where>
+	</select>
+
+	<update id="update" parameterType="repay">
+		UPDATE repay
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(userId)">user_id=#{userId},</if>
+			<if test="period != null">period=#{period},</if>
+			<if test="time != null">time=#{time},</if>
+			<if test="repayDay != null">repay_day=#{repayDay},</if>
+			<if test="corpus != null">corpus=#{corpus},</if>
+			<if test="interest != null">interest=#{interest},</if>
+			<if test="defaultInterest != null">default_interest=#{defaultInterest},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(status)">status=#{status},</if>
+			<if test="operationTime != null">operation_time=#{operationTime},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(loanId)">loan_id=#{loanId},</if>
+			<if test="isBeforeRepay!=0">is_before_repay=#{isBeforeRepay},</if>
+		</set>
+		WHERE id = #{id}
+	</update>
+
+	<!-- 获得项目还款完成（结束）时间 -->
+	<select id="getCompleteDate" parameterType="string" resultType="date">
+		SELECT repay.operation_time
+		FROM repay
+		LEFT JOIN
+		loan
+		ON loan.id =
+		repay.loan_id
+		WHERE loan.id = #{loanId}
+		AND repay.`status` =
+		'完成'
+		AND
+		loan.`status` = '完成'
+		ORDER BY
+		repay.operation_time DESC
+		LIMIT 1
+	</select>
+
+	<update id="updateOtherRepay" parameterType="repay">
+		UPDATE repay
+		set interest = 0,
+		corpus = 0,
+		status = '完成'
+		WHERE id != #{id} and loan_id = #{loanId} and status='还款中'
+	</update>
+</mapper>

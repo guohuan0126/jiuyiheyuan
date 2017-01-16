@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.payment.mapper.PaymentBankChannelMapper">
+
+    <resultMap type="PaymentBankChannel" id="PaymentBankChannelMap">
+        <id property="id" column="id"/>
+        <result property="bankId" column="bank_id"/>
+        <result property="channelId" column="channel_id"/>
+        <result property="oneMoney" column="one_money"/>
+        <result property="dayMoney" column="day_money"/>
+        <result property="monthMoney" column="month_money"/>
+        <result property="onlineBanking" column="online_banking"/>
+        <result property="quickRecharge" column="quick_recharge"/>
+        <result property="tiecard" column="tiecard"/>
+        <result property="urgentWithdrawals" column="urgent_withdrawals"/>
+        <result property="sort" column="sort"/>
+        <result property="isDel" column="is_del"/>
+        <association property="bankInfo" column="bank_id" javaType="com.duanrong.drpay.business.payment.model.PaymentBankInfo"  select="getBankInfoById" ></association>
+        <association property="channel" column="channel_id" javaType="com.duanrong.drpay.business.payment.model.PaymentChannel" select="getChannelById" ></association>
+    </resultMap>
+
+    <resultMap type="PaymentBankInfo" id="PaymentBankInfoMap">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="code" column="code"/>
+        <result property="logo" column="logo"/>
+        <result property="fuIouCode" column="fuiou_code"/>
+    </resultMap>
+
+    <resultMap type="PaymentChannel" id="PaymentChannelMap">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="code" column="code"/>
+        <result property="logo" column="logo"/>
+        <result property="rateGateway" column="gateway_rate"/>
+        <result property="rateQuick" column="quick_rate"/>
+        <result property="withdrawFee" column="withdraw_fee"/>
+        <result property="pcUsable" column="pc_usable"/>
+        <result property="mobUsable" column="mob_usable"/>
+        <result property="sort" column="sort"/>
+    </resultMap>
+    <!--  根据银行名称查询渠道信息集合 -->
+     <select id="findByBankChannel" parameterType="map" resultMap="PaymentBankChannelMap">
+        select bc.* from payment_bank_channel bc LEFT JOIN  payment_bankinfo b on bc.bank_id = b.id LEFT JOIN payment_channel c on bc.channel_id = c.id  
+		<where>
+		    b.name = #{bankName} and bc.is_del = 1
+		    <if test="quickRecharge != null and quickRecharge != '' ">and bc.quick_recharge = #{quickRecharge}</if>
+			<if test="tiecard != null and tiecard != '' ">and bc.tiecard = #{tiecard}</if>
+			<if test="pcUsable != null and pcUsable != '' ">and c.pc_usable = #{pcUsable}</if>
+			<if test="mobUsable != null and mobUsable != '' ">and c.mob_usable = #{mobUsable}</if>
+		</where>
+     </select>
+     <select id="getBankInfoById" parameterType="int" resultMap="PaymentBankInfoMap" >
+        SELECT * FROM payment_bankinfo WHERE id = #{id}
+     </select>
+     <select id="findBankInfoByName" parameterType="String" resultMap="PaymentBankInfoMap" >
+        SELECT * FROM payment_bankinfo WHERE name = #{name}
+     </select>
+     
+     <select id="getChannelById" parameterType="int" resultMap="PaymentChannelMap" >
+        SELECT * FROM payment_channel WHERE id = #{id}
+     </select>
+     <select id="getChannelByCode" parameterType="String" resultMap="PaymentChannelMap" >
+        SELECT * FROM payment_channel WHERE code = #{code}
+     </select>
+
+     <!-- 查询易宝支持的网银 -->
+     <select id="findOnlineBank" resultType="String" >
+        select DISTINCT b.name from payment_bank_channel bc 
+		LEFT JOIN  payment_bankinfo b on bc.bank_id = b.id 
+		LEFT JOIN payment_channel c on bc.channel_id = c.id  
+		where c.code = 'Yeepay' and bc.online_banking= 1
+     </select>
+
+</mapper>

@@ -1,0 +1,98 @@
+package com.duanrong.drpay.business.loan.dao.impl;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Repository;
+
+import base.dao.impl.BaseDaoImpl;
+
+import com.duanrong.drpay.business.invest.model.Invest;
+import com.duanrong.drpay.business.loan.dao.LoanDao;
+import com.duanrong.drpay.business.loan.model.Loan;
+import com.duanrong.drpay.business.user.dao.UserDao;
+import com.duanrong.drpay.business.user.model.User;
+
+/**
+ * Copyright : duanrong.com.cn All Rights Reserved Company : 久亿财富（北京）投资有限公司
+ * 
+ * @Author : 孙铮
+ * @CreateTime : 2014-8-28 下午12:46:30
+ * @Description : drsoa com.duanrong.business.loan.dao.impl LoanDaoImpl.java
+ * 
+ */
+@Repository
+public class LoanDaoImpl extends BaseDaoImpl<Loan> implements LoanDao {
+
+	@Resource
+	UserDao userDao;
+
+	public LoanDaoImpl() {
+		this.setMapperNameSpace("com.duanrong.drpay.business.loan.mapper.LoanMapper");
+	}
+
+	/**
+	 * 
+	 * @description 根据组合条件查询所有借款记录
+	 * @author 孙铮
+	 * @time 2014-8-28 下午5:29:29
+	 * @param userID
+	 * @return
+	 */
+	public List<Loan> getLoansByGroupCondition(Loan loan) {
+		List<Loan> loans = this.getSqlSession().selectList(
+				this.getMapperNameSpace() + ".getLoansByGroupCondition", loan);
+		return loans;
+	}
+
+	/**
+	 * 
+	 * @description 根据loanID查询对应借款人信息
+	 * @author 孙铮
+	 * @time 2014-8-28 下午5:40:44
+	 * @param loanID
+	 * @return
+	 */
+	public User getUserByLoanID(String loanID) {
+		String userId = this.getSqlSession().selectOne(
+				this.getMapperNameSpace() + ".getUserByloanID", loanID);
+		return userDao.get(userId);
+	}
+
+	/**
+	 * 
+	 * @description 根据组合条件查询所有借款记录
+	 * @author 孙铮
+	 * @time 2014-9-1 下午12:01:22
+	 * @param invest
+	 * @return
+	 */
+	public List<Invest> getInvestsByGroupCondition(Invest invest) {
+		List<Invest> invests = this.getSqlSession().selectList(
+				this.getMapperNameSpace() + ".getInvestsByGroupCondition",
+				invest);
+		return invests;
+	}
+
+
+	public Integer findPaging4PersonalCount(Loan loan) {
+		return this.getSqlSession().selectOne(
+				this.getMapperNameSpace() + ".findPaging4PersonalCount", loan);
+	}
+
+
+
+	public Integer findByUserCount(String borrowMoneyUserID) {
+		return this.getSqlSession().selectOne(
+				this.getMapperNameSpace() + ".findByUserCount",
+				borrowMoneyUserID);
+	}
+	
+	@Override
+	public Loan getWithLock(String id) {
+			return this.getSqlSession().selectOne(
+					this.getMapperNameSpace() + ".getWithLock", id);
+	}
+
+}

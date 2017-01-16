@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.user.mapper.RedPacketMapper">
+		
+	<resultMap type="RedPacket" id="redPacketRM">
+		<id property="id" column="id" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="userId" column="user_id" />
+		<result property="openId" column="open_id" />	
+		<result property="createTime" column="create_time" />
+		<result property="deadLine" column="deadline" />
+		<result property="money" column="money" />
+		<result property="rate" column="rate" />
+		<result property="sendTime" column="send_time" />
+		<result property="sendStatus" column="send_status" />
+		<result property="shareCount" column="share_count" />
+		<result property="name" column="name" />
+		<result property="ruleId" column="rule_id" />		
+		<result property="type" column="type" />
+		<result property="usageDetail" column="usage_detail" />
+		<result property="usageRule" column="usage_rule" />
+		<result property="investMoney" column="invest_money" />
+		<result property="investRate" column="invest_rate" />	
+		<result property="investCycle" column="invest_cycle" />
+		<result property="useLoanType" column="use_loan_type"/>	
+		<result property="useTime" column="use_time"/>	
+	</resultMap>
+			
+	<resultMap type="Rule" id="ruleRM">
+		<id property="ruleId" column="rule_id" />
+		<result property="ruleName" column="name" />
+		<result property="ruleType" column="type" />			
+		<result property="sendStyle" column="send_style" />
+		<result property="getRule" column="get_rule" />
+	</resultMap>
+
+	<select id="findAll" resultMap="redPacketRM">						
+		select * from red_packet_detail where  is_available = 1 order by create_time
+	</select>
+
+	<select id="getRuleById" resultMap="ruleRM" parameterType="int">						
+		select * from red_packet_rule where id=#{id} 	
+	</select>
+	
+	<select id="get" resultMap="redPacketRM" parameterType="int">						
+		select * from red_packet_detail where id=#{id} AND is_available = 1		
+	</select>
+	
+	<select id="getRedPacketDetails" parameterType="RedPacket" resultMap="redPacketRM">						
+		select * from red_packet_detail 
+		<where>			
+				AND is_available = 1
+			<if test="id!=0">
+				AND id = #{id}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(userId)">
+				AND user_id = #{userId}
+			</if>
+
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(mobileNumber)">
+				AND mobile_number = #{mobileNumber}
+			</if>
+			
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(openId)">
+				AND open_id = #{openId}
+			</if>
+			
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(sendStatus)">
+				AND send_status = #{sendStatus}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(shareCount)">
+				AND share_count = #{shareCount}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(name)">
+				AND name = #{name}
+			</if>
+			<if test="ruleId != null and ruleId != 0">
+				AND rule_id = #{ruleId}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(type)">
+				AND type = #{type}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(usageDetail)">
+				AND usage_detail = #{usageDetail}
+			</if>
+		</where>	
+		order by deadline
+	</select>
+	
+
+	<update id="update" parameterType="RedPacket">
+		UPDATE red_packet_detail
+		<set>
+			<if test="sendStatus != null">send_status = #{sendStatus},</if>
+			<if test="useTime != null">use_time = #{useTime},</if>
+		<!-- 根据需要增加 -->
+		</set>
+		WHERE id = #{id}
+	</update>	
+	
+	<update id="updateDetailMobileNumber" parameterType="map">
+		UPDATE red_packet_detail
+		<set>
+			mobile_number = #{newNumber}
+		<!-- 根据需要增加 -->
+		</set>
+		WHERE mobile_number = #{oldNumber}
+	</update>
+	
+	<update id="updateShareMobileNumber" parameterType="map">
+		UPDATE red_packet_share
+		<set>
+			mobile = #{newNumber}
+		<!-- 根据需要增加 -->
+		</set>
+		WHERE mobile = #{oldNumber}
+	</update>
+</mapper>

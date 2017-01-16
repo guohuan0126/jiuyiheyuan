@@ -1,0 +1,26 @@
+package com.duanrong.drpay.trusteeship.service;
+
+import base.exception.TradeException;
+import base.exception.UserAccountException;
+
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+
+/**
+ * 交易业务
+ * 单笔业务查询
+ * @author xiao
+ * @datetime 2016年12月7日 上午9:15:16
+ */
+public interface TrusteeshipTradeService {
+
+	/**
+	 * 单笔业务查询
+	 * @param params
+	 * @throws TradeException
+	 * @throws UserAccountException
+	 */
+	public Generator queryTransaction(String requestNo,String transactionType);
+	
+	public String giveMoneyToBorrower(String userId, String loanId)  throws Exception;
+	
+}

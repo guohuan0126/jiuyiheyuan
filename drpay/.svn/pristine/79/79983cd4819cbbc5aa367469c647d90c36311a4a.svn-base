@@ -1,0 +1,235 @@
+package com.duanrong.drpay.business.demand.service.impl;
+
+import java.util.Date;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.StringUtils;
+import org.quartz.JobBuilder;
+import org.quartz.JobDetail;
+import org.quartz.SchedulerException;
+import org.quartz.SimpleScheduleBuilder;
+import org.quartz.SimpleTrigger;
+import org.quartz.TriggerBuilder;
+import org.quartz.TriggerKey;
+import org.quartz.impl.StdScheduler;
+import org.springframework.stereotype.Service;
+
+import util.ArithUtil;
+import util.DateUtil;
+import util.Log;
+import base.exception.AccountException;
+import base.exception.DemandException;
+import base.exception.ErrorCodeException;
+import base.exception.ParameterException;
+import base.exception.UserAccountException;
+import base.pagehelper.PageInfo;
+import base.schedule.constants.ScheduleConstants;
+import base.schedule.job.CheckDemandInOverExpectTime;
+
+import com.duanrong.drpay.business.account.service.UserAccountService;
+import com.duanrong.drpay.business.demand.DemandtreasureConstants;
+import com.duanrong.drpay.business.demand.dao.DemandtreasureTransferInDao;
+import com.duanrong.drpay.business.demand.model.Demandtreasure;
+import com.duanrong.drpay.business.demand.model.DemandtreasureTransferIn;
+import com.duanrong.drpay.business.demand.service.DemandTreasureBillService;
+import com.duanrong.drpay.business.demand.service.DemandtreasureService;
+import com.duanrong.drpay.business.demand.service.DemandtreasureTransferInService;
+import com.duanrong.drpay.config.BusinessEnum;
+import com.duanrong.drpay.config.IdUtil;
+import com.duanrong.drpay.config.ToType;
+
+@Service
+public class DemandtreasureTransferInServiceImpl implements DemandtreasureTransferInService {
+
+	final Lock lock = new ReentrantLock();
+	
+	@Resource
+	DemandtreasureTransferInDao demandtreasureTransferInDao;
+
+	@Resource
+	DemandtreasureService demandtreasureService;
+	
+	@Resource
+	DemandTreasureBillService demandTreasureBillService ;
+	
+	@Resource
+	UserAccountService userAccountService;
+	
+	@Resource
+	StdScheduler scheduler;
+	
+	@Resource
+	Log log;
+	
+	@Override
+	public PageInfo<DemandtreasureTransferIn> findPageInfo(int pageNo, int pageSize,
+			DemandtreasureTransferIn entity){
+		return demandtreasureTransferInDao.findPageInfo(pageNo, pageSize, entity);
+	}
+	
+	@Override
+	public void insert(DemandtreasureTransferIn demandtreasureTransferIn) {
+		demandtreasureTransferInDao.insert(demandtreasureTransferIn);
+	}
+
+	@Override
+	public void update(DemandtreasureTransferIn demandtreasureTransferIn) {
+		demandtreasureTransferInDao.update(demandtreasureTransferIn);
+	}
+
+	@Override
+	public void create(DemandtreasureTransferIn demandIn)throws ErrorCodeException{
+
+		/*********************** 参数校验 ***********************/
+		if (demandIn == null) {
+			log.errLog("活期宝转入create","传入的对象为空");
+			throw new ParameterException(this.getClass().getName() + ".createRechargeOrder(..)");
+		}
+		String userId = demandIn.getUserId();
+		Double actualMoney = demandIn.getMoney();
+
+		// 金额最低限制
+		if (StringUtils.isBlank(userId) || actualMoney == null ) {
+			log.errLog("活期宝转入create","某个参数为空"+ "userId:"+userId+",actualMoney:"+actualMoney);
+			throw new ParameterException() ;
+		}
+		if (ArithUtil.getDecimals(actualMoney) >2){
+			log.errLog("活期宝转入create","转入金额不符合规则"+ "userId:"+userId+",actualMoney:"+actualMoney);
+			throw new ParameterException("输入金额最多两位小数");
+		}
+
+		//判断项目可投金额
+		Demandtreasure demandtreasure =  demandtreasureService.queryAll().get(0);
+		Date date =  new Date();
+		if (DateUtil.getHour(date) < demandtreasure.getStartTime()||DateUtil.getHour(date) >= demandtreasure.getEndTime()) {
+			log.errLog("活期宝转入create", "投资时间超过开放时间,用户ID：" + userId+
+					",actualMoney:"+actualMoney+",时间:"+DateUtil.DateToString(date, "yyyy-MM-dd HH:mm:ss"));
+			throw new ErrorCodeException() ;
+		}
+		try {
+			String id = IdUtil.generateId(ToType.RCIN);
+			demandIn.setId(id);
+			demandIn.setSendedTime(new Date());
+			int status = isDemandRiseMoney(demandIn);
+			if (status == 0) {
+				log.errLog("活期宝转入金额大于项目剩余募集的金额", "用户ID为：" + userId + "，投资金额为：" + actualMoney);
+				// 投资失败，还原加息券	
+				throw new DemandException("活期宝转入金额大于项目剩余募集的金额");
+			}else if(status == -1){
+				log.errLog("账户余额不足", "用户ID为：" + userId + "，投资金额为：" + actualMoney);
+				throw new AccountException("您的账户余额不足，请充值");
+			}else{
+				try {
+					createSchule(demandIn);
+				} catch (SchedulerException e) {
+					log.errLog("投资活期宝生成调度失败", demandIn.toString());
+				}
+			}
+		} catch (Exception e) {
+			log.errLog("投资异常",e);
+			throw e;
+		}
+	}
+
+	private int isDemandRiseMoney(DemandtreasureTransferIn demandIn) {
+		return demandtreasureTransferInDao.isDemandRiseMoney(demandIn);
+	}
+
+	private void createSchule(DemandtreasureTransferIn demandIn) throws SchedulerException {
+		SimpleTrigger trigger = (SimpleTrigger) scheduler
+				.getTrigger(TriggerKey.triggerKey(
+						demandIn.getId(),
+						ScheduleConstants.TriggerGroup.CHECK_DEMANDIN_OVER_EXPECT_TIME));
+		if (trigger != null) {
+			trigger.getTriggerBuilder()
+					.withSchedule(
+							SimpleScheduleBuilder.simpleSchedule())
+					.startAt(DateUtil.addMinute(demandIn.getSendedTime(), 5)).build();
+			scheduler.rescheduleJob(trigger.getKey(), trigger);
+		} else {
+			JobDetail jobDetail = JobBuilder
+					.newJob(CheckDemandInOverExpectTime.class)
+					.withIdentity(
+							demandIn.getId(),
+							ScheduleConstants.JobGroup.CHECK_DEMANDIN_OVER_EXPECT_TIME)
+					.build();// 任务名，任务组，任务执行类
+			jobDetail.getJobDataMap().put(
+					"demandin", demandIn.getId());
+			trigger = TriggerBuilder
+					.newTrigger()
+					.forJob(jobDetail)
+					.startAt(DateUtil.addMinute(demandIn.getSendedTime(), 5))
+					.withSchedule(
+							SimpleScheduleBuilder.simpleSchedule())
+					.withIdentity(
+							demandIn.getId(),
+							ScheduleConstants.TriggerGroup.CHECK_DEMANDIN_OVER_EXPECT_TIME)
+					.build();
+			scheduler.scheduleJob(jobDetail, trigger);
+		}
+
+	}
+	@Override
+	public void syncDemandIn(DemandtreasureTransferIn demandIn, String type) throws Exception {
+		lock.lock();
+		try {
+
+			if (StringUtils.equals(type, "create")) {
+				create(demandIn);
+				log.infoLog("活期宝转入create成功", "demandIn:"+demandIn.toString());
+			}else if (StringUtils.equals(type, "S2SSuccess")) {
+				// 必须保证invest表的投资状态改为冻结
+				demandIn.setStatus(DemandtreasureConstants.TransferInStatus.FREEZE);
+				demandIn.setFreezeTime(new Date());
+				update(demandIn);
+				log.infoLog("活期宝转入成功", "demandIn:"+demandIn.toString());
+			}else if (StringUtils.equals(type, "S2SFail")) {
+				demandIn.setStatus(DemandtreasureConstants.TransferInStatus.FAIL);
+				update(demandIn);
+				//修改活期宝基本信息表，可投金额+投资金额
+				Demandtreasure demandtreasure = demandtreasureService.queryAll().get(0);
+				Double money = demandIn.getMoney();
+				demandtreasure.setAvailableMoney(demandtreasure.getAvailableMoney()+money);
+				demandtreasure.setUpdateTime(new Date());
+				demandtreasureService.update(demandtreasure);
+				//查询活期表每次更新记录最后一条，如果募集完成时间存在，将时间置空				
+//				AvailableMoneyRecord availableMoneyRecord = availableMoneyRecordService.getEndLine();
+//
+//				if(availableMoneyRecord.getEndtime()!=null){
+//					availableMoneyRecord.setEndtime(null);
+//					availableMoneyRecordService.update(availableMoneyRecord);
+//				}
+				//解冻用户本地账户
+				userAccountService.unfreeze(demandIn.getUserId(), demandIn.getMoney(), BusinessEnum.demand_in, "解冻：投资天天赚", "投资活期宝失败，资金解冻！", demandIn.getId());
+				//userMoneyService.unfreezeMoney(demandIn.getUserId(), demandIn.getMoney(),"解冻：投资天天赚","投资活期宝失败，资金解冻！");
+				log.infoLog("活期宝转入失败", "资金解冻,用户ID："+demandIn.getUserId()+",demandIn："+demandIn.toString());
+			}
+
+		}catch(UserAccountException e){
+			log.errLog("活期宝解冻", e.getCodeMessage().getErrorMessage());
+			e.printStackTrace();
+		}catch (Exception ex) {
+			throw ex;
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	@Override
+	public DemandtreasureTransferIn get(String id) {
+		return demandtreasureTransferInDao.get(id);
+	}
+
+	
+	@Override
+	public PageInfo<DemandtreasureTransferIn> pageLite(int pageNo,
+			int pageSize, DemandtreasureTransferIn in) {
+		return demandtreasureTransferInDao.pageLite(pageNo, pageSize, in);
+	}
+
+	
+	
+}

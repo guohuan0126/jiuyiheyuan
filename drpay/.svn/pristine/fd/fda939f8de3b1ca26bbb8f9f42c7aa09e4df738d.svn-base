@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.account.mapper.FreezeMapper">
+	<resultMap type="Freeze" id="FreezeRM">
+		<id property="id" column="id" />
+		<result property="description" column="description" />
+		<result property="expiredTime" column="expired_time" />
+		<result property="freezeTime" column="freeze_time" />
+		<result property="freezeUserId" column="freeze_user" />
+		<result property="money" column="money" />
+		<result property="requestNo" column="request_no" />
+		<result property="status" column="status" />
+		<result property="unFreezeTime" column="unfreeze_time" />
+		<result property="unfreezeUserId" column="unfreeze_user" />
+		<result property="userId" column="user_id" />
+		
+	</resultMap>
+	
+	<insert id="insert" parameterType="Freeze">
+		INSERT INTO fund_freeze
+		(id,
+		description,
+		expired_time, freeze_time, freeze_user, money,request_no,status,unfreeze_time,unfreeze_user,user_id)
+		VALUES
+		(#{id}, #{description},
+		#{expiredTime}, #{freezeTime}, #{freezeUserId}, #{money},#{requestNo},#{status},#{unFreezeTime},#{unfreezeUserId},#{userId})
+	</insert>
+	 <select id="pageInfo" resultMap="FreezeRM">
+		SELECT *
+		FROM fund_freeze
+		ORDER BY freeze_time DESC
+	</select>
+    <update id="update" parameterType="Freeze">
+		UPDATE fund_freeze
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(unfreezeUserId)">unfreeze_user=#{unfreezeUserId},</if>
+			<if test="unFreezeTime != null">unfreeze_time=#{unFreezeTime},</if>
+			<if test="status!=null">status=#{status}</if>
+		</set>
+		WHERE id = #{id}
+	</update>
+	<select id="get" parameterType="string" resultMap="FreezeRM">
+		SELECT *
+		FROM fund_freeze
+		WHERE id = #{id}
+	</select>
+</mapper>

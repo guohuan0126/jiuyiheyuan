@@ -1,0 +1,42 @@
+package http;
+
+import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.Map;
+
+
+
+import org.bouncycastle.util.encoders.Base64;
+
+import util.FastJsonUtil;
+
+
+public class HttpTest {
+
+	public static void main(String[] args) throws UnsupportedEncodingException{
+		
+	
+	/*String url = "http://localhost:8080/test/test.do";
+	String timestamp = Long.toString(new Date().getTime());
+
+	
+	RequestGeneratorJSON json = new RequestGeneratorJSON();
+	json.setRequestNo(IdUtil.generateId(ToType.RPWD));
+	json.setPlatformUserNo("13061533333");
+	json.setCallbackUrl(DepositoryConstants.NOTIFY_URL + NotifyURL.RPWD);
+	
+	String data = "{\"timestamp\":\"20161212154250\",\"callbackUrl\":\"https://demodrpay.duanrong.net/depository/RPWD\",\"requestNo\":\"dmsoRPWD088720161212154250177000002\",\"platformUserNo\":\"QR3M32RzeiA3brff\"}";
+	
+	System.out.println(Sign.sign(data));
+	
+
+	System.out.println(data);*/
+		
+	Map<String, String> map = new HashMap<>();
+	map.put("userId", "13261356043ppfh");
+	System.out.println(new String(Base64.encode(FastJsonUtil.objToJsonNoWriteNull(map).getBytes())));
+	
+		
+	}
+
+}

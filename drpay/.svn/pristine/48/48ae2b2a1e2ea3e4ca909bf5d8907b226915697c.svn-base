@@ -1,0 +1,157 @@
+package com.duanrong.drpay.business.transaction.service.impl;
+
+import java.io.IOException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.duanrong.drpay.business.account.service.UserAccountService;
+import com.duanrong.drpay.business.platformtransfer.model.PlatformTransfer;
+import com.duanrong.drpay.business.platformtransfer.service.PlatformTransferService;
+import com.duanrong.drpay.business.transaction.constants.GeneralTransferConstants;
+import com.duanrong.drpay.business.transaction.dao.TransactionAuthorizationDao;
+import com.duanrong.drpay.business.transaction.dao.TransactionAuthorizationDetailDao;
+import com.duanrong.drpay.business.transaction.model.TransactionAuthorization;
+import com.duanrong.drpay.business.transaction.model.TransactionAuthorizationDetail;
+import com.duanrong.drpay.business.transaction.service.GeneralTransactionService;
+import com.duanrong.drpay.business.trusteeship.service.TrusteeshipOperationService;
+import com.duanrong.drpay.config.BusinessEnum;
+import com.duanrong.drpay.config.IdUtil;
+import com.duanrong.drpay.config.ToType;
+
+import util.DateUtil;
+import util.Log;
+import base.pagehelper.PageInfo;
+
+
+@Service
+public class GeneralTransactionServiceImpl implements GeneralTransactionService {
+
+	@Resource
+	TransactionAuthorizationDao transactionAuthorizationDao;
+
+	@Resource
+	TransactionAuthorizationDetailDao transactionAuthorizationDetailDao;
+	
+	@Resource
+	Log log;
+	
+	@Resource
+	UserAccountService userAccountService;
+	
+	@Resource
+	PlatformTransferService platformTransferService;
+	
+	@Override
+	@Transactional
+	public TransactionAuthorization prepare(String userId, String targetUserId, double money) {
+		TransactionAuthorization transactionAuthorization = new TransactionAuthorization();
+		transactionAuthorization.setId(IdUtil.generateId(ToType.TSCA));
+		transactionAuthorization.setDuserId(userId);
+		Date d = new Date();
+		transactionAuthorization.setCommitTime(d);
+		transactionAuthorization.setExpired(DateUtil.addMinute(d, 5));
+		transactionAuthorization.setStatus(GeneralTransferConstants.TransferStatus.WAIT);
+		transactionAuthorization.setAmount(money);	
+		TransactionAuthorizationDetail detail = new TransactionAuthorizationDetail();
+		detail.setTransactionAuthorizationId(transactionAuthorization.getId());
+		detail.setUserId(targetUserId);
+		detail.setAmount(money);
+		detail.setStatus(GeneralTransferConstants.TransferStatus.WAIT);
+		insertGeneralTransaction(transactionAuthorization);
+		//添加平台划款入账记录
+		PlatformTransfer platformTransfer = new PlatformTransfer();
+		platformTransfer.setActualMoney(money);
+		platformTransfer.setBillType("in");
+		platformTransfer.setId(IdUtil.randomUUID());
+		platformTransfer.setOrderId(transactionAuthorization.getId());
+		platformTransfer.setType("transfer");
+		platformTransfer.setUsername(userId);
+		platformTransfer.setTime(d);
+		platformTransfer.setStatus("等待平台划款");
+		platformTransfer.setRemarks("用户向平台转账user：" + userId);
+		platformTransferService.insert(platformTransfer);	
+		return transactionAuthorization;
+	}
+
+	@Override
+	public void insertGeneralTransaction(TransactionAuthorization transactionAuthorization) {
+		transactionAuthorizationDao.insert(transactionAuthorization);
+		TransactionAuthorizationDetail detail = transactionAuthorization.getTransactionAuthorizationDetail();
+		if(detail !=null){
+			transactionAuthorizationDetailDao.insert(detail);
+		}
+	}
+	
+	@Override
+	public void authConfirm(String tranid, String flag) throws IOException {
+		
+		   TransactionAuthorization tran=transactionAuthorizationDao.get(tranid);
+		   List<TransactionAuthorizationDetail> list=readDetails(tranid);
+		   if(tran==null){
+			   return;
+		   }else{
+				
+				if ("1".equals(code)) {
+					if (GeneralTransferConstants.TransferStatus.CONFIRM.equals(flag)) {
+						tran.setStatus(GeneralTransferConstants.TransferStatus.CONFIRM);
+						transactionAuthorizationDao.update(tran);					
+						
+						if(!tran.getUserId().equals("10012401196")){
+							userAccountService.tofreeze(tran.getUserId(), tran.getAmount(), BusinessEnum.transfer, "用户："+tran.getUserId()+ "成功!转出金额",
+									"转账ID：" +  tran.getId(), tranid);
+						}
+						for(TransactionAuthorizationDetail temp:list){
+							temp.setStatus(GeneralTransferConstants.TransferStatus.CONFIRM);
+							transactionAuthorizationDetailDao.update(temp);
+							if(!temp.getUserId().equals("10012401196"))//不能是商户平台编号
+							{
+								userAccountService.transferIn(temp.getUserId(), temp.getAmount(), BusinessEnum.transfer, "用户："+temp.getUserId()+ "被用户"+tran.getDuserId()+"成功通过转账!转入金额", "转账ID：" +  tran.getId(), tran.getId());
+							}
+						}
+						
+					}else{
+						tran.setStatus(GeneralTransferConstants.TransferStatus.CANCEL);
+						transactionAuthorizationDao.update(tran);
+						
+						if(!tran.getUserId().equals("10012401196")){
+							userAccountService.unfreeze(tran.getUserId(),
+									tran.getAmount(), BusinessEnum.transfer, "取消转账解冻转账金额" , "转账ID：" +tran.getDuserId(), tran.getDuserId());
+						}
+						for(TransactionAuthorizationDetail temp:list){
+							temp.setStatus(GeneralTransferConstants.TransferStatus.CANCEL);
+							transactionAuthorizationDetailDao.update(temp);
+						}
+					}
+				
+				} 
+		}
+			}
+
+	
+
+	@Override
+	public void updateTA(TransactionAuthorization transactionAuthorization) {
+		transactionAuthorizationDao.update(transactionAuthorization);
+	}
+
+	@Override
+	public void updateTAD(
+			TransactionAuthorizationDetail transactionAuthorizationDetail) {
+		transactionAuthorizationDetailDao
+				.update(transactionAuthorizationDetail);
+	}
+	
+	@Override
+	public TransactionAuthorization readTA(String id) {
+		return transactionAuthorizationDao.get(id);
+	}
+
+
+}

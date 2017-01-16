@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.trade.demand.mapper.DateRateMapper">
+	<resultMap type="DateRate" id="DateRateRM">
+		<id property="id" column="id" />
+		<result property="rate" column="rate" />
+		<result property="date" column="date" />
+		<result property="interest" column="interest" />
+		<result property="time" column="time" />
+	</resultMap>
+	<select id="pageInfo" parameterType="map" resultMap="DateRateRM">
+		SELECT *
+		FROM Demand_treasure_dayRate where =status = 1
+
+		<if test="sdate != null and sdate != ''">
+			AND DATE_FORMAT(date,'%Y-%m')=#{sdate}
+		</if>
+		<if test="year != null and year != ''">
+			AND DATE_FORMAT(date,'%Y')=#{year}
+		</if>
+		<if test="month != null and month != ''">
+			AND DATE_FORMAT(date,'%m')=#{month}
+		</if>
+
+		ORDER BY date DESC
+	</select>
+
+
+	<!-- 获取计息利息 -->
+	<select id="getRate" resultType="double" parameterType="java.util.Date">
+		SELECT
+		rate
+		FROM
+		demand_treasure_dayRate WHERE status = 1 AND
+		date_format(date,'%Y-%m-%d') =
+		date_format(#{date},'%Y-%m-%d')-interval 1 DAY
+		limit 1
+	</select>
+
+
+	<!-- 获取最近 n天利率 -->
+	<select id="getRateDays" resultMap="DateRateRM" parameterType="int">
+		SELECT *
+		FROM
+		demand_treasure_dayRate WHERE status = 1 AND
+		date_format(date,'%Y-%m-%d')
+		&lt;= date_format(CURDATE(),'%Y-%m-%d')
+		AND
+		date_format(date,'%Y-%m-%d') >=
+		date_format(CURDATE(),'%Y-%m-%d')-interval #{days}-1 DAY
+	</select>
+</mapper>

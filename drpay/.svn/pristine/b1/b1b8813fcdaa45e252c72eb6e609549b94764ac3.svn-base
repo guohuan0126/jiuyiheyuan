@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.user.mapper.UserMapper">
+	<resultMap type="User" id="userRM">
+		<id property="userId" column="user_id" />
+		<result property="username" column="username" />
+		<result property="email" column="email" />
+		<result property="registerTime" column="register_time" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="status" column="status" />
+		<result property="password" column="password" />
+		<result property="postAddress" column="post_address" />
+		<result property="postCode" column="post_code" />
+		<result property="realname" column="realname" />
+		<result property="idCard" column="id_card" />
+		<result property="userType" column="user_type" />
+		<result property="enterpriseName" column="enterprise_name" />
+		<result property="bankLicense" column="bank_license" />
+		<result property="orgNo" column="org_no" />
+		<result property="businessLicense" column="business_license" />
+		<result property="taxNo" column="tax_no" />
+		<result property="legal" column="legal" />
+		<result property="legalIdcard" column="legal_idcard" />
+		<result property="contact" column="contact" />
+		
+		<result property="investMoneyTotal" column="invest_money_total" />
+		<result property="referrer" column="referrer" />
+		<result property="phoneNoAttribution" column="phone_no_attribution" />
+		<result property="phoneNoCity" column="phone_no_city" />
+		
+		<result property="interior" column="user_interior" />
+		<result property="isTransfer" column="is_transfer"/>
+	</resultMap>
+	<resultMap type="TrusteeshipUserInfo" id="TrusteeshipUserInfoRM">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="idCardNo" column="id_card_no" />
+		<result property="bankCardNo" column="bank_card_no" />
+		<result property="requestNo" column="request_no" />
+		<result property="time" column="time" />
+	</resultMap>
+
+	<!-- 校验身份证号是否存在 -->
+	<select id="verifyIdCard" parameterType="map" resultType="long">
+		SELECT
+		COUNT(*) FROM user
+		WHERE id_card = #{idCard} AND id != #{userId}
+	</select>
+
+
+	<select id="getUserByMobileNumber" parameterType="string"
+		resultMap="userRM">
+		SELECT *, id AS user_id
+		FROM user
+		WHERE mobile_number =
+		#{mobileNumber}
+	</select>
+
+	<select id="findAll" resultMap="userRM">
+		SELECT *, id AS user_id
+		FROM user
+	</select>
+
+
+	<select id="get" parameterType="string" resultMap="userRM">
+		SELECT *, id
+		AS user_id
+		FROM user
+		WHERE id = #{id}
+	</select>
+	<select id="getTrusteeshipUserInfo" parameterType="map" resultMap="TrusteeshipUserInfoRM">
+		SELECT *
+		FROM trusteeship_user_info
+		WHERE 1=1
+		<if test="userId != null">  
+        AND user_id like #{userId}  
+    	</if>  
+		<if test="requestNo != null">  
+        AND request_no like #{requestNo}  
+    	</if>  
+		order by id DESC LIMIT 1
+	</select>
+
+	<select id="getRoles" parameterType="string" resultType="string">
+		SELECT
+		role_id
+		FROM user_role
+		WHERE user_id = #{userId}
+	</select>
+
+	<!-- 查询用户是否有开户权限 -->
+	<select id="hasRoleByUserId" parameterType="map" resultType="int">
+		SELECT count(*) FROM user_role
+		WHERE user_id = #{userId} and role_id = #{roleId}
+	</select>
+
+
+	<insert id="addRole" parameterType="map">
+		INSERT INTO user_role
+		(user_id,role_id)
+		VALUES
+		(#{userId},#{roleId})
+	</insert>
+	<insert id="insertTrusteeshipUserInfo" parameterType="map">
+		INSERT INTO trusteeship_user_info
+		(user_id, id_card_no, bank_card_no, request_no, time)
+		VALUES
+		(#{userId}, #{idCardNo}, #{bankCardNo}, #{requestNo}, NOW())
+	</insert>
+
+	<update id="update" parameterType="user">
+		UPDATE user
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(realname)">realname=#{realname},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(idCard)">id_card=#{idCard},</if>
+			<if test="investMoneyTotal!=0">invest_money_total=#{investMoneyTotal},</if>
+		</set>
+		WHERE id = #{userId}
+	</update>
+	
+	<update id="updateUserMobileNumber" parameterType="map">
+		UPDATE user
+		<set>
+			mobile_number = #{mobileNumber}
+		<!-- 根据需要增加 -->
+		</set>
+		WHERE id = #{userId}
+	</update>
+	
+	<update id="updateReferrerMobileNumber" parameterType="map">
+		UPDATE user
+		<set>
+			referrer = #{newNumber}
+		<!-- 根据需要增加 -->
+		</set>
+		WHERE referrer = #{oldNumber}
+	</update>
+	
+	<update id="updateDetailMobileNumber" parameterType="map">
+		UPDATE red_packet_detail
+		<set>
+			mobile_number = #{newNumber}
+		<!-- 根据需要增加 -->
+		</set>
+		WHERE mobile_number = #{oldNumber}
+	</update>
+	
+	<update id="updateShareMobileNumber" parameterType="map">
+		UPDATE red_packet_share
+		<set>
+			mobile = #{newNumber}
+		<!-- 根据需要增加 -->
+		</set>
+		WHERE mobile = #{oldNumber}
+	</update>
+	
+</mapper>

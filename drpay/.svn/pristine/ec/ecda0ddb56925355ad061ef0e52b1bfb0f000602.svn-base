@@ -1,0 +1,22 @@
+package com.duanrong.drpay.trusteeship.service;
+
+import org.springframework.transaction.annotation.Transactional;
+
+import base.exception.ParameterException;
+
+import com.duanrong.drpay.jsonservice.param.PaymentParameter;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorRechargeJSON;
+
+/**
+ * 充值提现业务
+ * @author xiao
+ * @datetime 2016年12月7日 上午9:16:08
+ */
+public interface TrusteeshipPaymentService {
+
+	@Transactional
+	Generator recharge(PaymentParameter parameter) throws ParameterException;
+
+	void rechargeCallback(GeneratorRechargeJSON respData);
+}

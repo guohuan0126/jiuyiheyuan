@@ -1,0 +1,83 @@
+package com.duanrong.drpay.jsonservice.controller;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import base.error.ErrorCode;
+import base.exception.BankCardException;
+import base.exception.ParameterException;
+import base.exception.UserAccountException;
+
+import com.alibaba.druid.util.StringUtils;
+import com.duanrong.drpay.jsonservice.handler.RequestParameter;
+import com.duanrong.drpay.jsonservice.handler.View;
+import com.duanrong.drpay.jsonservice.param.PaymentParameter;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipPaymentService;
+
+@Controller
+@RequestMapping(value = "/payment", method = RequestMethod.POST)
+public class PaymentController extends BaseController {
+
+	@Resource
+	TrusteeshipPaymentService trusteeshipPaymentService;
+
+	@RequestMapping("/recharge")
+	@ResponseBody
+	public View recharge(@RequestParameter PaymentParameter parameter,
+			String source) throws ParameterException, BankCardException {
+		View view = getView(source);
+		if (parameter == null || StringUtils.isEmpty(parameter.getUserId())
+				|| parameter.getMoney() == null
+				|| parameter.getRechargeWay() == null) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator reqData = trusteeshipPaymentService.recharge(parameter
+					.getUserId(), parameter.getMoney(), parameter
+					.getRechargeWay().toString(), parameter.getAuthtradeType(),
+					parameter.getAuthtenderAmount(), parameter.getProjectNo(),
+					source);
+			if (reqData != null) {
+				reqData.setUserDevice(sourceToUserDevice(source));
+			}
+			view.setData(reqData);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+
+	/**
+	 * 用户提现
+	 * 
+	 * @param parameter
+	 * @param source
+	 * @return
+	 * @throws UserAccountException
+	 */
+	@RequestMapping("/withdraw")
+	@ResponseBody
+	public View withdraw(@RequestParameter PaymentParameter parameter,
+			String source) throws UserAccountException {
+		View view = getView();
+		if (StringUtils.isEmpty(parameter.getUserId())
+				|| parameter.getMoney() == null
+		// ||parameter.getMoney() < 100
+		) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator reqData = trusteeshipPaymentService.withdraw(
+					parameter.getUserId(), parameter.getMoney());
+			if (reqData != null) {
+				reqData.setUserDevice(sourceToUserDevice(source));
+			}
+			view.setData(reqData);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+
+}

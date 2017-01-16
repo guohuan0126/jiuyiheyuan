@@ -1,0 +1,209 @@
+package com.duanrong.drpay.jsonservice.controller;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import base.error.ErrorCode;
+import base.exception.BankCardException;
+import base.exception.ParameterException;
+import base.exception.UserAccountException;
+import base.exception.UserInfoException;
+
+import com.alibaba.druid.util.StringUtils;
+import com.duanrong.drpay.business.account.model.CgtUserAccount;
+import com.duanrong.drpay.business.account.model.UserAccount;
+import com.duanrong.drpay.jsonservice.handler.RequestParameter;
+import com.duanrong.drpay.jsonservice.handler.View;
+import com.duanrong.drpay.jsonservice.param.UserAccountParameter;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipAccountService;
+
+/**
+ * 用户账户服务
+ * 
+ * @author xiao
+ * @datetime 2016年12月7日 下午6:42:06
+ */
+@Controller
+@RequestMapping(value = "/account", method = RequestMethod.POST)
+public class UserAccountController extends BaseController {
+
+	@Resource
+	TrusteeshipAccountService trusteeshipAccountService;
+
+	/**
+	 * 开户（绑卡注册）
+	 * 
+	 * @param params
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 * @throws ParameterException
+	 * @throws BankCardException
+	 */
+	@RequestMapping(value = "/createAccount")
+	@ResponseBody
+	public View createAccount(@RequestParameter UserAccountParameter params)
+			throws UserInfoException, UserAccountException, ParameterException,
+			BankCardException {
+		View view = getView();
+		if (params == null || StringUtils.isEmpty(params.getUserId())
+				|| StringUtils.isEmpty(params.getRealName())
+				|| StringUtils.isEmpty(params.getIdCardType().toString())
+				|| StringUtils.isEmpty(params.getUserRole().toString())
+				|| StringUtils.isEmpty(params.getIdCardNo())
+				|| StringUtils.isEmpty(params.getBankcardNo())
+				|| StringUtils.isEmpty(params.getMobile())) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator data = trusteeshipAccountService.createAccount(params);
+			view.setData(data);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+
+	/**
+	 * 查询存管通用户信息
+	 * 
+	 * @param userId
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 */
+	@RequestMapping(value = "/queryCgtUserInfo")
+	@ResponseBody
+	public View queryCgtUserInfo(@RequestParameter String userId)
+			throws UserInfoException, UserAccountException {
+		View view = getPcView();
+		if (StringUtils.isEmpty(userId)) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			CgtUserAccount data = trusteeshipAccountService.queryCgtUserInfo(userId);
+			view.setData(data);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+
+	/**
+	 * 查询本地用户账户信息
+	 * 
+	 * @param userId
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 */
+	@RequestMapping(value = "/queryLocalUserInfo")
+	@ResponseBody
+	public View queryLocalUserInfo(@RequestParameter String userId)
+			throws UserInfoException, UserAccountException {
+		View view = getView();
+		if (StringUtils.isEmpty(userId)) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			UserAccount account = trusteeshipAccountService
+					.queryLocalUserInfo(userId);
+			view.setData(account);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+
+	/**
+	 * 存管通交易密码校验
+	 * 
+	 * @param userId
+	 * @param templateType
+	 *            提示信息（或信息模板类型）
+	 * @return
+	 * @throws UserInfoException
+	 * @throws UserAccountException
+	 */
+	@RequestMapping(value = "/checkPassword")
+	@ResponseBody
+	public View checkPassword(@RequestParameter String userId,
+			@RequestParameter String templateType) throws UserAccountException,
+			UserInfoException {
+		View view = getView();
+		if (StringUtils.isEmpty(userId) || StringUtils.isEmpty(templateType)) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator reqData = trusteeshipAccountService.checkPassword(userId,
+					templateType);
+			view.setData(reqData);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+
+	/**
+	 * 个人绑卡
+	 * 
+	 * @param parameter
+	 * @return
+	 * @throws UserInfoException 
+	 * @throws UserAccountException 
+	 */
+	@RequestMapping(value = "/bindCard")
+	@ResponseBody
+	public View bindCard(@RequestParameter UserAccountParameter parameter) throws UserInfoException, UserAccountException {
+		View view = getView();
+		if (parameter == null || StringUtils.isEmpty(parameter.getUserId())
+				|| StringUtils.isEmpty(parameter.getMobile())
+				|| StringUtils.isEmpty(parameter.getBankcardNo())) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator reqData = trusteeshipAccountService.bindCard(parameter.getUserId(), parameter.getMobile(), parameter.getBankcardNo());
+			view.setData(reqData);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+	
+	/**
+	 * 修改密码
+	 * @param userId
+	 * @return
+	 * @throws UserInfoException 
+	 * @throws UserAccountException 
+	 */
+	@RequestMapping("/resetPassword")
+	@ResponseBody
+	public View resetPassword(@RequestParameter String userId) throws UserAccountException, UserInfoException {
+		View view = getView();
+		if (StringUtils.isEmpty(userId)) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator reqData = trusteeshipAccountService.resetPassword(userId);
+			view.setData(reqData);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+	
+	/**
+	 * 解绑银行卡（直连）
+	 * @param userId
+	 * @return
+	 * @throws UserInfoException 
+	 * @throws UserAccountException 
+	 */
+	@RequestMapping("/unBindCard")
+	@ResponseBody
+	public View unBindCard(@RequestParameter String userId) throws UserAccountException, UserInfoException {
+		View view = getView();
+		if (StringUtils.isEmpty(userId)) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator generator = trusteeshipAccountService.unBindCard(userId);
+			view.setData(generator);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+}

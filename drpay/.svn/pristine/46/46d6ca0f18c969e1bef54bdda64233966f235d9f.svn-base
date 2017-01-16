@@ -1,0 +1,46 @@
+package com.duanrong.drpay.trusteeship.controller;
+
+import java.io.IOException;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+
+import util.FastJsonUtil;
+import base.exception.UserAccountException;
+
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorWithdrawJSON;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipPaymentService;
+
+/**
+ * 主动通知接口
+ * 适用于业务：
+ * 提现到账
+ * 企业用户开户成功通知
+ * 
+ * @author zjypp
+ *
+ */
+@Controller
+@RequestMapping(value="/depository", method = RequestMethod.POST)
+public class NotifyController {
+
+	@Resource
+	TrusteeshipPaymentService trusteeshipPaymentService;
+	
+	@RequestMapping(value="/notify.do")
+	public void notify(HttpServletRequest request, HttpServletResponse response) throws IOException{
+		
+		response.getWriter().write("SUCCESS");
+		String respData = request.getParameter("respData");
+		try {
+			trusteeshipPaymentService.withdrawCallback((GeneratorWithdrawJSON)FastJsonUtil.jsonToObj(respData, GeneratorWithdrawJSON.class));
+		} catch (UserAccountException e) {
+			e.printStackTrace();
+		}
+	}
+}

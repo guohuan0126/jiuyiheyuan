@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.demand.mapper.DemandtreasureMapper">
+	<resultMap type="Demandtreasure" id="DemandtreasureRM">
+		<id property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="availableMoney" column="available_money" />
+		<result property="sumMoney" column="sum_money" />
+		<result property="investMaxmoney" column="invest_max_Money" />
+		<result property="outMaxMoney" column="out_max_money" />
+		<result property="createTime" column="createTime" />
+		<result property="updateTime" column="last_update_time" />
+		<result property="loanInfo" column="loan_info" />
+		
+		<result property="startTime" column="start_time" />
+		<result property="endTime" column="end_time" />
+		<result property="outNumber" column="out_number" />
+	</resultMap>
+	
+   <select id="findAll" resultMap="DemandtreasureRM">
+		SELECT *
+		FROM Demand_treasure
+	</select>
+	<insert id="insert" parameterType="Demandtreasure">
+		INSERT INTO Demand_treasure(id, name, available_money, invest_max_Money,createTime,last_update_time) VALUES(#{id}, #{name}, #{availableMoney}, #{investMaxmoney}, #{createTime}, #{updateTime})
+	</insert>
+	
+	<!-- 根据Id修改权限 -->
+	<update id="update" parameterType="Demandtreasure">
+		UPDATE Demand_treasure 
+		<set>
+			<if test="availableMoney != null">
+				available_money=#{availableMoney},
+			</if>
+			<if test="investMaxmoney != null">
+				invest_max_Money=#{investMaxmoney},
+			</if>
+			<if test="updateTime != null">
+				last_update_time =#{updateTime},
+			</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	
+	<!-- 根据条件获得用户投资金额 -->
+	<select id="getWithLock" resultMap="DemandtreasureRM">
+		SELECT * FROM Demand_treasure for update
+	</select>
+</mapper>

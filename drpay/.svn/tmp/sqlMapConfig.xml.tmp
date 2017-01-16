@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+	PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<settings>
+		<setting name="logImpl" value="STDOUT_LOGGING" />
+	</settings>
+
+	<!-- 别名统一使用类名 -->
+	<typeAliases>
+	
+		<!-- 系统配置  -->
+		<typeAlias type="com.duanrong.drpay.business.config.model.Config" alias="Config"/>
+		
+		<!-- 用户相关 -->
+		<typeAlias type="com.duanrong.drpay.business.user.model.AuthInfo" alias="AuthInfo"/>
+		<typeAlias type="com.duanrong.drpay.business.user.model.User" alias="User"/>
+		<typeAlias type="com.duanrong.drpay.business.user.model.RedPacket" alias="RedPacket"/>
+		<typeAlias type="com.duanrong.drpay.business.user.model.Rule" alias="Rule"/>
+		<typeAlias type="com.duanrong.drpay.business.user.model.Rule" alias="Rule"/>
+		
+
+		<!-- 账户相关 -->
+		<typeAlias type="com.duanrong.drpay.business.account.model.BankCard" alias="BankCard"/>
+		<typeAlias type="com.duanrong.drpay.business.account.model.PaymentAccount" alias="PaymentAccount"/>
+		<typeAlias type="com.duanrong.drpay.business.account.model.PaymentBill" alias="PaymentBill"/>
+		<typeAlias type="com.duanrong.drpay.business.account.model.PlatformAccount" alias="PlatformAccount"/>
+		<typeAlias type="com.duanrong.drpay.business.account.model.PlatformBill" alias="PlatformBill"/>
+		<typeAlias type="com.duanrong.drpay.business.account.model.UserAccount" alias="UserAccount"/>
+		<typeAlias type="com.duanrong.drpay.business.account.model.UserBill" alias="UserBill"/>
+		<typeAlias type="com.duanrong.drpay.business.account.model.UnbindCardInfo" alias="UnbindCardInfo"/>
+		<typeAlias type="com.duanrong.drpay.business.account.model.Freeze" alias="Freeze" />
+
+		<!-- 支付相关 -->
+		<typeAlias type="com.duanrong.drpay.business.payment.model.PaymentAdvancefund" alias="PaymentAdvancefund"/>
+		<typeAlias type="com.duanrong.drpay.business.payment.model.PaymentBankChannel" alias="PaymentBankChannel"/>
+		<typeAlias type="com.duanrong.drpay.business.payment.model.PaymentBankInfo" alias="PaymentBankInfo"/>
+		<typeAlias type="com.duanrong.drpay.business.payment.model.PaymentChannel" alias="PaymentChannel"/>
+		<typeAlias type="com.duanrong.drpay.business.payment.model.Recharge" alias="Recharge"/>
+		<typeAlias type="com.duanrong.drpay.business.payment.model.PaymentUserRelation" alias="PaymentUserRelation"/>
+		<typeAlias type="com.duanrong.drpay.business.payment.model.WithdrawCash" alias="WithdrawCash"/>
+
+		<!-- 项目相关 -->
+		<typeAlias type="com.duanrong.drpay.business.loan.model.Loan" alias="Loan"/>
+
+		<!-- 交易相关  -->
+		<typeAlias type="com.duanrong.drpay.business.autoinvest.model.AutoInvest" alias="AutoInvest"/>
+		<typeAlias type="com.duanrong.drpay.business.invest.model.Invest" alias="Invest"/>
+		<typeAlias type="com.duanrong.drpay.business.invest.model.InvestRedpacket" alias="InvestRedpacket"/>
+		<typeAlias type="com.duanrong.drpay.business.repay.model.RepayInvest" alias="RepayInvest"/>
+		<typeAlias type="com.duanrong.drpay.business.repay.model.Repay" alias="Repay"/>
+		<typeAlias type="com.duanrong.drpay.business.platformtransfer.model.PlatformTransfer" alias="PlatformTransfer"/>
+		<typeAlias type="com.duanrong.drpay.business.transaction.model.TransactionAuthorization" alias="TransactionAuthorization"/>
+		<typeAlias type="com.duanrong.drpay.business.transaction.model.TransactionAuthorizationDetail" alias="TransactionAuthorizationDetail"/>
+	
+		
+		<!-- 活期宝 -->
+		<typeAlias type="com.duanrong.drpay.business.demand.model.DemandTreasureBill" alias="DemandTreasureBill"/>
+		<typeAlias type="com.duanrong.drpay.business.demand.model.Demandtreasure" alias="Demandtreasure"/>
+		<typeAlias type="com.duanrong.drpay.business.demand.model.DemandtreasureTransferIn" alias="DemandtreasureTransferIN"/>
+		<typeAlias type="com.duanrong.drpay.business.demand.model.DemandtreasureTransferOut" alias="DemandtreasureTransferOut"/>
+		<typeAlias type="com.duanrong.drpay.business.demand.model.AvailableMoneyRecord" alias="AvailableMoneyRecord"/>
+		<typeAlias type="com.duanrong.drpay.business.demand.model.DateRate" alias="DateRate"/>
+		<typeAlias type="com.duanrong.drpay.business.demand.model.DemandtreasureGuOut" alias="DemandtreasureGuOut"/>
+		<typeAlias type="com.duanrong.drpay.business.demand.model.DemandtreasureGuOutDetail" alias="DemandtreasureGuOutDetail"/>
+		<typeAlias type="com.duanrong.drpay.business.demand.model.DemandTreasureLoan" alias="DemandTreasureLoan"/>
+		<!-- 其他  -->
+		<typeAlias type="com.duanrong.drpay.business.trusteeship.model.TrusteeshipOperation" alias="TrusteeshipOperation"/>
+		<typeAlias type="com.duanrong.drpay.business.user.model.TrusteeshipUserInfo" alias="TrusteeshipUserInfo" />
+	</typeAliases>
+	<plugins>
+	
+		<!-- com.github.pagehelper为PageHelper类所在包名 -->
+		<plugin interceptor="base.pagehelper.PageHelper">
+			<property name="dialect" value="mysql" />
+			<!-- 该参数默认为false -->
+			<!-- 设置为true时，会将RowBounds第一个参数offset当成pageNum页码使用 -->
+			<!-- 和startPage中的pageNum效果一样 -->
+			<property name="offsetAsPageNum" value="true" />
+			<!-- 该参数默认为false -->
+			<!-- 设置为true时，使用RowBounds分页会进行count查询 -->
+			<property name="rowBoundsWithCount" value="true" />
+			<!-- 设置为true时，如果pageSize=0或者RowBounds.limit = 0就会查询出全部的结果 -->
+			<!-- （相当于没有执行分页查询，但是返回结果仍然是Page类型） -->
+			<property name="pageSizeZero" value="true" />
+			<!-- 3.3.0版本可用 - 分页参数合理化，默认false禁用 -->
+			<!-- 启用合理化时，如果pageNum<1会查询第一页，如果pageNum>pages会查询最后一页 -->
+			<!-- 禁用合理化时，如果pageNum<1或pageNum>pages会返回空数据 -->
+			<property name="reasonable" value="true" />
+			<!-- 3.5.0版本可用 - 为了支持startPage(Object params)方法 -->
+			<!-- 增加了一个`params`参数来配置参数映射，用于从Map或ServletRequest中取值 -->
+			<!-- 可以配置pageNum,pageSize,count,pageSizeZero,reasonable,不配置映射的用默认值 -->
+			<property name="params" value="pageNum=start;pageSize=limit;pageSizeZero=zero;reasonable=heli;count=contsql" />
+		</plugin>
+	</plugins>
+
+</configuration>

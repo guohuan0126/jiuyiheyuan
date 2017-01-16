@@ -1,0 +1,40 @@
+package com.duanrong.drpay.business.payment.service.impl;
+
+import com.duanrong.drpay.business.payment.dao.WithdrawCashDao;
+import com.duanrong.drpay.business.payment.model.WithdrawCash;
+import com.duanrong.drpay.business.payment.service.WithdrawCashService;
+import org.springframework.stereotype.Service;
+import util.DateUtil;
+import util.Week;
+
+import javax.annotation.Resource;
+import java.util.Date;
+
+@Service
+public class WithdrawCashServiceImpl implements WithdrawCashService {
+
+	@Resource
+	WithdrawCashDao withdrawCashDao;
+
+
+	@Override
+	public WithdrawCash get(String id) {
+		return withdrawCashDao.get(id);
+	}
+
+	@Override
+	public Date getArrivalDate(Date date){
+		Date tomorrow = DateUtil.addDay(date, 2);//明天
+		Integer i = withdrawCashDao.getHolidayDate(tomorrow,"holiday");
+		if(Week.SATURDAY!=DateUtil.getWeek(tomorrow)&&Week.SUNDAY!=DateUtil.getWeek(tomorrow)&&i==0){
+			return tomorrow;
+		}
+		//法定上班日
+		Integer j = withdrawCashDao.getHolidayDate(tomorrow,"work");
+		if(j>0){
+			return tomorrow;
+		}
+		return getArrivalDate(tomorrow);
+	}
+
+}

@@ -1,0 +1,16 @@
+package com.duanrong.drpay.business.invest.dao;
+
+import java.util.List;
+
+import base.dao.BaseDao;
+
+import com.duanrong.drpay.business.invest.model.Invest;
+
+public interface InvestDao extends BaseDao<Invest> {
+
+	public Double getInvestSumMoneyByLoan(String loanId);
+
+	public Double getInvestSumMoneyByUser(String userId, String loanId);
+
+	public List<Invest> getInvestLoan(Invest invest);
+}

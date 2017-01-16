@@ -1,0 +1,61 @@
+package com.duanrong.drpay.jsonservice.controller;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import base.error.ErrorCode;
+import base.exception.ParameterException;
+import base.exception.PaymentAccountException;
+import base.exception.UserAccountException;
+
+import com.alibaba.druid.util.StringUtils;
+import com.duanrong.drpay.jsonservice.handler.RequestParameter;
+import com.duanrong.drpay.jsonservice.handler.View;
+import com.duanrong.drpay.jsonservice.param.PaymentParameter;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipPaymentService;
+
+@Controller
+@RequestMapping(value = "/payment", method = RequestMethod.POST)
+public class PaymentController extends BaseController {
+
+	@Resource
+	TrusteeshipPaymentService trusteeshipPaymentService;
+
+	@RequestMapping("/recharge")
+	@ResponseBody
+	public View recharge(@RequestParameter PaymentParameter parameter)
+			throws ParameterException {
+		View view = getView();
+		if (parameter == null || StringUtils.isEmpty(parameter.getUserId())
+				|| parameter.getAmount() == null
+				|| parameter.getRechargeWay() == null) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator reqData = trusteeshipPaymentService.recharge(parameter);
+			view.setData(reqData);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+
+	@RequestMapping("/withdraw")
+	@ResponseBody
+	public View withdraw(@RequestParameter String userId,
+			@RequestParameter Double money) throws UserAccountException{
+		View view = getView();
+		if (StringUtils.isEmpty(userId)|| money == null || money < 100) {
+			view.setError(ErrorCode.ParametersError);
+		} else {
+			Generator reqData = trusteeshipPaymentService.withdraw(userId,money);
+			view.setData(reqData);
+			view.setError(ErrorCode.SUCCESS);
+		}
+		return view;
+	}
+
+}

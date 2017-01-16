@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.platformtransfer.mapper.PlatformTransferMapper">
+	<resultMap type="PlatformTransfer" id="platformTransferRM">
+		<id property="id" column="id" />
+		<result property="username" column="username" />
+		<result property="time" column="time" />
+		<result property="successTime" column="success_time" />
+		<result property="status" column="status" />
+		<result property="actualMoney" column="actual_money" />
+		<result property="remarks" column="remarks" />
+		<result property="type" column="type"/>
+		<result property="loanId" column="loan_id"/>
+		<result property="repayId" column="repay_id"/>
+		<result property="orderId" column="order_id"/>
+	</resultMap>
+
+	<insert id="insert" parameterType="PlatformTransfer">
+		INSERT INTO platform_transfer
+		(id,order_id,username,time,
+		success_time,status,actual_money, remarks, type)
+		VALUES
+		(#{id},#{orderId},#{username},#{time},#{successTime},#{status},#{actualMoney},#{remarks}, #{type})
+	</insert>
+
+	<insert id="insertBatch" parameterType="list">
+		INSERT INTO platform_transfer
+		(id,order_id,username,time,
+		success_time,status,actual_money, remarks, type)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+			(#{item.id},#{item.orderId},#{item.userId},#{item.time},#{item.successTime},#{item.status},#{item.actualMoney},#{item.remarks}, #{item.type})
+		</foreach>
+	</insert>
+
+
+	<!-- 根据常用loan表中字段进行组合条件查询 -->
+	<select id="getPlatformTransfer" resultMap="platformTransferRM"
+		parameterType="PlatformTransfer">
+		SELECT * FROM
+		platform_transfer
+		<where>
+			<if test="id != null and id != ''">
+				AND id =#{id}
+			</if>
+			<if test="username != null and username != ''">
+				AND username = #{username}
+			</if>
+			<if test="successTime != null and successTime != ''">
+				AND success_time =#{successTime}
+			</if>
+			<if test="time != null and time != ''">
+				AND time =#{time}
+			</if>
+			<if test="status != null and status != ''">
+				AND status in (${status})
+			</if>
+			<if test="actualMoney != null and actualMoney != ''">
+				AND actual_money =#{actualMoney}
+			</if>
+			<if test="remarks != null and remarks != ''">
+				AND remarks =#{remarks}
+			</if>
+			<if test="orderId != null and orderId != ''">
+				AND order_id =#{orderId}
+			</if>
+			<if test="type != null and type != ''">
+				AND type =#{type}
+			</if>
+		</where>
+	</select>
+
+	<!--  -->
+	<update id="update" parameterType="PlatformTransfer">
+		UPDATE platform_transfer
+		<set>
+			<if test="username != null">username=#{username},</if>
+			<if test="successTime != null">success_time=#{successTime},</if>
+			<if test="time != null">time=#{time},</if>
+			<if test="status != null">status=#{status},</if>
+			<if test="actualMoney != null">actual_money=#{actualMoney},</if>
+			<if test="remarks != null">remarks=#{remarks},</if>
+		</set>
+		WHERE id=#{id};
+	</update>
+</mapper>

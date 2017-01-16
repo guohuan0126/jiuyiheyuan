@@ -1,0 +1,172 @@
+package com.duanrong.drpay.business.payment.service.impl;
+
+import com.duanrong.drpay.business.account.PaymentEnum;
+import com.duanrong.drpay.business.account.PlatformAccountEnum;
+import com.duanrong.drpay.business.account.service.PaymentAccountService;
+import com.duanrong.drpay.business.account.service.PlatformAccountService;
+import com.duanrong.drpay.business.account.service.UserAccountService;
+import com.duanrong.drpay.business.payment.dao.PaymentBankChannelDao;
+import com.duanrong.drpay.business.payment.dao.RechargeDao;
+import com.duanrong.drpay.business.payment.model.PaymentChannel;
+import com.duanrong.drpay.business.payment.model.Recharge;
+import com.duanrong.drpay.business.payment.service.RechargeService;
+import com.duanrong.drpay.business.user.UserConstants;
+import com.duanrong.drpay.config.BusinessEnum;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import util.ArithUtil;
+import util.Log;
+
+import javax.annotation.Resource;
+
+import java.util.Date;
+import java.util.List;
+
+@Service
+public class RechargeServiceImpl implements RechargeService {
+
+	@Resource
+	RechargeDao rechargeDao;
+	
+	@Resource
+	PaymentBankChannelDao paymentBankChannelDao;
+
+	@Resource
+	UserAccountService userAccountService;
+
+	@Resource
+	PaymentAccountService paymentAccountService;
+
+	@Resource
+	PlatformAccountService platformAccountService;
+
+	@Resource
+	Log log;
+
+	@Override
+	public List<Recharge> getByCondition(Recharge recharge) {
+		return rechargeDao.getByCondition(recharge);
+	}
+
+	@Override
+	public void insert(Recharge recharge) {
+		rechargeDao.insert(recharge);
+	}
+
+	@Override
+	public Recharge get(String id) {
+		return rechargeDao.get(id);
+	}
+
+	@Override
+	public void rechargeSuccess(String rechargeId) {
+		// 充值时Callback返回的没有充值类型
+		rechargeSuccess(rechargeId, null);
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void rechargeSuccess(String rechargeId, String type) {
+		// 采用分布式锁, 防止分布式环境下并发问题
+		/*if (DRJedisDLock.getDLock("recharge" + rechargeId, rechargeId)) {*/
+			try {
+				Recharge recharge = rechargeDao.getWithLock(rechargeId);
+				if (StringUtils.equals(recharge.getStatus(),
+						UserConstants.RechargeStatus.WAIT_PAY)) {
+					// 修改状态为成功
+					recharge.setStatus(UserConstants.RechargeStatus.SUCCESS);
+					// 设置充值成功时间
+					recharge.setSuccessTime(new Date());
+					// 充值方式
+					// recharge.setType(type);
+					String userId = recharge.getUserId();
+					Double money = recharge.getActualMoney();
+					String operatorInfo = "充值成功";
+					double fee = 0;
+					try {
+						double rate = 0.0;
+						PaymentChannel channel = paymentBankChannelDao
+								.getChannelByCode(recharge.getPaymentId());
+						if (StringUtils.equalsIgnoreCase(
+								recharge.getType(), "quick")) {
+							rate = channel.getRateQuick();
+						} else {
+							rate = channel.getRateGateway();
+						}
+						
+						fee = ArithUtil.round(recharge.getActualMoney() * rate,
+								2);
+						if(recharge.getPaymentId().equals(PaymentEnum.Baofoo.toString())&&recharge.getType().equals("quick")) fee = fee < 2 ? 2 : fee;
+						recharge.setFee(fee);
+					} catch (Exception e) {
+						e.printStackTrace();
+						log.errLog("计算充值手续费失败", recharge.toString()
+								+ ",Excetpion:" + e);
+					}
+					rechargeDao.update(recharge);
+					// 往user_bill表中插入值并计算余额
+					
+					// FIXME 新账户充值
+					userAccountService.transferIn(userId, money,
+							BusinessEnum.recharge, operatorInfo, operatorInfo,
+							rechargeId);
+					// 记录充值手续费
+					try {
+						platformAccountService.transferOut(PlatformAccountEnum.PLATFORM_SYS, fee,
+								BusinessEnum.fee, "充值手续费", rechargeId);
+					} catch (Exception e) {
+						e.printStackTrace();
+						log.errLog("转出充值手续费失败", e);
+					}	
+					
+					// 非易宝充值，需要更新充值账户
+					if (recharge.getPaymentId() != null) {
+						try {
+							switch (recharge.getPaymentId()) {
+							case "Baofoo":
+								paymentAccountService.transferIn(
+										PaymentEnum.Baofoo, money,
+										BusinessEnum.recharge, "充值成功",
+										rechargeId);
+								paymentAccountService.transferOut(
+										PaymentEnum.Baofoo, fee,
+										BusinessEnum.fee, "充值手续费",
+										rechargeId);
+								break;
+							case "JDpay":
+								paymentAccountService.transferIn(
+										PaymentEnum.JDpay, money,
+										BusinessEnum.recharge, "充值成功",
+										rechargeId);
+								paymentAccountService.transferOut(
+										PaymentEnum.JDpay, fee,
+										BusinessEnum.fee, "充值手续费",
+										rechargeId);
+								break;
+							}
+							
+							System.out.println("****************充值通道完成：" + recharge.getPaymentId());
+
+						} catch (Exception e) {
+							e.printStackTrace();
+							log.errLog("支付账户充值失败", e);
+						}
+					}
+
+				}
+			} catch (Exception ex) {
+				log.errLog("处理充值失败", ex);
+			}/* finally {
+				DRJedisDLock.releaseDLock("recharge" + rechargeId, rechargeId);
+			}*/
+		//}
+	}
+
+	@Override
+	public void update(Recharge recharge) {
+		rechargeDao.update(recharge);
+	}
+}

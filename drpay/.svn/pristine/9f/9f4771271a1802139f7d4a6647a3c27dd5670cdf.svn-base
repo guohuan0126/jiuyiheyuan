@@ -1,0 +1,74 @@
+package base.schedule.job;
+
+import java.util.List;
+
+import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.springframework.util.CollectionUtils;
+
+import util.Log;
+import util.SpringBeanUtil;
+
+import com.duanrong.drpay.business.invest.InvestConstants;
+import com.duanrong.drpay.business.invest.model.Invest;
+import com.duanrong.drpay.business.invest.service.InvestService;
+import com.duanrong.drpay.config.BusinessEnum;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorDetailJSON;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorJSON;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipTradeService;
+
+public class CheckInvestOverExpectTime implements Job {
+
+	private InvestService investService;
+	
+	private TrusteeshipTradeService trusteeshipTradeService;
+
+	private Log log;
+
+	/**
+	 * 处理五分钟调度
+	 * 1、判断状态是否为等待确认
+	 * 2、去单笔业务查询是否成功
+	 * 3、修改本地数据
+	 */
+	@Override
+	public void execute(JobExecutionContext context)
+			throws JobExecutionException {
+		investService = (InvestService) SpringBeanUtil
+				.getBeanByType(InvestService.class);
+		trusteeshipTradeService = (TrusteeshipTradeService) SpringBeanUtil
+				.getBeanByType(TrusteeshipTradeService.class);
+		String id = context.getJobDetail().getJobDataMap().getString("invest");
+//		log = SpringBeanUtil.getBeanByType(Log.class);
+//		log.infoLog("投资qrtz", "调度开始" + id);
+		Invest invest = investService.query(id);
+		if (InvestConstants.InvestStatus.WAIT_AFFIRM.equals(invest.getStatus())) {
+			queryInvest(invest);
+		}
+	}
+
+	private void queryInvest(Invest invest){
+		try {
+			Generator generator = trusteeshipTradeService.queryTransaction(invest.getId(), BusinessEnum.invest.name());
+			GeneratorJSON data = generator.getRespData();
+			List<GeneratorDetailJSON> details = data.getRecords();
+			if ("0".equals(data.getCode()) && !CollectionUtils.isEmpty(details)) {
+				GeneratorDetailJSON detail = details.get(0);
+				if ("FREEZED".equals(detail.getStatus())||"INIT".equals(detail.getStatus())) {
+					invest.setStatus(InvestConstants.InvestStatus.BID_SUCCESS);
+					investService.update(invest);
+				}else if ("UNFREEZED".equals(detail.getStatus())||"FAIL".equals(detail.getStatus())) {
+						investService.failInvest(invest);
+				}else{//异常ERROR
+						investService.failInvest(invest);
+				}
+			}else{
+				investService.failInvest(invest);
+			}
+		} catch (Exception e) {
+			log.errLog("投资qrtz", "投资ID"+invest.getId()+",Exception:"+e);
+		}
+	}
+}

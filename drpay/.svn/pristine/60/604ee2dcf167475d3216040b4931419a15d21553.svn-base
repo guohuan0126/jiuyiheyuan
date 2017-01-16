@@ -1,0 +1,31 @@
+package com.duanrong.drpay.business.platformtransfer.service.impl;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+
+import com.duanrong.drpay.business.platformtransfer.dao.PlatformTransferDao;
+import com.duanrong.drpay.business.platformtransfer.model.PlatformTransfer;
+import com.duanrong.drpay.business.platformtransfer.service.PlatformTransferService;
+
+@Service
+public class PlatformTransferServiceImpl implements PlatformTransferService {
+
+	@Resource
+	PlatformTransferDao platformTransferDao;
+
+	@Override
+	public void save(PlatformTransfer platformTransfer) {
+		platformTransferDao.insert(platformTransfer);
+	}
+
+	@Override
+	public void insertBatch(List<PlatformTransfer> list) {
+		if(!list.isEmpty()){
+			platformTransferDao.insertBatch(list);
+		}
+	}
+
+}

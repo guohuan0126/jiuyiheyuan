@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.loan.mapper.LoanMapper">
+	<resultMap type="Loan" id="loanRM">
+		<id property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="type" column="type" />
+		<result property="contract" column="risk_instruction" />
+		<result property="totalmoney" column="money" />
+		<result property="investOriginMoney" column="min_invest_money" />
+		<result property="increaseMoney" column="asc_invest_money" />
+		<result property="borrowMoneyUserID" column="user_id" />
+		<result property="rate" column="rate" />
+		<result property="loanType" column="loan_type" />
+		<result property="loanGuranteeFee" column="loan_gurantee_fee" />
+		<result property="operationType" column="operation_type" />
+		<result property="repayType" column="repay_type" />
+		<result property="beforeRepay" column="before_repay" />
+		<result property="deadline" column="deadline" />
+		<result property="day" column="day" />
+		<result property="expectTime" column="expect_time" />
+		<result property="textItem" column="company_name" />
+		<result property="status" column="status" />
+		<result property="commitTime" column="commit_time" />
+		<result property="giveMoneyTime" column="give_money_time" />
+		<result property="contractName" column="loan_instruction" />
+		<result property="maxInvestMoney" column="max_invest_money" />
+		<result property="symbol" column="symbol" />
+		<result property="newbieEnjoy" column="newbieEnjoy" />
+		<result property="interestRule" column="interest_rule" />
+		<result property="giveMoneyOperationTime" column="give_money_operation_time" />
+		<result property="loanAllowanceInterest" column="loan_allowance_interest" />
+		<result property="organizationExclusive" column="organization_exclusive" />
+		<result property="loanSpacialType" column="loan_special_type" />
+		<result property="isBeforeRepay" column="is_before_repay" />
+		<result property="whetherInvested" column="whether_invested" />
+		<result property="finishTime" column="finish_time" />
+		<result property="stock" column="stock" />
+		<result property="standardOrProject" column="standard_or_project" />
+		<result property="drpayStatus" column="drpay_status" />
+	</resultMap>
+
+	<!-- 子标 -->
+	<resultMap type="SubLoan" id="SubLoanRM">
+		<result property="id" column="id" />
+		<result property="loanId" column="loan_id" />
+		<result property="subloanId" column="subloan_id" />
+		<result property="subloanName" column="subloan_name" />
+		<result property="money" column="money" />
+		<result property="subloanStatus" column="subloan_status" />
+		<result property="allocationMoney" column="allocation_money" />
+		<result property="drpayStatus" column="drpay_status" />
+	</resultMap>
+
+	<!-- 根据理财包id获取车贷子标 -->
+	<select id="getVehicle" parameterType="string" resultMap="SubLoanRM">
+		select
+		* from loan_vehicle where allocation_money > 0 and status=1 and
+		loan_id = #{loanId} order by money desc
+	</select>
+
+	<!-- 根据理财包id获取农贷子标 -->
+	<select id="getAgriculture" parameterType="string" resultMap="SubLoanRM">
+		select * from agriculture_fork_loans where allocation_money > 0 and loan_id =
+		#{loanId} order by money desc
+	</select>
+
+	<!-- 根据理财包id获取车贷子标 -->
+	<select id="getVehicleByGroupCondition" parameterType="SubLoan"
+		resultMap="SubLoanRM">
+		select * from loan_vehicle where status=1 
+		and drpay_status = #{drpayStatus} and
+		loan_id = #{loanId} order by money desc
+	</select>
+
+	<!-- 根据理财包id获取农贷子标 -->
+	<select id="getAgricultureByGroupCondition" parameterType="SubLoan"
+		resultMap="SubLoanRM">
+		select * from agriculture_fork_loans where
+		drpay_status = #{drpayStatus} and loan_id = #{loanId} order by money
+		desc
+	</select>
+
+	<!-- 批量更新子标可分配金额 -->
+	<update id="updateBatchVehicle" parameterType="java.util.List">
+		<foreach collection="list" item="item" index="index" open=""
+			close="" separator=";">
+			update loan_vehicle set allocation_money=
+			#{item.allocationMoney}
+			where id = #{item.id}
+		</foreach>
+	</update>
+
+	<!-- 批量更新子标可分配金额 -->
+	<update id="updateBatchAgricultureForkLoans" parameterType="java.util.List">
+		<foreach collection="list" item="item" index="index" open=""
+			close="" separator=";">
+			update agriculture_fork_loans set
+			allocation_money=
+			#{item.allocationMoney}
+			where id = #{item.id}
+		</foreach>
+	</update>
+
+	<!-- 批量更新子标可分配金额 -->
+	<update id="updateVehicle" parameterType="SubLoan">
+		update loan_vehicle set subloan_status=#{subloanStatus}
+		where loan_id = #{loanId} 
+		<if test="subloanId != null and subloanId != '' ">
+			AND subloan_id = #{subloanId}
+		</if>
+	</update>
+
+	<!-- 批量更新子标可分配金额 -->
+	<update id="updateAgricultureForkLoans" parameterType="SubLoan">
+		update agriculture_fork_loans set subloan_status=#{subloanStatus}
+		where loan_id = #{loanId}
+		<if test="subloanId != null and subloanId != '' ">
+			AND subloan_id = #{subloanId}
+		</if>
+	</update>
+
+	<!-- 根据id查询loan记录 -->
+	<select id="get" resultMap="loanRM" parameterType="string">
+		SELECT loan.*,
+		SUM(invest.money) AS sum_money
+		FROM loan, invest
+		WHERE invest.loan_id =
+		loan.id
+		AND invest.`status` IN ('等待确认','投标成功','还款中','完成')
+		AND loan.id =
+		#{id}
+	</select>
+
+	<!-- 根据常用loan表中字段进行组合条件查询 -->
+	<select id="getLoansByGroupCondition" resultMap="loanRM"
+		parameterType="loan">
+		SELECT * FROM
+		loan
+		<where>
+			<if test="id != null and id != ''">
+				AND id =#{id}
+			</if>
+			<if test="status != null and status != ''">
+				AND status = #{status}
+			</if>
+			<if test="borrowMoneyUserID != null and borrowMoneyUserID != ''">
+				AND user_id =#{borrowMoneyUserID}
+			</if>
+			<if test="name != null and name != ''">
+				AND name =#{name}
+			</if>
+			<if test="rate != null and rate != ''">
+				AND rate =#{rate}
+			</if>
+			<if test="deadline != null and deadline != ''">
+				AND deadline =#{deadline}
+			</if>
+			<if test="day != null and day != ''">
+				AND day =#{day}
+			</if>
+			<if test="textItem != null and textItem != ''">
+				AND company_name =#{textItem}
+			</if>
+			<if test="operationType != null and operationType != ''">
+				AND operation_type =#{operationType}
+			</if>
+			<if test="beforeRepay != null and beforeRepay != ''">
+				AND before_repay =#{beforeRepay}
+			</if>
+			<if test="loanType != null and loanType != ''">
+				AND loan_type =#{loanType}
+			</if>
+		</where>
+	</select>
+
+	<update id="update" parameterType="loan">
+		UPDATE loan
+		<set>
+			<if test="name!=null">name=#{name},</if>
+			<if test="type!=null">type=#{type},</if>
+			<if test="contract!=null">risk_instruction=#{contract},</if>
+			<if test="totalmoney!=null">money=#{totalmoney},</if>
+			<if test="investOriginMoney!=null">min_invest_money=#{investOriginMoney},</if>
+			<if test="increaseMoney!=null">asc_invest_money=#{increaseMoney},</if>
+			<if test="borrowMoneyUserID!=null">user_id=#{borrowMoneyUserID},</if>
+			<if test="rate!=null">rate=#{rate},</if>
+			<if test="loanType!=null">loan_type=#{loanType},</if>
+			<if test="loanGuranteeFee!=null">loan_gurantee_fee=#{loanGuranteeFee},</if>
+			<if test="operationType!=null">operation_type=#{operationType},</if>
+			<if test="repayType!=null">repay_type=#{repayType},</if>
+			<if test="beforeRepay!=null">before_repay=#{beforeRepay},</if>
+			<if test="deadline!=null">deadline=#{deadline},</if>
+			<if test="day!=null">day=#{day},</if>
+			<if test="expectTime!=null">expect_time=#{expectTime},</if>
+			<if test="textItem!=null">company_name=#{textItem},</if>
+			<if test="status!=null">status=#{status},</if>
+			<if test="commitTime!=null">commit_time=#{commitTime},</if>
+			<if test="giveMoneyTime!=null">give_money_time=#{giveMoneyTime},</if>
+			<if test="contractName!=null">loan_instruction=#{contractName},</if>
+			<if test="isBeforeRepay!=0">is_before_repay=#{isBeforeRepay},</if>
+			<if test="finishTime != null">finish_time=#{finishTime},</if>
+		</set>
+		WHERE id=#{id};
+	</update>
+
+	<!-- 根据条件获得用户投资金额 -->
+	<select id="getWithLock" parameterType="String" resultMap="loanRM">
+		SELECT * FROM loan WHERE id = #{id} for update
+	</select>
+</mapper>

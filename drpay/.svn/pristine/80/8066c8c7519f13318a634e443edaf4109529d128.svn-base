@@ -1,0 +1,81 @@
+package com.duanrong.drpay.trusteeship.service.impl;
+
+import java.util.Date;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
+import util.ArithUtil;
+import util.DateUtil;
+import util.Log;
+import base.exception.TradeException;
+import base.exception.UserAccountException;
+
+import com.duanrong.drpay.business.invest.InvestConstants;
+import com.duanrong.drpay.business.invest.model.Invest;
+import com.duanrong.drpay.business.repay.model.Repay;
+import com.duanrong.drpay.business.repay.service.RepayService;
+import com.duanrong.drpay.config.IdUtil;
+import com.duanrong.drpay.config.ToType;
+import com.duanrong.drpay.trusteeship.constants.TrusteeshipServer;
+import com.duanrong.drpay.trusteeship.helper.model.BizType;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorPreTransactionJSON;
+import com.duanrong.drpay.trusteeship.helper.model.NotifyURL;
+import com.duanrong.drpay.trusteeship.helper.service.TrusteeshipService;
+import com.duanrong.drpay.trusteeship.service.TrusteeshipRepayService;
+
+@Service
+public class TrusteeshipRepayServiceImpl implements TrusteeshipRepayService {
+
+	@Resource
+	TrusteeshipService trusteeshipService;
+
+	@Resource
+	RepayService repayService;
+
+	@Resource
+	Log log;
+
+	@Override
+	public Generator createRepay(String repayId) throws UserAccountException, TradeException {
+		boolean flag = false;
+		// 本地创建还款记录
+		Repay repay = repayService.prepare(repayId);
+		double repayMoney = 0.0;
+		List<Invest> invests = repay.getLoan().getInvests();
+		if (!CollectionUtils.isEmpty(invests)) {
+			for (Invest invest : invests) {
+				if (invest.getStatus().equals(
+						InvestConstants.InvestStatus.REPAYING)) {
+					Double money = ArithUtil.round(repayService
+							.queryRepayMoney(invest, repay, new Date(),
+									flag), 2);
+					repayMoney += money;
+					if (money < 0.01) {
+						log.infoLog("还款利息小于0.01", "投资ID" + invest.getId()
+								+ "，金额" + money.toString());
+						continue;
+					}
+				}
+			}
+		}
+		// 调用用户预处理，生成去银行存管的参数,返回前台跳转
+		GeneratorPreTransactionJSON json = new GeneratorPreTransactionJSON();
+		json.setRequestNo(IdUtil.generateId(ToType.REPA));
+		json.setCallbackUrl(NotifyURL.REPAY);
+		json.setPlatformUserNo(repay.getUserId());
+		json.setProjectNo(repay.getLoanId());
+		json.setAmount(repayMoney);
+		json.setBizType(BizType.REPAYMENT);
+		json.setExpired(DateUtil.DateToString(
+				DateUtil.addMinute(new Date(), 5), "yyyy-MM-dd HH:mm:ss"));
+		json.setRemark("借款人还款");
+		return trusteeshipService.create(json,
+				TrusteeshipServer.USER_PRE_TRANSACTION);
+	}
+
+}

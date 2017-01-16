@@ -1,0 +1,119 @@
+package com.duanrong.drpay.trusteeship.helper.model;
+
+import java.util.Date;
+
+import util.DateUtil;
+
+public class GeneratorPreTransactionJSON extends GeneratorJSON {
+
+	// 预处理业务类型
+	private BizType bizType;
+
+	// 超过此时间即页面过期
+	private Date expired;
+
+	/************* 非必填字段 ************/
+
+	// 预处理流水号
+	private String preTransactionNo;
+
+	// 预备使用的红包金额，只记录不冻结，仅限投标业务类型
+	private Double preMarketingAmount;
+	// 购买债转份额，业务类型为购买债权时，需要传此参数
+	private String share;
+	// 债权出让请求流水号，只有购买债权业务需填此参数
+	private String creditsaleRequestNo;
+	// 备注
+	private String remark;
+
+	// 收款方平台用户编号（目前只能是平台账户）
+	private String targetPlatformUserNo;
+
+	// 扣费说明
+	private String customDefine;
+
+	public String getPreTransactionNo() {
+		return preTransactionNo;
+	}
+
+	public void setPreTransactionNo(String preTransactionNo) {
+		this.preTransactionNo = preTransactionNo;
+	}
+
+	public BizType getBizType() {
+		return bizType;
+	}
+
+	public void setBizType(BizType bizType) {
+		this.bizType = bizType;
+	}
+
+	public Double getPreMarketingAmount() {
+		return preMarketingAmount;
+	}
+
+	public void setPreMarketingAmount(Double preMarketingAmount) {
+		this.preMarketingAmount = preMarketingAmount;
+	}
+
+	public String getExpired() {
+		if (expired != null)
+			return DateUtil.DateToString(this.expired, "yyyyMMddHHmmss");
+		return null;
+	}
+
+	public void setExpired(Date expired) {
+		this.expired = expired;
+	}
+
+	public String getRemark() {
+		return remark;
+	}
+
+	public void setRemark(String remark) {
+		this.remark = remark;
+	}
+
+	public String getShare() {
+		return share;
+	}
+
+	public void setShare(String share) {
+		this.share = share;
+	}
+
+	public String getCreditsaleRequestNo() {
+		return creditsaleRequestNo;
+	}
+
+	public void setCreditsaleRequestNo(String creditsaleRequestNo) {
+		this.creditsaleRequestNo = creditsaleRequestNo;
+	}
+
+	public String getTargetPlatformUserNo() {
+		return targetPlatformUserNo;
+	}
+
+	public void setTargetPlatformUserNo(String targetPlatformUserNo) {
+		this.targetPlatformUserNo = targetPlatformUserNo;
+	}
+
+	public String getCustomDefine() {
+		return customDefine;
+	}
+
+	public void setCustomDefine(String customDefine) {
+		this.customDefine = customDefine;
+	}
+
+	@Override
+	public String toString() {
+		return "GeneratorPreTransactionJSON [bizType=" + bizType + ", expired="
+				+ expired + ", preTransactionNo=" + preTransactionNo
+				+ ", preMarketingAmount=" + preMarketingAmount + ", share="
+				+ share + ", creditsaleRequestNo=" + creditsaleRequestNo
+				+ ", remark=" + remark + ", targetPlatformUserNo="
+				+ targetPlatformUserNo + ", customDefine=" + customDefine + "]";
+	}
+
+}

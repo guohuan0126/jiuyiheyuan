@@ -1,0 +1,25 @@
+package com.duanrong.drpay.business.payment.service;
+
+import java.util.Date;
+
+import org.springframework.transaction.annotation.Transactional;
+
+import base.exception.UserAccountException;
+
+import com.duanrong.drpay.business.payment.model.WithdrawCash;
+
+public interface WithdrawCashService {
+
+	WithdrawCash get(String id);
+
+	Date getArrivalDate(Date date);
+
+	void insert(WithdrawCash withdrawCash);
+
+	@Transactional(rollbackFor = Exception.class)
+	void successWithdraw(String withdrawCashId)throws UserAccountException;
+
+	@Transactional(rollbackFor = Exception.class)
+	void failWithdraw(String withdrawCashId)throws UserAccountException;
+
+}

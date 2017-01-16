@@ -1,0 +1,37 @@
+package com.duanrong.drpay.jsonservice.param;
+
+
+public class InvestParameter extends Parameter {
+	private static final long serialVersionUID = -4708630027509232450L;
+	
+	private String userId;
+	private String loanId;
+	private double money;
+	private int redpacketId;
+	public String getUserId() {
+		return userId;
+	}
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+	public String getLoanId() {
+		return loanId;
+	}
+	public void setLoanId(String loanId) {
+		this.loanId = loanId;
+	}
+	public double getMoney() {
+		return money;
+	}
+	public void setMoney(double money) {
+		this.money = money;
+	}
+	public int getRedpacketId() {
+		return redpacketId;
+	}
+	public void setRedpacketId(int redpacketId) {
+		this.redpacketId = redpacketId;
+	}
+	
+	
+}

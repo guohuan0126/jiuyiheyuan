@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.repay.mapper.RepayInvestSubLoanMapper">
+	<resultMap type="RepayInvestSubLoan" id="repayInvestSubLoanRM">
+		<id property="id" column="id" />
+		<result property="repayInvestSubLoanId" column="repay_invest_subLoan_id" />
+		<result property="repaySubLoanId" column="repay_subLoan_id" />
+		<result property="investId" column="invest_id" />
+		<result property="corpus" column="corpus" />
+		<result property="interest" column="interest" />
+		<result property="userId" column="user_id" />
+		<result property="status" column="status" />
+		<result property="repayTime" column="repay_time" />
+		<result property="transactionTime" column="transaction_time" />
+		<result property="failReason" column="fail_reason" />
+		<result property="operator" column="operator" />
+	</resultMap>
+	
+	<insert id="insert" parameterType="RepayInvestSubLoan">
+		INSERT INTO repay_invest_subloan
+		(repay_invest_subLoan_id, repay_subLoan_id,
+		invest_id, corpus,interest,user_id,status,repay_time)
+		VALUES(#{repayInvestSubLoanId},#{repaySubLoanId},#{investId},
+		#{corpus},#{interest},#{userId},#{status},#{repayTime})
+	</insert>
+	<update id="update" parameterType="RepayInvestSubLoan">
+		update repay_invest_subloan
+		<set>
+			<if test="status != null">status=#{status},</if>
+			<if test="repayTime != null">repay_time=#{repayTime},</if>
+			<if test="transactionTime != null">transaction_time=#{transactionTime},</if>
+			<if test="failReason!=null">fail_reason=#{failReason},</if>
+			<if test="operator!=null">operator=#{operator},</if>
+		</set>
+		WHERE repay_invest_subLoan_id = #{repayInvestSubLoanId}
+	</update>
+	
+	<select id="getRepayInvestSubLoans" parameterType="string" resultMap="repayInvestSubLoanRM">
+		select * from repay_invest_subloan where repay_subloan_id = #{repaySubLoanId} and status = 0
+	</select>
+	
+	<delete id="deleteRepayInvestSubLoans" parameterType="string">
+		delete from repay_invest_subloan  WHERE repay_subloan_id = #{repaySubLoanId}
+	</delete>
+	
+	<select id="getCorpusAndInterestByInvestId" parameterType="string" resultType="map">
+		select IFNULL(SUM(corpus), 0) as corpus,IFNULL(SUM(interest), 0)  as interest 
+		from repay_invest_subloan 
+		where invest_id = #{investId} and status = 0
+	</select>
+	
+	<select id="getRepayInvestSubLoan" parameterType="string" resultMap="repayInvestSubLoanRM">
+		select * from repay_invest_subloan where repay_invest_subLoan_id = #{repayInvestSubLoanId}
+	</select>
+</mapper>

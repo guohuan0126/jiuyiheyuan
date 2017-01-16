@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.repay.mapper.RepayInvestMapper">
+	<resultMap type="RepayInvest" id="repayInvestRM">
+		<id property="id" column="id" />
+		<result property="repayId" column="repay_id" />
+		<result property="corpus" column="corpus" />
+		<result property="interest" column="interest" />
+		<result property="investAllowanceInterest" column="invest_allowance_interest" />
+		<result property="investUserId" column="invest_user_id" />
+		<result property="investId" column="invest_id" />
+		<result property="rewardMoney" column="reward_money" />
+		<result property="status" column="status" />
+		<result property="repayTime" column="repay_time" />
+	</resultMap>
+
+	<select id="getByCondition" parameterType="RepayInvest" resultMap="repayInvestRM">
+		SELECT * FROM repay_invest
+		WHERE repay_id =
+		#{repayId} AND invest_user_id = #{investUserId} AND invest_id = #{investId}
+	</select>
+
+	<select id="getCountByRepayIdAndStatus" parameterType="string" resultType="int">
+		SELECT count(*) FROM repay_invest
+		WHERE status = 0 and repay_id =
+		#{repayId}
+	</select>
+	
+
+	<insert id="insert" parameterType="RepayInvest">
+		INSERT INTO repay_invest
+		(repay_id, corpus, interest,invest_allowance_interest,
+		invest_user_id, invest_id,reward_money)
+		VALUES(#{repayId},#{corpus},#{interest},#{investAllowanceInterest},#{investUserId},
+		#{investId},#{rewardMoney})
+	</insert>
+
+	<update id="update" parameterType="RepayInvest">
+		UPDATE repay_invest
+		<set>
+			<if test="corpus != null and corpus != 0">corpus = #{corpus},</if>
+			<if test="interest != null and interest != 0">interest = #{interest},</if>
+			<if test="rewardMoney != null and rewardMoney != 0">reward_money = #{rewardMoney},</if>
+			<if test="investAllowanceInterest != null and investAllowanceInterest != 0">invest_allowance_interest = #{investAllowanceInterest},</if>
+			<if test="status != null and status != 0">status = #{status},</if>
+			<if test="repayTime != null">repay_time = #{repayTime},</if>	
+		</set>
+		WHERE repay_id =
+		#{repayId} AND invest_user_id = #{investUserId} AND invest_id = #{investId}
+	</update>
+	
+	<delete id="deleteRepayInvests" parameterType="string">
+		delete from repay_invest  WHERE repay_id = #{repayId}
+	</delete>
+</mapper>

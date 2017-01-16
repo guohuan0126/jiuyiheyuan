@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+			http://www.springframework.org/schema/beans/spring-beans-4.0.xsd 
+			http://www.springframework.org/schema/context 
+			http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+
+	<!-- 引入属性文件，方便配置内容修改 -->
+	<context:property-placeholder location="classpath:jdbc.properties" />
+
+	<!-- 数据库链接 -->
+	<bean id="dataSourceRW" class="com.alibaba.druid.pool.DruidDataSource"
+		destroy-method="close">
+		<!-- 基本属性 url、user、password -->
+		<property name="url" value="${jdbc_url}" />
+		<property name="username" value="${jdbc_username}" />
+		<property name="password" value="${jdbc_password}" />
+
+		<!-- 配置初始化大小、最小、最大 -->
+		<property name="initialSize" value="${druid_initialSize}" />
+		<property name="minIdle" value="${druid_minIdle}" />
+		<property name="maxActive" value="${druid_maxActive}" />
+
+		<!-- 配置获取连接等待超时的时间 -->
+		<property name="maxWait" value="${druid_maxWait}" />
+
+		<property name="validationQuery" value="SELECT 'x'" />
+		<property name="testWhileIdle" value="true" />
+
+		<!-- 打开PSCache，并且指定每个连接上PSCache的大小 -->
+		<property name="poolPreparedStatements" value="true" />
+		<property name="maxPoolPreparedStatementPerConnectionSize"
+			value="100" />
+
+		<!-- 密码加密 -->
+		<property name="filters" value="config" />
+		<property name="connectionProperties" value="config.decrypt=true" />
+	</bean>
+
+
+		<!-- 数据库链接 -->
+	<bean id="dataSourceR" class="com.alibaba.druid.pool.DruidDataSource"
+		destroy-method="close">
+		<!-- 基本属性 url、user、password -->
+		<property name="url" value="${jdbc_url_read}" />
+		<property name="username" value="${jdbc_username_read}" />
+		<property name="password" value="${jdbc_password_read}" />
+
+		<!-- 配置初始化大小、最小、最大 -->
+		<property name="initialSize" value="${druid_initialSize}" />
+		<property name="minIdle" value="${druid_minIdle}" />
+		<property name="maxActive" value="${druid_maxActive}" />
+
+		<!-- 配置获取连接等待超时的时间 -->
+		<property name="maxWait" value="${druid_maxWait}" />
+
+		<property name="validationQuery" value="SELECT 'x'" />
+		<property name="testWhileIdle" value="true" />
+
+		<!-- 打开PSCache，并且指定每个连接上PSCache的大小 -->
+		<property name="poolPreparedStatements" value="true" />
+		<property name="maxPoolPreparedStatementPerConnectionSize"
+			value="100" />
+
+		<!-- 密码加密 -->
+		<property name="filters" value="config" />
+		<property name="connectionProperties" value="config.decrypt=true" />
+	</bean>
+
+
+	 <!-- 动态数据源 -->  
+   <bean id="dynamicDataSource" class="base.dataSource.DynamicDataSource">  
+       <!-- 通过key-value关联数据源 -->  
+       <property name="targetDataSources">  
+           <map>  
+               <entry value-ref="dataSourceRW" key="dataSourceKeyRW"></entry>  
+               <entry value-ref="dataSourceR" key="dataSourceKeyR"></entry>  
+           </map>  
+       </property>  
+       <property name="defaultTargetDataSource" ref="dataSourceRW" />      
+   </bean>
+
+	<!-- spring整合mybatis -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dynamicDataSource" />
+		<property name="configLocation" value="classpath:sqlMapConfig.xml" />
+		<!-- 自动扫描映射文件 -->
+		<property name="mapperLocations"
+			value="classpath:com/duanrong/drpay/business/*/mapper/*Mapper.xml" />
+        <property name="configurationProperties">
+            <props>
+                <prop key="dialect">mysql</prop>
+            </props>
+        </property>
+	</bean>	
+	
+	<!-- 整合jdbcTemplate -->
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dynamicDataSource" />
+	</bean>	
+
+</beans>

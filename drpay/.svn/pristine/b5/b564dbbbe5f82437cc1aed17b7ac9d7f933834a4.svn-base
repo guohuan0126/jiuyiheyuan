@@ -1,0 +1,12 @@
+#存管通 url
+requestUrl=http\://220.181.25.233:8602/bha-neo-app/lanmaotech/
+#网关接口
+gateway=gateway/
+#直连接口
+service=service/
+#下载接口
+download=download/
+#商户号
+platformNo=3000000066
+#服务器通知
+notifyUrl=https\://demodrpay.duanrong.com/depository/

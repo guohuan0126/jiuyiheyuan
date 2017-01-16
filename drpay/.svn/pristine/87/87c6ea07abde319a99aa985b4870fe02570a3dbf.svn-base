@@ -1,0 +1,43 @@
+package com.duanrong.drpay.trusteeship.helper.service.impl;
+
+import util.FastJsonUtil;
+
+import com.duanrong.drpay.trusteeship.constants.TrusteeshipConstants;
+import com.duanrong.drpay.trusteeship.constants.TrusteeshipServer;
+import com.duanrong.drpay.trusteeship.helper.httpclient.TrusteeshipHttpClient;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorJSON;
+import com.duanrong.drpay.trusteeship.helper.model.UserDevice;
+import com.duanrong.drpay.trusteeship.helper.service.TrusteeshipService;
+import com.duanrong.drpay.trusteeship.helper.sign.Sign;
+
+/**
+ * DepositoryService 默认实现类
+ * 
+ * @author xiao
+ * @datetime 2016年12月12日 上午9:32:12
+ */
+public abstract class AbstractTrusteeshipService implements TrusteeshipService {
+
+	@Override
+	public Generator create(GeneratorJSON json, TrusteeshipServer server) {
+		return new Generator(TrusteeshipConstants.REQUEST_URL
+				+ TrusteeshipConstants.GATEWAY, server,
+				Sign.sign(json.toJSON()), json);
+	}
+
+	@Override
+	public Generator execute(GeneratorJSON json, TrusteeshipServer server,
+			Class<? extends GeneratorJSON> GeneratorJSONClass) {
+		String reqData = json.toJSON();
+		String sign = Sign.sign(reqData);
+		return new Generator(TrusteeshipConstants.REQUEST_URL
+				+ TrusteeshipConstants.SERVICE, server, UserDevice.PC, sign,
+				json, (GeneratorJSON) FastJsonUtil.jsonToObj(
+						TrusteeshipHttpClient.send(
+								TrusteeshipConstants.REQUEST_URL
+										+ TrusteeshipConstants.SERVICE, server,
+								reqData, sign), GeneratorJSONClass));
+	}
+
+}

@@ -1,0 +1,49 @@
+package com.duanrong.drpay.trusteeship.helper.service;
+
+import com.duanrong.drpay.trusteeship.constants.TrusteeshipServer;
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+import com.duanrong.drpay.trusteeship.helper.model.GeneratorJSON;
+
+/**
+ * 存管业务接口，定义存管业务模板
+ * 
+ * @author xiao
+ * @datetime 2016年12月6日 下午5:17:37
+ */
+public interface TrusteeshipService {
+
+	/**
+	 * 创建请求参数数组 1、sign 签名 2、reqUrl 请求地址 3、serviceName 请求接口 4、reqData 请求数据(json)
+	 * 5、platformNo 平台编号 6、userDevice 终端设备类型
+	 * 
+	 * @param obj
+	 * @return
+	 */
+	Generator create(GeneratorJSON json, TrusteeshipServer server);
+
+	/**
+	 * 直连接口执行方法
+	 * 
+	 * @param sign
+	 * @param reqData
+	 * @return
+	 */
+	Generator execute(GeneratorJSON json, TrusteeshipServer server,
+					  Class<? extends GeneratorJSON> generatorJSONClass);
+
+	/**
+	 * callback
+	 * 
+	 * @param data
+	 * @return
+	 */
+	String callback(String data);
+
+	/**
+	 * s2sCallback
+	 * 
+	 * @param data
+	 * @return
+	 */
+	String notify(String data);
+}

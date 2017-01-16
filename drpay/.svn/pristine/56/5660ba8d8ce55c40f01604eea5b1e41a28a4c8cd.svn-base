@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.demand.mapper.DemandtreasureTransferInMapper">
+	<resultMap type="DemandtreasureTransferIN" id="DemandtreasureTransferInRM">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="money" column="money" />
+		<result property="sendedTime" column="sended_time" />
+		<result property="freezeTime" column="freeze_time" />
+		<result property="confirmTime" column="confirm_time" />
+		<result property="transferWay" column="transfer_way" />
+		<result property="status" column="status" />
+		<association property="user" javaType="user">
+			<id property="userId" column="uid" />
+			<result property="username" column="username" />
+			<result property="mobileNumber" column="mobile_number" />
+		</association>
+	</resultMap>
+	
+	<!-- 分页查询投资人详情  -->
+	<select id="findPageInfo" parameterType="DemandtreasureTransferIN" resultMap="DemandtreasureTransferInRM">
+		SELECT i.*,u.*,u.id as uid FROM demand_treasure_transferIn i,user u
+		<where>
+				i.user_id = u.id
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(userId)">
+				and user_id=#{userId}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(status)">
+				and i.status=#{status}
+			</if>
+		</where>
+		order by confirm_time DESC
+	</select>
+	
+	 <!-- 通过ID流水号查询 -->
+	<select id="get" parameterType="String" resultMap="DemandtreasureTransferInRM">
+		SELECT *
+		FROM demand_treasure_transferIn
+		WHERE id = #{id}
+	</select>
+	
+	
+	<select id="pageLite" parameterType="DemandtreasureTransferIN" resultMap="DemandtreasureTransferInRM">
+		SELECT * FROM demand_treasure_transferIn 
+		WHERE status in ('sended', 'freeze', 'confirm') AND user_id = #{userId} order by sended_time desc
+	</select>
+	
+	<!--  -->
+	<insert id="insert" parameterType="DemandtreasureTransferIN">
+		INSERT INTO demand_treasure_transferIn
+			(id, user_id, money,sended_time, freeze_time,Confirm_time,transfer_way,status) 
+		VALUES
+			(#{id}, #{userId}, #{money}, #{sendedTime}, #{freezeTime}, #{confirmTime}, #{transferWay}, #{status})
+	</insert>
+	
+	<!-- 根据Id修改权限 -->
+	<update id="update" parameterType="DemandtreasureTransferIN">
+		UPDATE demand_treasure_transferIn 
+		<set>
+			<if test="status != null">
+				status=#{status},
+			</if>
+			<if test="freezeTime != null">
+				freeze_time=#{freezeTime},
+			</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	
+	<!-- 安状态获取用户转出总额 -->
+	<select id="getInMoneySumByStatus" parameterType="map" resultType="double">
+		SELECT SUM(money) FROM demand_treasure_transferin
+		WHERE (status = 'sended' or status = 'freeze')  AND user_id = #{userId}
+	</select>
+	
+	
+	<!-- 判断是否满标 -->
+	<select id="isDemandRiseMoney" statementType="CALLABLE"
+		parameterType="DemandtreasureTransferIN" resultType="int">
+		call demand_in_v3 (
+		#{id, mode=IN, jdbcType=VARCHAR},
+		#{userId, mode=IN, jdbcType=VARCHAR},
+		#{money, mode=IN,jdbcType=DOUBLE},
+		#{transferWay, mode=IN,jdbcType=VARCHAR})
+	</select>
+	
+</mapper>

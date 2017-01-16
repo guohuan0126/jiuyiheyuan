@@ -1,0 +1,135 @@
+package com.duanrong.drpay.business.demand.service.impl;
+
+import java.util.Date;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+
+import com.duanrong.drpay.business.demand.DemandtreasureConstants;
+import com.duanrong.drpay.business.demand.dao.DemandTreasureBillDao;
+import com.duanrong.drpay.business.demand.dao.DemandtreasureTransferInDao;
+import com.duanrong.drpay.business.demand.dao.DemandtreasureTransferOutDao;
+import com.duanrong.drpay.business.demand.model.DemandTreasureBill;
+import com.duanrong.drpay.business.demand.model.DemandtreasureTransferOut;
+import com.duanrong.drpay.business.demand.service.DemandTreasureBillService;
+
+import util.ArithUtil;
+import util.DateUtil;
+import base.pagehelper.PageInfo;
+
+
+/**
+ * @author xiao
+ * @date 2015年7月20日下午2:41:22
+ */
+@Service
+public class DemandTreasureBillServiceImpl implements DemandTreasureBillService {
+
+	@Resource
+	DemandTreasureBillDao demandTreasureBillDao;
+
+	@Resource
+	DemandtreasureTransferInDao demandtreasureTransferInDao;
+
+	@Resource
+	DemandtreasureTransferOutDao demandtreasureTransferOutDao;
+
+	@Override
+	public double queryDemandTreasureInMoney(String userId) {
+
+		return demandTreasureBillDao.getDemandTreasureMoneyByType(userId,
+				DemandtreasureConstants.DemandBillStatus.TRANIN);
+	}
+
+	@Override
+	public double queryDemandTreasureOutMoney(String userId) {
+		return demandTreasureBillDao.getDemandTreasureMoneyByType(userId,
+				DemandtreasureConstants.DemandBillStatus.TRANOUT);
+	}
+
+	@Override
+	public double queryDemandTreasureInterestMoney(String userId) {
+		return demandTreasureBillDao.getDemandTreasureMoneyByType(userId,
+				DemandtreasureConstants.DemandBillStatus.INTEREST);
+	}
+
+	@Override
+	public double queryDemandTreasureOutInterestMoney(String userId) {
+		return demandTreasureBillDao.getDemandTreasureMoneyByType(userId,
+				DemandtreasureConstants.DemandBillStatus.OUTINTEREST);
+	}
+
+	@Override
+	public List<String> getDemandTreasureUser() {
+
+		return demandTreasureBillDao.getDemandTreasureUser();
+	}
+
+	@Override
+	public PageInfo<DemandTreasureBill> pageLite(int pageNo, int pageSize,
+			DemandTreasureBill bill) {
+		PageInfo<DemandTreasureBill>  pageInfo = demandTreasureBillDao.pageLite(pageNo, pageSize, bill);
+		List<DemandTreasureBill> list = pageInfo.getResults();
+		if (list!=null&&!list.isEmpty()) {//显示成昨日的利息
+			for (int i = 0; i < list.size(); i++) {
+				DemandTreasureBill b = list.get(i);
+				Date date = DateUtil.addDay(b.getCreateTime(), 0);
+				b.setCreateTime(date);
+				
+			}
+		}
+		return pageInfo;
+	}
+
+	@Override
+	public double getDemandTreasureMoney(String userId) {
+		return ArithUtil.round(queryDemandTreasureInMoney(userId)
+				- queryDemandTreasureOutMoney(userId)
+				+ queryDemandTreasureInterestMoney(userId)
+				- queryDemandTreasureOutInterestMoney(userId), 2);
+	}
+
+	@Override
+	public double getDemandLaterInterest(String userId) {
+		return ArithUtil.round(
+				demandTreasureBillDao.getDemandLaterInterest(userId), 2);
+	}
+
+	@Override
+	public double queryuserDemandInSumMoney(String userId) {
+
+		return ArithUtil.round(queryDemandTreasureInMoney(userId)
+				- queryDemandTreasureOutMoney(userId)
+				+ demandtreasureTransferInDao.getuserDemandInSumMoney(userId),
+				2);
+	}
+
+	@Override
+	public double getDemandAvlidTreasureMoney(String userId) {
+		return ArithUtil.round(queryDemandTreasureInMoney(userId)
+				- queryDemandTreasureOutMoney(userId), 2);
+	}
+
+	@Override
+	public double getDemandAvlidInterestMoney(String userId) {
+		return ArithUtil.round(queryDemandTreasureInterestMoney(userId)
+				- queryDemandTreasureOutInterestMoney(userId), 2);
+	}
+
+	@Override
+	public DemandtreasureTransferOut queryDemandOutTreasureMoney(String userId) {
+
+		return demandtreasureTransferOutDao.queryOutSumMoney(
+				userId, DemandtreasureConstants.TransferOutStatus.SENDED);
+	}
+
+	@Override
+	public double queryDemandInTreasureMoney(String userId) {
+
+		return ArithUtil.round(
+				demandtreasureTransferInDao.getuserDemandInSumMoney(userId), 2);
+	}
+
+}

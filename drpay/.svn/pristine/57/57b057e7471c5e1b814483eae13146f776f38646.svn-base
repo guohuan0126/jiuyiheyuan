@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.trade.demand.mapper.DemandtreasureTransferOutMapper">
+	<resultMap type="DemandtreasureTransferOut" id="DemandtreasureTransferOutRM">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="money" column="money" />
+		<result property="principal" column="principal" />
+		<result property="interest" column="interest" />
+		<result property="sendedTime" column="sended_Time" />
+		<result property="successTime" column="success_time" />
+		<result property="transferWay" column="trnsfer_way" />
+		<result property="status" column="status" />
+		<result property="detail" column="detail" />
+	</resultMap>
+	
+
+	<resultMap type="DemandtreasureTransferOut" id="DemandtreasureTransferOutRM3">
+		<id property="id" column="id" />
+		<result property="total" column="total" />
+		<result property="summoney" column="summoney" />
+	</resultMap>
+	
+	<resultMap type="DemandtreasureTransferOut" id="DemandtreasureTransferOutRM2">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="summoney" column="summoney" />
+	</resultMap>
+	<select id="get" parameterType="String" resultMap="DemandtreasureTransferOutRM">
+		SELECT *
+		FROM demand_treasure_transferout
+		WHERE id = #{id}
+	</select>
+	<update id="update" parameterType="DemandtreasureTransferOut">
+		UPDATE demand_treasure_transferout 
+		<set>
+			<if test="status != null">
+				status=#{status},
+			</if>
+			<if test="successTime != null">
+				success_time=#{successTime},
+			</if>
+			<if test="money != 0">
+				money=#{money},
+			</if>
+			<if test="principal != 0">
+				principal=#{principal},
+			</if>
+			<if test="interest != 0">
+				interest=#{interest},
+			</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	<select id="gettotal"
+		resultMap="DemandtreasureTransferOutRM3">
+		select  count(*) as total,ROUND(SUM(money),2) as summoney from demand_treasure_transferout where status='sended'
+	</select>
+	
+	<select id="gettotalUser"
+		resultMap="DemandtreasureTransferOutRM2">
+		select  user_id ,ROUND(SUM(money),2) as summoney from demand_treasure_transferout where status='sended' GROUP BY user_id
+	</select>
+	
+	<select id="findAll"   resultMap="DemandtreasureTransferOutRM">
+		select * from demand_treasure_transferout where status='sended' ORDER BY sended_time
+	</select>
+	
+	<insert id="insert" parameterType="DemandtreasureTransferOut">
+		INSERT INTO demand_treasure_transferout
+		(id, user_id, money,principal, interest,sended_time,success_time,trnsfer_way,status,detail) 
+		VALUES
+		(#{id}, #{userId}, #{money},#{principal},#{interest}, #{sendedTime}, #{successTime}, #{transferWay}, #{status}, #{detail})
+	</insert>
+	
+	<!-- 按状态获取用户转出总额 -->
+	<select id="getOutMoneySumByStatus" parameterType="map" resultType="double">
+		SELECT SUM(principal) FROM demand_treasure_transferout 
+		WHERE status = #{status} AND user_id = #{userId}
+	</select>
+	
+	
+	<resultMap type="DemandtreasureTransferOut" id="DemandtreasureTransferOutRM1">	
+		<result property="principal" column="principal" />
+		<result property="money" column="money" />
+		<result property="interest" column="interest" />
+	</resultMap>
+	
+	<select id="getOutSumMoney" parameterType="map" resultMap="DemandtreasureTransferOutRM1">
+		SELECT SUM(money) as money, SUM(interest) as interest, SUM(principal) AS principal  FROM demand_treasure_transferout 
+		WHERE status = #{status} AND user_id = #{userId}
+	
+	</select>
+	
+	<!-- 按状态获取用户转出利息 -->
+	<select id="getOutInterestSumByStatus" parameterType="map" resultType="double">
+		SELECT SUM(interest) FROM demand_treasure_transferout 
+		WHERE status = #{status} AND user_id = #{userId}
+	</select>
+	<select id="pageLite" parameterType="DemandtreasureTransferOut" resultMap="DemandtreasureTransferOutRM">
+		SELECT * FROM demand_treasure_transferout 
+		WHERE status in ('sended', 'success') AND user_id = #{userId} order by sended_time desc
+	</select>
+	
+	<!-- 获取用户当天转出记录数 -->
+	<select id="getValidOutCount" parameterType="map" resultType="int">
+		SELECT count(*)
+		FROM demand_treasure_transferout
+		WHERE user_id = #{userId}
+		AND date(sended_Time) = CURDATE()
+		AND trnsfer_way !='expires'
+	</select>
+	
+	
+	<!-- 获取用户当天转出记录数 -->
+	<select id="getValidOutSumMoney" parameterType="string" resultType="double">
+		SELECT IFNULL(sum(principal),0)
+		FROM demand_treasure_transferout
+		WHERE status in('success', 'sended') and user_id = #{userId}
+		AND date(sended_Time) = CURDATE()
+	</select>
+</mapper>

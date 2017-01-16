@@ -1,0 +1,64 @@
+package com.duanrong.drpay.business.demand.service.impl;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+
+import util.ArithUtil;
+import base.pagehelper.PageInfo;
+
+import com.duanrong.drpay.business.demand.dao.DemandtreasureTransferOutDao;
+import com.duanrong.drpay.business.demand.model.DemandtreasureTransferOut;
+import com.duanrong.drpay.business.demand.service.DemandtreasureTransferOutService;
+
+@Service
+public class DemandtreasureTransferOutServiceImpl implements DemandtreasureTransferOutService{
+
+	
+	@Resource
+	DemandtreasureTransferOutDao demandtreasureTransferOutDao;
+	
+	@Override
+	public void insert(DemandtreasureTransferOut demandOut) {
+		demandtreasureTransferOutDao.insert(demandOut);
+	}
+
+	@Override
+	public void update(DemandtreasureTransferOut demandOut) {
+		demandtreasureTransferOutDao.update(demandOut);
+		
+	}
+
+	@Override
+	public Double queryOutMoneySumByStatus(String userId , String status) {
+		return ArithUtil.round(demandtreasureTransferOutDao.getOutMoneySumByStatus(userId,status),2);
+	}
+
+	@Override
+	public Integer queryValidOutCount(String userId) {
+		return demandtreasureTransferOutDao.getValidOutCount(userId);
+	}
+
+	
+	@Override
+	public PageInfo<DemandtreasureTransferOut> pageLite(int pageNo, int pageSize, DemandtreasureTransferOut out) {
+		
+		return demandtreasureTransferOutDao.pageLite(pageNo, pageSize, out);
+	}
+
+	@Override
+	public Double getOutInterestSumByStatus(String userId, String status) {
+		return ArithUtil.round(demandtreasureTransferOutDao.getOutInterestSumByStatus(userId,status),2);
+	}
+
+	@Override
+	public double queryValidOutSumMoney(String userId) {
+		return demandtreasureTransferOutDao.queryValidOutSumMoney(userId);
+	}
+
+
+
+
+	
+	
+}

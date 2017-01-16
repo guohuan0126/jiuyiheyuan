@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.account.mapper.UserAccountMapper">
+
+	<!-- 用户账户 -->
+	<resultMap type="userAccount" id="userAccountRM">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="balance" column="balance" />
+		<result property="availableBalance" column="available_balance" />
+		<result property="freezeAmount" column="freeze_amount" />
+		<result property="password" column="password" />
+		<result property="autoInvest" column="auto_invest" />
+		<result property="autoRepay" column="auto_repay" />
+		<result property="time" column="time" />
+		<result property="status" column="status" />
+	</resultMap>
+
+	<!-- 账户流水 -->
+	<resultMap type="UserBill" id="userBillRM">
+		<id property="id" column="id" />
+		<result property="seqNum" column="seq_num" />
+		<result property="time" column="time" />
+		<result property="type" column="type" />
+		<result property="typeInfo" column="type_info" />
+		<result property="money" column="money" />
+		<result property="detail" column="detail" />
+		<result property="userId" column="user_id" />
+		<result property="requestNo" column="request_no" />
+		<result property="balance" column="balance" />
+		<result property="freezeAmount" column="freeze_amount" />
+		<result property="businessType" column="business_type" />
+	</resultMap>
+
+	<!-- 查询用户账户 -->
+	<select id="get" parameterType="string" resultMap="userAccountRM">
+		select * from
+		user_account where user_id = #{userId}
+	</select>
+
+	<!-- 查询用户账户 -->
+	<select id="getWithLock" parameterType="string" resultMap="userAccountRM">
+		select * from
+		user_account where user_id = #{userId} for update
+	</select>
+
+
+	<!-- 开户 -->
+	<insert id="insert" parameterType="UserAccount">
+		insert user_account(user_id,
+		balance, available_balance, freeze_amount, password, auto_invest,
+		auto_repay, time, status) values(
+		#{userId}, #{balance}, #{availableBalance},
+		#{freezeAmount}, #{password}, #{autoInvest}, #{autoRepay}, #{time}, #{status}
+		)
+	</insert>
+
+
+	<!-- 更新账户 -->
+	<update id="update" parameterType="UserAccount">
+		update user_account
+		<set>
+			<if test="balance != null">
+				balance = #{balance},
+			</if>
+			<if test="availableBalance != null">
+				available_balance = #{availableBalance},
+			</if>
+			<if test="freezeAmount != null">
+				freeze_amount = #{freezeAmount},
+			</if>
+			<if test="password != null and password != '' ">
+				password = #{password},
+			</if>
+			<if test="autoInvest != null">
+				auto_invest = #{autoInvest},
+			</if>
+			<if test="autoRepay != null">
+				auto_repay = #{autoRepay},
+			</if>
+			<if test="time != null">
+				time = #{time},
+			</if>
+			<if test="status != null and status != '' ">
+				status=#{status}
+			</if>
+		</set>
+		where user_id = #{userId}
+	</update>
+
+	<!-- 冻结账户 -->
+	<select id="freezeAccount" parameterType="String">
+		update
+		user_account set status = 0 where id = #{userId}
+	</select>
+
+	<!-- 解冻账户 -->
+	<select id="unfreezeAccount" parameterType="String">
+		update
+		user_account set status = 1 where id = #{userId}
+	</select>
+
+	<select id="getLastUserBillByUserId" parameterType="string"
+		resultMap="userBillRM">
+		select * from user_bill where user_id = #{user_id} order by
+		seq_num desc limit 1
+	</select>
+
+	<!-- 添加用户资金流水 -->
+	<insert id="insertUserBill" parameterType="UserBill">
+		insert into
+		user_bill(id, seq_num, user_id, time, type,type_info,
+		money, balance,
+		request_no, detail,business_type,freeze_amount)
+		values(#{id},
+		#{seqNum}, #{userId}, #{time}, #{type}, #{typeInfo},
+		#{money},
+		#{balance}, #{requestNo}, #{detail}, #{businessType}, #{freezeAmount})
+	</insert>
+	
+	
+	<select id="pageLite" resultMap="userBillRM" parameterType="UserBill">
+		select * from user_bill
+		<where>
+			<if test="id != null and id != '' ">
+				and id=#{id}
+			</if>
+			<if test="userId != null and userId != '' ">
+				and user_id=#{userId}
+			</if>
+			<if test="seqNum != null and seqNum != '' ">
+				and seq_num=#{seqNum}
+			</if>
+			<if test="requestNo != null and requestNo != '' ">
+				and request_no=#{requestNo}
+			</if>
+			<if test="type != null and type != '' ">
+				and type=#{type}
+			</if>
+			<if test="typeInfo != null and typeInfo != ''">
+				and type_info =#{typeInfo}
+			</if>
+			<if test="money != null and money != '' ">
+				and money =#{money}
+			</if>
+			<if test="freezeAmount != null and freezeAmount != '' ">
+				and freeze_amount =#{freezeAmount}
+			</if>
+			<if test="balance != null and balance != '' ">
+				and balance =#{balance}
+			</if>
+			<if test="businessType != null and businessType != '' ">
+				and business_type =#{businessType}
+			</if>
+			<if test="beginTime != null and endTime != '' ">
+				and time &gt;=#{beginTime}
+			</if>
+			<if test="endTime != null and endTime != '' ">
+				and time &lt;=#{endTime}
+			</if>
+
+		</where>
+		ORDER BY time DESC
+	</select>
+
+	<!-- 根据流水查询账户信息 -->
+	<select id="getBalance" statementType="CALLABLE" parameterType="map">
+		call user_balance( #{userId,jdbcType=VARCHAR,mode=IN},
+		#{balance,jdbcType=DOUBLE,mode=OUT},
+		#{frozen,jdbcType=DOUBLE,mode=OUT})
+	</select>
+</mapper>

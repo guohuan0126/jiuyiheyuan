@@ -1,0 +1,66 @@
+package com.duanrong.drpay.jsonservice.param;
+
+/**
+ * 奖励参数
+ * @author xiao
+ * @datetime 2016年12月17日 下午12:21:04
+ */
+public class RewardParameter extends Parameter {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7818314689381642940L;
+
+	//奖励金额
+	private double money;
+	
+	//用户流水信息（用户可见）
+	private String info;
+	
+	//备注信息（用户不可见）
+	private String remarks;
+
+	//项目编号
+	private String loanId;
+	
+	public double getMoney() {
+		return money;
+	}
+
+	public void setMoney(double money) {
+		this.money = money;
+	}
+
+	public String getInfo() {
+		return info;
+	}
+
+	public void setInfo(String info) {
+		this.info = info;
+	}
+
+	public String getRemarks() {
+		return remarks;
+	}
+
+	public void setRemarks(String remarks) {
+		this.remarks = remarks;
+	}
+
+	
+	public String getLoanId() {
+		return loanId;
+	}
+
+	public void setLoanId(String loanId) {
+		this.loanId = loanId;
+	}
+
+	@Override
+	public String toString() {
+		return "RewardParameter [money=" + money + ", info=" + info
+				+ ", remarks=" + remarks + ", loanId=" + loanId + "]";
+	}
+	
+}

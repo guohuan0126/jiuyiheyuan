@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.demand.mapper.AvailableMoneyRecordMapper">
+	<resultMap type="AvailableMoneyRecord" id="AvailableMoneyRecordRM">
+		<id property="id" column="id" />
+		<result property="money" column="money" />
+		<result property="begintime" column="beginTime" />
+		<result property="endtime" column="endTime" />
+		<result property="status" column="status" />
+		<result property="operateorid" column="operateorid" />
+	</resultMap>
+	
+    <select id="pageInfo"  resultMap="AvailableMoneyRecordRM">
+		SELECT *
+		FROM Demand_treasure_availableMoneyRecord where status=1
+	</select>
+	<insert id="insert" parameterType="AvailableMoneyRecord">
+		INSERT INTO Demand_treasure_availableMoneyRecord <include refid="InfoManageSet" />
+	</insert>
+     
+    <sql id="InfoManageSet">
+         <set >
+              <if test= "id != null">id=#{id},</if >
+              <if test= "money != null">money=#{money},</if >
+              <if test= "begintime != null">beginTime=#{begintime},</if >
+              <if test= "endtime!= null">endTime=#{endtime},</if >
+              <if test= "status != null">status=#{status},</if >
+              <if test= "operateorid != null">operateorid=#{operateorid},</if >
+          </set>
+    </sql >
+    <update id="del" parameterType="AvailableMoneyRecord">
+		UPDATE Demand_treasure_availableMoneyRecord
+		set status=#{status},operateorid=#{operateorid}
+		WHERE id=#{id}
+	</update>
+	<!-- 获取最后一条记录 -->
+	<select id="getEndLine"  resultMap="AvailableMoneyRecordRM">
+		SELECT *
+		FROM Demand_treasure_availableMoneyRecord where status=1 order by beginTIme desc limit 1
+	</select>
+	<!-- 更新募集完成时间 -->
+	<update id="update" parameterType="AvailableMoneyRecord">
+		UPDATE Demand_treasure_availableMoneyRecord
+		set endtime=#{endtime},operateorid=#{operateorid}
+		WHERE id=#{id}
+	</update>
+</mapper>

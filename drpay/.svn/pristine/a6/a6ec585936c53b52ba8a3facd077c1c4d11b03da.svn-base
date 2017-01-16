@@ -1,0 +1,102 @@
+package com.duanrong.drpay.trusteeship.helper.model;
+
+import util.ArithUtil;
+
+public class GeneratorPreTransactionJSON extends GeneratorJSON {
+
+	// 预处理业务类型
+	private BizType bizType;
+	// 冻结金额
+	private double amount;
+	// 超过此时间即页面过期
+	private String expired;
+	// 标的号
+	private String projectNo;
+	/************* 非必填字段 ************/
+	
+	//预处理流水号
+	private String preTransactionNo;	
+	
+	// 预备使用的红包金额，只记录不冻结，仅限投标业务类型
+	private double preMarketingAmount;
+	// 购买债转份额，业务类型为购买债权时，需要传此参数
+	private String share;
+	// 债权出让请求流水号，只有购买债权业务需填此参数
+	private String creditsaleRequestNo;
+	// 备注
+	private String remark;
+
+	
+	public String getPreTransactionNo() {
+		return preTransactionNo;
+	}
+
+	public void setPreTransactionNo(String preTransactionNo) {
+		this.preTransactionNo = preTransactionNo;
+	}
+
+	public BizType getBizType() {
+		return bizType;
+	}
+
+	public void setBizType(BizType bizType) {
+		this.bizType = bizType;
+	}
+
+	public double getAmount() {
+		return ArithUtil.round(amount, 2);
+	}
+
+	public void setAmount(double amount) {
+		this.amount = amount;
+	}
+
+	public double getPreMarketingAmount() {
+		return preMarketingAmount;
+	}
+
+	public void setPreMarketingAmount(double preMarketingAmount) {
+		this.preMarketingAmount = preMarketingAmount;
+	}
+
+	public String getExpired() {
+		return expired;
+	}
+
+	public void setExpired(String expired) {
+		this.expired = expired;
+	}
+
+	public String getRemark() {
+		return remark;
+	}
+
+	public void setRemark(String remark) {
+		this.remark = remark;
+	}
+
+	public String getProjectNo() {
+		return projectNo;
+	}
+
+	public void setProjectNo(String projectNo) {
+		this.projectNo = projectNo;
+	}
+
+	public String getShare() {
+		return share;
+	}
+
+	public void setShare(String share) {
+		this.share = share;
+	}
+
+	public String getCreditsaleRequestNo() {
+		return creditsaleRequestNo;
+	}
+
+	public void setCreditsaleRequestNo(String creditsaleRequestNo) {
+		this.creditsaleRequestNo = creditsaleRequestNo;
+	}
+
+}

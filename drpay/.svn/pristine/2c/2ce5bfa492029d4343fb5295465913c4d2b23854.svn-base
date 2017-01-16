@@ -1,0 +1,23 @@
+package com.duanrong.drpay.trusteeship.service;
+
+import base.exception.TradeException;
+import base.exception.UserAccountException;
+
+import com.duanrong.drpay.trusteeship.helper.model.Generator;
+
+/**
+ * 还款业务
+ * @author xiao
+ * @datetime 2016年12月7日 上午9:15:16
+ */
+public interface TrusteeshipRepayService {
+
+	/**
+	 * 创建还款记录
+	 * @param params
+	 * @throws TradeException
+	 * @throws UserAccountException
+	 */
+	public Generator createRepay(String repayId) throws UserAccountException, TradeException;
+	
+}

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.config.mapper.ConfigMapper">
+	<!-- 系统参数配置 -->
+	<resultMap type="Config" id="configRM">
+		<result property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="description" column="description" />
+		<result property="value" column="value" />
+		<result property="type" column="type" />
+	</resultMap>
+
+	<update id="update" parameterType="config">
+		UPDATE config
+		<set>
+			<if test="value != null and value != '' ">value=#{value},</if>
+			<if test="description != null and description != '' ">description=#{description},</if>
+			<if test="type != null and type != '' ">value=#{value},</if>
+			<if test="name != null and name != '' ">name=#{name},</if>
+		</set>
+		WHERE id = #{id}
+	</update>
+
+	<insert id="insert" parameterType="config">
+		insert into config(id,
+		name, value, description) values(#{id}, #{name}, #{value},
+		#{description})
+	</insert>
+
+	<!-- 系统配置参数 -->
+	<select id="get" resultMap="configRM" parameterType="string">
+		SELECT * FROM config where id=#{id}
+	</select>
+	
+</mapper>

@@ -1,0 +1,42 @@
+package base.schedule.job;
+
+import com.duanrong.drpay.business.invest.InvestConstants;
+import com.duanrong.drpay.business.invest.model.Invest;
+import com.duanrong.drpay.business.invest.service.InvestService;
+
+import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+
+import util.Log;
+import util.SpringBeanUtil;
+
+public class CheckInvestOverExpectTime implements Job {
+
+	private InvestService investService;
+
+	private Log log;
+
+	/**
+	 * 处理五分钟调度
+	 * 1、判断状态是否为等待确认
+	 * 2、去单笔业务查询是否成功
+	 * 3、修改本地数据
+	 */
+	@Override
+	public void execute(JobExecutionContext context)
+			throws JobExecutionException {
+		investService = (InvestService) SpringBeanUtil
+				.getBeanByType(InvestService.class);
+		String id = context.getJobDetail().getJobDataMap().getString("invest");
+		log = SpringBeanUtil.getBeanByType(Log.class);
+		log.infoLog("投资qrtz", "调度开始" + id);
+		Invest invest = investService.query(id);
+		if ("等待确认".equals(invest.getStatus())) {
+			//TODO 单笔业务查询 investRecord(invest);
+			invest.setStatus(InvestConstants.InvestStatus.CANCEL);
+			investService.update(invest);
+		}
+	}
+
+}

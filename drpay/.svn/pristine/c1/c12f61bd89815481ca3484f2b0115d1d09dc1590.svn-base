@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.account.mapper.BankCardMapper">
+	<resultMap type="BankCard" id="bcRM">
+		<id property="id" column="bc_id" />
+		<result property="userId" column="user_id" />
+		<result property="bank" column="bank" />
+		<result property="cardNo" column="card_no" />
+		<result property="time" column="time" />
+		<result property="status" column="status" />
+		<result property="deleteBankCard" column="bank_city" />
+		<result property="cancelBandDingTime" column="bank_no" />
+		<result property="cancelStatus" column="bank_province" />
+		<result property="name" column="name" />
+		<result property="accountName" column="account_name" />
+		<result property="paySwift" column="pay_swift" />
+		<result property="paymentId" column="payment_id"/>
+		<result property="paymentNo" column="payment_no"/>
+		<result property="bankMobile" column="bank_mobile"/>
+	</resultMap>
+	
+	
+
+	<sql id="allColumns">
+		user_id, bank, card_no, time, status, bank_city,
+		bank_no,
+		account_name,
+		bank_province, IFNULL(name, bank) AS name, id AS bc_id,
+		pay_swift,payment_id,payment_no
+	</sql>
+
+	<!-- 更新指定用户下所有有效的银行卡 -->
+	<update id="updateAllValidCard" parameterType="BankCard">
+		UPDATE bank_card
+		<set>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(deleteBankCard)">bank_city=#{deleteBankCard},</if>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(cancelBandDingTime)">bank_no=#{cancelBandDingTime},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(cancelStatus)">bank_province=#{cancelStatus},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(paySwift)">pay_swift=#{paySwift},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(paySwift)">bank_mobile=#{bankMobile},</if>
+		</set>
+		WHERE user_id = #{userId} AND bank_city is null
+		AND status = 'VERIFIED'
+	</update>
+
+	<!-- 取消绑卡中的数据 -->
+	<select id="getCancelTheTieCard" resultMap="bcRM">
+		SELECT
+		<include refid="allColumns" />
+		FROM bank_card
+		WHERE bank_province = '解绑中'
+	</select>
+
+	<!-- 根据用户ID获取有效的银行卡 -->
+	<select id="getValidBankCardByUserId" parameterType="map"
+		resultMap="bcRM">
+		SELECT
+		<include refid="allColumns" />
+		FROM
+		bank_card
+		WHERE
+		user_id = #{userId}
+		AND bank_city is null
+		<if test="valid == 'all'">
+			AND status in('VERIFIED', 'VERIFYING')
+		</if>
+		<if test="valid == 'verified'">
+			AND status = 'VERIFIED'
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(paymentId)">
+			AND payment_id = #{paymentId}
+		</if>
+	</select>
+	
+	<select id="getBankCardVerifyingByUserId" parameterType="String" resultMap="bcRM">
+		select * from
+		bank_card
+		where
+		user_id=#{userId}
+		AND bank_city is null
+		AND status = 'VERIFYING'
+	</select>
+	
+	<select id="getBankCardVerifedByUserId" parameterType="String" resultMap="bcRM">
+		select * from
+		bank_card
+		where
+		user_id=#{userId}
+		AND bank_city is null
+		AND status = 'VERIFIED'
+	</select>
+	
+	
+
+	<!-- 根据用户ID获取绑卡中的银行卡 -->
+	<select id="getVerifyingBankCardByUserId" parameterType="map"
+		resultMap="bcRM">
+		SELECT
+		<include refid="allColumns" />
+		FROM
+		bank_card
+		WHERE
+		user_id = #{userId}
+		AND bank_city is null
+		AND status =
+		'VERIFYING'
+	</select>
+
+	<insert id="insert" parameterType="BankCard">
+		INSERT INTO bank_card(id,
+		card_no, bank, status, time, user_id, name,payment_id,payment_no,bank_mobile)
+		VALUES(#{id}, #{cardNo},
+		#{bank},
+		#{status}, NOW(), #{userId}, #{name}, #{paymentId}, #{paymentNo},#{bankMobile})
+	</insert>
+
+	<!-- 根据常用BankCard表中字段进行组合条件查询 -->
+	<select id="getBankCardsByGroupCondition" resultMap="bcRM"
+		parameterType="BankCard">
+		SELECT
+		<include refid="allColumns" />
+		FROM
+		bank_card
+		<where>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(id)">
+				AND id =#{id}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(userId)">
+				AND user_id = #{userId}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(status)">
+				AND status = #{status}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(cardNo)">
+				AND card_no = #{cardNo}
+			</if>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(deleteBankCard)">
+				AND bank_city is null
+			</if>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(cancelBandDingTime)">
+				AND bank_no is null
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(cancelStatus)">
+				AND bank_province is null
+			</if>
+		</where>
+	</select>
+
+	<select id="get" parameterType="string" resultMap="bcRM">
+		SELECT
+		<include refid="allColumns" />
+		FROM
+		bank_card
+		WHERE
+		id=#{id}
+		AND bank_city is null
+	</select>
+
+	<!-- 进行update的时候一定要设置id -->
+	<update id="update" parameterType="withdrawCash">
+		UPDATE bank_card
+		<set>
+			<if test="userId != null">user_id=#{userId},</if>
+			<if test="status != null">status=#{status},</if>
+			<if test="cardNo != null">card_no=#{cardNo},</if>
+			<if test="deleteBankCard != null">bank_city=#{deleteBankCard},</if>
+			<if test="cancelBandDingTime != null">bank_no=#{cancelBandDingTime},</if>
+			<if test="cancelStatus != null">bank_province=#{cancelStatus},</if>
+			<if test="accountName != null">account_name=#{accountName},</if>
+			<if test="bank != null">bank=#{bank},</if>
+			<if test="name != null">name=#{name},</if>
+			<if test="paymentId != null">payment_id=#{paymentId},</if>
+		</set>
+		WHERE id = #{id};
+	</update>
+	
+	<select id="getByPaymentNo" parameterType="string" resultMap="bcRM">
+		SELECT
+		<include refid="allColumns" />
+		FROM
+		bank_card
+		WHERE
+		payment_no=#{paymentNo}
+		AND bank_city is null
+	</select>
+	
+	<update id="updateBankMobile" parameterType="map">
+		UPDATE bank_card
+		<set>
+			<if test="mobile != null">bank_mobile=#{mobile}</if>
+		</set> 
+		WHERE user_id = #{userId} and ISNULL(bank_city) and status='VERIFIED'
+	</update>
+	<select id="getmobile" parameterType="map" resultType="String">
+		SELECT
+		bank_mobile
+		FROM
+		bank_card
+		WHERE user_id = #{userId} and card_no=#{bankNo} and  ISNULL(bank_city) and status='VERIFIED'
+	</select>
+	
+	
+	<!-- <select id="findBankInfoByName" parameterType="String" resultMap="PaymentBankInfoMap" >
+        SELECT * FROM payment_bankinfo WHERE name = #{name}
+     </select> -->
+     
+     
+     <!-- 查询宝付支持的所有银行卡 -->
+     <select id="getBankCardUsableByBaoFoo" parameterType="String" resultType="String">
+     	SELECT p2.code from payment_bank_channel p1 LEFT JOIN payment_bankinfo p2 ON  p1.bank_id=p2.id
+ 		WHERE channel_id='4' and online_banking='1'
+     </select>
+     
+     <!-- 查询存管通支持的所有银行卡 -->
+     <select id="getBankCardUsableByCgt" parameterType="String" resultType="String">
+     	SELECT DISTINCT p2.code from payment_bank_channel p1 LEFT JOIN payment_bankinfo p2 ON  p1.bank_id=p2.id
+     </select>
+
+	<!-- 根据渠道查询是否支持提现 -->
+	<select id="getBankCardUsableByPaymentId" parameterType="String" resultType="String">
+		SELECT p2.code from payment_bank_channel p1 
+		LEFT JOIN payment_bankinfo p2  ON  p1.bank_id=p2.id
+		LEFT JOIN payment_channel p3 ON p3.id=p1.channel_id
+ 		WHERE p3.code=#{paymentId} and p1.is_withdraw='1'
+	</select>
+</mapper>

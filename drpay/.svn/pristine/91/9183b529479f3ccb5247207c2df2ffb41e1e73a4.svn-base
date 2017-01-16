@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.drpay.business.invest.mapper.InvestMapper">
+	<resultMap type="Invest" id="investRM">
+		<id property="id" column="id" />
+		<result property="loanName" column="loan_name" />
+		<result property="time" column="time" />
+		<result property="isAutoInvest" column="is_auto_invest" />
+		<result property="status" column="status" />
+		<result property="rate" column="rate" />
+		<result property="type" column="type" />
+		<result property="money" column="money" />
+		<result property="paidMoney" column="paid_money" />
+		<result property="paidInterest" column="paid_interest" />
+		<result property="interest" column="interest" />
+		<result property="loanId" column="loan_id" />
+		<result property="userSource" column="user_source" />
+		<result property="investUserID" column="user_id" />
+		<result property="redpacketId" column="redpacket_id" />
+		<result property="investAllowanceInterest" column="invest_allowance_interest" />
+		<result property="managementExpense" column="management_expense" />
+		<association property="loan" javaType="Loan">
+			<id property="id" column="loan_id2" />
+			<result property="name" column="name" />
+			<result property="type" column="loan_type" />
+			<result property="contract" column="risk_instruction" />
+			<result property="totalmoney" column="loan_money" />
+			<result property="investOriginMoney" column="min_invest_money" />
+			<result property="increaseMoney" column="asc_invest_money" />
+			<result property="borrowMoneyUserID" column="user_id2" />
+			<result property="rate" column="rate" />
+			<result property="loanType" column="loan_type" />
+			<result property="loanGuranteeFee" column="loan_gurantee_fee" />
+			<result property="operationType" column="operation_type" />
+			<result property="repayType" column="repay_type" />
+			<result property="beforeRepay" column="before_repay" />
+			<result property="deadline" column="deadline" />
+			<result property="day" column="day" />
+			<result property="expectTime" column="expect_time" />
+			<result property="textItem" column="company_name" />
+			<result property="status" column="status2" />
+			<result property="commitTime" column="commit_time" />
+			<result property="giveMoneyTime" column="give_money_time" />
+			<result property="contractName" column="loan_instruction" />
+			<result property="calculateMoneyNeedRaised" column="sum_money" />
+			<result property="symbol" column="symbol" />
+			<result property="newbieEnjoy" column="newbieEnjoy" />
+			<result property="interestRule" column="interest_rule" />
+			<result property="giveMoneyOperationTime" column="give_money_operation_time" />
+			<result property="loanAllowanceInterest" column="loan_allowance_interest" />
+		</association>
+	</resultMap>
+
+	<!-- 根据id查询invest记录 -->
+	<select id="get" resultMap="investRM" parameterType="string">
+		SELECT
+		invest.*, loan.*,
+		loan.name as loan_name,
+		loan.id AS loan_id2,
+		loan.user_id AS user_id2,
+		loan.STATUS AS status2,
+		loan.money AS loan_money,
+		loan.type AS loan_type
+		FROM invest,loan
+		WHERE invest.loan_id = loan.id AND
+		invest.id = #{id}
+	</select>
+
+	<!-- 添加投资记录 -->
+	<insert id="insert" parameterType="invest">
+		INSERT INTO invest
+			(id,interest, money,rate,status, time,type,is_auto_invest,
+			user_id,loan_id, user_source, redpacket_id)
+		VALUES
+			(#{id},#{interest},#{money},#{rate},#{status},#{time},#{type},#{isAutoInvest},
+			#{investUserID}, #{loanId},#{userSource}, #{redpacketId})
+	</insert>
+
+	<!--得到某个项目标的的有效募集金额 getValidInvestSumByLoan -->
+	<select id="getInvestSumMoneyByLoan" parameterType="string"
+		resultType="double">
+		SELECT IFNULL(SUM(money),0)
+		FROM invest
+		WHERE loan_id =
+		#{loanId} and status !='流标'
+	</select>
+
+
+	<!-- 查询个人单个项目的投资总金额 -->
+	<select id="getInvestSumMoneyByUser" parameterType="map"
+		resultType="double">
+		SELECT IFNULL(SUM(money), 0)
+		FROM invest
+		WHERE user_id =
+		#{userId}
+		AND loan_id = #{loanId}
+		AND status != '流标'
+	</select>
+	
+	<update id="update" parameterType="invest">
+		UPDATE invest
+		<set>
+			<if test="status!=null">status=#{status},</if>
+			<if test="money!=null">money=#{money},</if>
+			<if test="paidMoney!=null">paid_money=#{paidMoney},</if>
+			<if test="paidInterest!=null">paid_interest=#{paidInterest},</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+
+	<!-- 根据条件查询用户投资的项目 -->
+	<select id="getInvestLoan" parameterType="invest" resultMap="investRM">
+		SELECT invest.*, loan.*, loan.id AS loan_id2, loan.user_id AS user_id2
+		,loan.status AS status2, loan.money AS loan_money, loan.type AS
+		loan_type
+		FROM
+		invest
+		LEFT JOIN loan
+		ON invest.loan_id = loan.id
+		<where>
+			<if test="id != null and id != ''">
+				AND invest.id = #{id}
+			</if>
+			<if test="investUserID != null and investUserID != ''">
+				AND invest.user_id = #{investUserID}
+			</if>
+			<if test="status != null and status != ''">
+				<choose>
+					<when test="status == '还款中,投标成功'">
+						AND invest.status IN ('还款中','投标成功')
+					</when>
+					<when test="status == '等待确认,投标成功'">
+						AND invest.status IN ('等待确认','投标成功')
+					</when>
+					<when test="status == '还款中,完成'">
+						AND invest.status IN ('还款中','完成')
+					</when>
+					<when test="status == '!流标'">
+						AND invest.status != '流标'
+					</when>
+					<otherwise>AND invest.status = #{status}</otherwise>
+				</choose>
+			</if>
+			<if test="loanId != null and loanId != ''">
+				AND invest.loan_id = #{loanId}
+			</if>
+		</where>
+		ORDER BY time DESC
+	</select>
+
+	<!-- 创建补息奖励金额 -->
+	<insert id="insertInvestRedpacket" parameterType="InvestRedpacket">
+		INSERT INTO
+		invest_redpacket(id, invest_allowance_interest, reward_money,
+		invest_id, loan_id, user_id,
+		allowance_order, send_allowance_status,
+		send_allowance_time, send_allowance_result,
+		repacked_order,
+		send_redpacket_status, send_redpacket_time, send_redpacket_result,
+		repacked_id, create_time
+		)
+		VALUES(#{id}, #{investAllowanceInterest},
+		#{rewardMoney}, #{investId}, #{loanId},
+		#{userId}, #{allowanceOrder},
+		#{sendAllowanceStatus}, #{sendAllowanceTime}, #{sendAllowanceResult},
+		#{repackedOrder},
+		#{sendRedpacketStatus},
+		#{sendRedpacketTime},
+		#{sendRedpacketResult}, #{repackedId}, NOW());
+	</insert>
+	
+	<!-- 查询投资成功的数量 -->
+	<select id="getInvestSeccessByLoanId" parameterType="string"
+		resultType="int">
+		select count(*) from invest where loan_id = #{loanId} and
+		status = '投标成功'
+	</select>
+	
+	<select id="getInvestSuccessNotNewRecordByUserId" parameterType="string" resultType="long">
+		SELECT COUNT(*) FROM invest i ,loan l 
+		WHERE  i.loan_id=l.id  and i.status != '流标' 
+		AND i.user_id =  #{userId} and l.newbieEnjoy='否'
+	</select>
+</mapper>
