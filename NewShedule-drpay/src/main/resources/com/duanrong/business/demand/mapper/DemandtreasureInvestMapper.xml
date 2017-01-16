@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.demand.mapper.DemandtreasureInvestMapper">
+	<resultMap type="DemandtreasureInvest" id="DemandtreasureInvestRM">
+		<id property="id" column="id" />
+		<result property="demandTransferId" column="demand_transfer_id" />
+		<result property="demandLoanId" column="demand_loan_id" />
+		<result property="money" column="money" />
+		<result property="time" column="time" />
+		<result property="status" column="status" />
+		<result property="userId" column="user_id" />
+		<result property="totalMoney" column="total_money" />
+	</resultMap>
+
+	<resultMap type="DemandtreasureOpration" id="DemandtreasureOprationRM">
+		<id property="id" column="id" />
+		<result property="demandTransferId" column="demand_transfer_id" />
+		<result property="demandLoanId" column="demand_loan_id" />
+		<result property="money" column="money" />
+		<result property="time" column="time" />
+		<result property="demandTreasureInvestId" column="demandTreasure_invest_id" />
+		<result property="type" column="type" />
+		<result property="remark" column="remark" />
+	</resultMap>
+
+	<insert id="batchInsert" parameterType="java.util.List">
+		INSERT INTO
+		demand_treasure_invest(id, demand_transfer_id,
+		demand_loan_id, money,
+		time, STATUS, user_id) VALUES
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.id}, #{item.demandTransferId},
+			#{item.demandLoanId}, #{item.money},
+			NOW(), 0, #{item.userId})
+		</foreach>
+	</insert>
+
+	<insert id="batchInsertOpration" parameterType="DemandtreasureOpration">
+		INSERT INTO
+		demand_treasure_opration(id, demand_transfer_id,
+		demand_loan_id, money,
+		time, demand_treasure_invest_id, type, remark)
+		VALUES
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.id},
+			#{item.demandTransferId}, #{item.demandLoanId},
+			#{item.money}, NOW(),
+			#{item.demandTreasureInvestId}, #{item.type},
+			#{item.remark})
+		</foreach>
+
+	</insert>
+
+	<insert id="insertOpration" parameterType="java.util.List">
+		INSERT INTO
+		demand_treasure_opration(id, demand_transfer_id,
+		demand_loan_id, money,
+		time, demand_treasure_invest_id, type, remark)
+		VALUES (#{id},
+		#{demandTransferId}, #{demandLoanId},
+		#{money}, NOW(),
+		#{demandTreasureInvestId}, #{type},
+		#{remark})
+
+	</insert>
+
+	<select id="findAllOfUser1" parameterType="map"
+		resultMap="DemandtreasureInvestRM">
+		select vest.* from demand_treasure_invest vest
+		LEFT JOIN
+		demand_treasure_loan l on vest.demand_loan_id = l.id
+		where
+		l.finish_time &lt;= CURDATE() and vest.user_id =
+		#{userId} and
+		vest.money>0
+	</select>
+
+
+	<select id="get" parameterType="string" resultMap="DemandtreasureInvestRM">
+		select * from
+		demand_treasure_invest where id = #{id}
+	</select>
+
+	<select id="findAllOfUser2" parameterType="map"
+		resultMap="DemandtreasureInvestRM">
+		select vest.* from demand_treasure_invest vest
+		LEFT JOIN demand_treasure_loan
+		l on vest.demand_loan_id = l.id
+		where
+		l.finish_time > CURDATE() and
+		vest.money>0 and
+		vest.user_id = #{userId} ORDER BY vest.money
+		${sortValue}
+	</select>
+
+	<!-- 查询当日到期的资产 -->
+	<select id="getInvestByLoan" resultMap="DemandtreasureInvestRM">
+		SELECT i.*, n.user_id
+		from
+		demand_treasure_invest i JOIN demand_treasure_loan l
+		ON
+		i.demand_loan_id = l.id JOIN demand_treasure_transferin n
+		ON
+		i.demand_transfer_id = n.id
+		WHERE l.open_status = 'opened' AND i.money
+		> 0 and TO_DAYS(l.finish_time) =
+		TO_DAYS(NOW())
+		ORDER BY i.money DESC;
+	</select>
+
+
+	<!-- 查询当日到期的资产 -->
+	<select id="getInvesMoneytByLoan" resultMap="DemandtreasureInvestRM">
+		SELECT i.*,
+		n.user_id, SUM(i.money) AS total_money
+		from
+		demand_treasure_invest i
+		JOIN demand_treasure_loan l
+		ON
+		i.demand_loan_id = l.id JOIN
+		demand_treasure_transferin n
+		ON
+		i.demand_transfer_id = n.id
+		WHERE
+		l.open_status = 'opened' AND i.money
+		> 0 AND
+		l.loan_status='repay' and
+		TO_DAYS(l.finish_time) =
+		TO_DAYS(NOW()) GROUP BY n.user_id
+	</select>
+
+	<update id="batchUpdateMoney" parameterType="java.util.List">
+		<foreach collection="list" item="item" index="index" open=""
+			close="" separator=";">
+		<![CDATA[	
+			update demand_treasure_invest set money= money-#{item.money} where id = #{item.id} ]]>
+		</foreach>
+
+	</update>
+
+	<update id="deleteByMoney" parameterType="map">
+		update
+		demand_treasure_invest set money=#{money} where id = #{id}
+	</update>
+
+	<select id="getDemandByUserId" parameterType="map"
+		resultMap="DemandtreasureInvestRM">
+		select * from demand_treasure_invest where user_id=#{userId}
+	</select>
+</mapper>

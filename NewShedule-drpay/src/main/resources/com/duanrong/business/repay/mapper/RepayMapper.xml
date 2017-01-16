@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.repay.mapper.RepayMapper">
+	<resultMap type="repay" id="repayRM">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="period" column="period" />
+		<result property="time" column="time" />
+		<result property="repayDay" column="repay_day" />
+		<result property="corpus" column="corpus" />
+		<result property="interest" column="interest" />
+		<result property="defaultInterest" column="default_interest" />
+		<result property="status" column="status" />
+		<result property="operationTime" column="operation_time" />
+		<result property="loanId" column="loan_id" />
+		<result property="repay_allowance_interest" column="repayAllowanceInterest" />
+		<result property="sendAllowancStatus" column="send_allowance_status" />
+		<result property="sendRedpacketStatus" column="send_redpacket_status" />
+		<result property="sendAllowanceTime" column="send_allowance_time" />
+		<result property="sendRedpacketTime" column="send_redpacket_time" />
+
+		<association property="loan" javaType="loan">
+			<result property="totalmoney" column="loan_money" />
+			<result property="borrowMoneyUserID" column="loan_user_id" />
+			<result property="rate" column="loan_rate" />
+			<result property="commitTime" column="loan_commit_time" />
+			<result property="status" column="loan_status" />
+			<result property="expectTime" column="expect_time" />
+			<result property="name" column="loan_name" />
+			<result property="loanType" column="loan_type" />
+			<result property="repayType" column="loan_repay_type" />
+			<result property="day" column="loan_day" />
+			<result property="operationType" column="operation_type" />
+			<result property="beforeRepay" column="before_repay" />
+			<result property="giveMoneyTime" column="give_money_time" />
+			<result property="deadline" column="loan_deadline" />
+			<result property="symbol" column="symbol" />
+			<result property="interestRule" column="interest_rule" />
+			<result property="loanAllowanceInterest" column="loan_allowance_interest" />
+			<result property="giveMoneyOperationTime" column="give_money_operation_time" />
+
+			<collection property="invests" ofType="invest">
+				<id property="id" column="invest_id" />
+				<result property="money" column="invest_money" />
+				<result property="status" column="invest_status" />
+				<result property="type" column="invest_type" />
+				<result property="interest" column="invest_interest" />
+				<result property="paidInterest" column="paid_interest" />
+				<result property="paidMoney" column="paid_money" />
+				<result property="time" column="invest_time" />
+				<result property="isAutoInvest" column="is_auto_invest" />
+				<result property="userSource" column="user_source" />
+				<result property="investUserID" column="invest_user_id" />
+				<result property="investAllowanceInterest" column="invest_allowance_interest" />
+			</collection>
+
+		</association>
+	</resultMap>
+	<select id="getRepayByLoan2" resultMap="repayRM">
+		SELECT loan.rate as loan_rate,
+		loan.status as loan_status,
+		loan.repay_type as loan_repay_type,
+		loan.operation_type as operation_type,
+		loan.deadline AS loan_deadline, loan.`day` as loan_day, repay.*
+		FROM repay LEFT JOIN
+		loan ON repay.loan_id = loan.id
+		WHERE send_redpacket_status = 0 AND loan.`status` != '流标' AND
+		loan.company_name = '否' AND loan.organization_exclusive = '否' GROUP BY repay.loan_id
+	</select>
+
+	<resultMap type="repay" id="repayRM2">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="period" column="period" />
+		<result property="time" column="time" />
+		<result property="repayDay" column="repay_day" />
+		<result property="corpus" column="corpus" />
+		<result property="interest" column="interest" />
+		<result property="defaultInterest" column="default_interest" />
+		<result property="status" column="status" />
+		<result property="operationTime" column="operation_time" />
+		<result property="loanId" column="loan_id" />
+		<result property="repayAllowanceInterest" column="repay_allowance_interest" />
+
+		<result property="sendAllowancStatus" column="send_allowance_status" />
+		<result property="sendRedpacketStatus" column="send_redpacket_status" />
+		<result property="sendAllowanceTime" column="send_allowance_time" />
+		<result property="sendRedpacketTime" column="send_redpacket_time" />
+
+		<association property="loan" javaType="loan">
+			<id property="id" column="loan_id" />
+			<result property="name" column="loan_name" />
+			<result property="interestRule" column="interest_rule" />
+			<result property="loanAllowanceInterest" column="loan_allowance_interest" />
+			<result property="deadline" column="deadline" />
+			<result property="repayType" column="repay_type" />
+		</association>
+	</resultMap>
+
+
+	<!-- 根据id查询repay -->
+	<select id="get" parameterType="string" resultMap="repayRM">
+		SELECT * FROM
+		repay
+		LEFT JOIN (
+		SELECT
+		invest.id AS invest_id,
+		invest.money AS
+		invest_money,
+		invest.`status` AS invest_status,
+		invest.type AS
+		invest_type,
+		invest.interest AS invest_interest,
+		invest.paid_interest,
+		invest.paid_money,
+		invest.time AS invest_time,
+		invest.is_auto_invest,
+		invest.user_source,
+		invest.user_id AS invest_user_id,
+		invest.invest_allowance_interest,
+		loan.id,
+		loan.money AS loan_money,
+		loan.user_id AS loan_user_id,
+		loan.rate AS
+		loan_rate,
+		loan.commit_time AS
+		loan_commit_time,
+		loan.`status` AS
+		loan_status,
+		loan.expect_time AS
+		expect_time,
+		loan.`name` AS loan_name,
+		loan.loan_type,
+		loan.repay_type AS
+		loan_repay_type,
+		loan. DAY AS
+		loan_day,
+		loan.operation_type AS
+		operation_type,
+		loan.before_repay,
+		loan.give_money_time,
+		loan.deadline AS
+		loan_deadline,
+		loan.interest_rule,
+		loan.loan_allowance_interest,
+		loan.give_money_operation_time
+		FROM loan
+		LEFT JOIN
+		invest
+		ON loan.id =
+		invest.loan_id
+		WHERE invest.`status` in('还款中',
+		'债权转让')
+		) loan
+		ON
+		repay.loan_id = loan.id
+		WHERE repay.id = #{id}
+	</select>
+
+	<!-- 根据id查询repay -->
+	<select id="getById" parameterType="string" resultMap="repayRM">
+		SELECT *
+		FROM
+		repay WHERE id = #{id}
+	</select>
+
+	<insert id="insert" parameterType="repay">
+		INSERT INTO repay
+		(id,corpus,interest,repay_day,status,time,
+		loan_id,user_id,default_interest,period,operation_time,repay_allowance_interest)
+		VALUES
+		(#{id},#{corpus},#{interest},#{repayDay},#{status},#{time},
+		#{loanId},#{userId},#{defaultInterest},#{period},#{operationTime},#{repayAllowanceInterest})
+	</insert>
+
+	<update id="update" parameterType="repay">
+		UPDATE repay
+		<set>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(userId)">user_id=#{userId},</if>
+			<if test="period != null">period=#{period},</if>
+			<if test="time != null">time=#{time},</if>
+			<if test="repayDay != null">repay_day=#{repayDay},</if>
+			<if test="corpus != null">corpus=#{corpus},</if>
+			<if test="interest != null">interest=#{interest},</if>
+			<if test="defaultInterest != null">default_interest=#{defaultInterest},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(status)">status=#{status},</if>
+			<if test="operationTime != null">operation_time=#{operationTime},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(loanId)">loan_id=#{loanId},</if>
+			<if test="repayAllowanceInterest != null">repay_allowance_interest=#{repayAllowanceInterest},</if>
+			<if test="sendAllowancStatus != null">send_allowance_status=#{sendAllowancStatus},</if>
+			<if test="sendRedpacketStatus != null">send_redpacket_status=#{sendRedpacketStatus},</if>
+			<if test="sendAllowanceTime != null">send_allowance_time=#{sendAllowanceTime},</if>
+			<if test="sendRedpacketTime != null">send_redpacket_time=#{sendRedpacketTime},</if>
+		</set>
+		WHERE id = #{id}
+	</update>
+
+
+	<update id="updateByLoanId" parameterType="repay">
+		UPDATE repay
+		<set>
+			<if test="sendAllowancStatus != null">send_allowance_status=#{sendAllowancStatus},</if>
+			<if test="sendRedpacketStatus != null">send_redpacket_status=#{sendRedpacketStatus},</if>
+			<if test="sendAllowanceTime != null">send_allowance_time=#{sendAllowanceTime},</if>
+			<if test="sendRedpacketTime != null">send_redpacket_time=#{sendRedpacketTime},</if>
+		</set>
+		WHERE loan_id = #{loanId}
+	</update>
+
+	<!-- 获得项目还款完成（结束）时间 -->
+	<select id="getRepayByLoan" parameterType="string" resultType="list"
+		resultMap="repayRM">
+		SELECT repay.*, loan.name AS loan_name, loan.before_repay AS
+		before_repay,
+		loan.symbol AS symbol, loan.operation_type AS
+		operation_type
+		FROM repay JOIN loan ON repay.loan_id = loan.id where
+		repay.loan_id=#{loanId}
+	</select>
+	
+	<!-- 查询一周以内 已完成的还款 -->
+	<select id="getRapayListByLoanId" resultMap="repayRM2"
+		parameterType="map">
+		SELECT r.*,
+		l.id as loan_id,
+		l.name as loan_name,
+		l.interest_rule as interest_rule,
+		l.loan_allowance_interest as loan_allowance_interest,
+		l.deadline as
+		deadline,
+		l.repay_type as repay_type
+		FROM repay r left join loan l on
+		r.loan_id=l.id where l.status='还款中' and l.id in(${loanIds})
+	</select>
+
+	<!-- 查询一周以内 已完成的还款 -->
+	<select id="getRapayList" resultMap="repayRM2" parameterType="java.util.Date">
+		SELECT r.*,
+		l.id as loan_id,
+		l.name as loan_name,
+		l.interest_rule as interest_rule,
+		l.loan_allowance_interest as loan_allowance_interest,
+		l.deadline as
+		deadline,
+		l.repay_type as repay_type
+		FROM repay r left join loan l on
+		r.loan_id=l.id where
+		r.status = '完成' and (r.send_allowance_status=0 or
+		r.send_redpacket_status=0)
+		and date_format(r.operation_time,
+		'%Y-%m-%d') &gt;= date_format(CURDATE(),'%Y-%m-%d')
+		and
+		r.operation_time &lt; #{date}
+	</select>
+
+	<resultMap id="repayRM4" type="com.duanrong.business.repay.model.RepayMail">
+		<result property="userId" column="user_id" />
+		<result property="email" column="email" />
+		<result property="realName" column="realname" />
+	</resultMap>
+
+	<select id="getInterval" resultMap="repayRM4" parameterType="int">
+		SELECT DISTINCT (r.user_id) AS user_id, f.email as email, u.realname
+		from repay r
+		JOIN fixed_borrowers f ON r.user_id=f.user_id JOIN user u
+		on r.user_id = u.id
+		where r.`status` = '还款中' and f.status = 'open'
+		and date_format(r.repay_day,
+		'%Y-%m-%d') &lt;= date_format(CURDATE(),
+		'%Y-%m-%d') + interval #{days}
+		day
+		AND date_format(r.repay_day, '%Y-%m-%d') &gt;=
+		date_format(CURDATE(),
+		'%Y-%m-%d')
+	</select>
+
+	<resultMap id="repayRM3" type="com.duanrong.business.repay.model.RepayMail">
+		<result property="loanName" column="loan_name" />
+		<result property="loanId" column="loan_Id" />
+		<result property="loanMoney" column="loan_money" />
+		<result property="rate" column="rate" />
+		<result property="commitTime" column="commit_time" />
+		<result property="giveMoneyTime" column="give_money_time" />
+		<result property="deadline" column="deadline" />
+		<result property="operationType" column="operation_type" />
+		<result property="operationTime" column="operation_time" />
+		<result property="day" column="day" />
+		<result property="loanType" column="loan_type" />
+		<result property="repayType" column="repay_type" />
+		<result property="email" column="email" />
+		<result property="corpus" column="corpus" />
+		<result property="interest" column="interest" />
+		<result property="repayDay" column="repay_day" />
+		<result property="period" column="period" />
+	</resultMap>
+
+	<select id="getRepayInterval" resultMap="repayRM3"
+		parameterType="map">
+		SELECT DISTINCT(r.id), l.id as loan_id, l.name AS
+		loan_name, l.money AS loan_money,l.rate as rate, l.commit_time AS
+		commit_time,
+		l.give_money_time as give_money_time, l.deadline AS
+		deadline, l.operation_type AS operation_type,
+		l.day as day, l.loan_type
+		as loan_type, l.repay_type as repay_type, f.email AS email, r.corpus
+		AS corpus, r.interest AS interest,
+		r.repay_day AS repay_day, r.period
+		AS period
+		from repay r JOIN loan l JOIN fixed_borrowers f ON
+		r.loan_id=l.id
+		AND r.user_id=f.user_id
+		where f.status = 'open' and r.`status` = '还款中'
+		AND date_format(r.repay_day,
+		'%Y-%m-%d') = date_format(CURDATE(), '%Y-%m-%d') + interval #{days}
+		day
+		AND r.user_id=#{userId}
+	</select>
+
+	<!-- days 天前还款的项目 -->
+	<select id="getRepayFinishInterval" resultMap="repayRM3"
+		parameterType="map">
+		SELECT distinct(l.id) as loan_id, l.name AS loan_name,
+		l.money AS loan_money,l.rate as rate, l.commit_time AS commit_time,
+		l.give_money_time as give_money_time, l.deadline AS deadline,
+		l.operation_type AS operation_type, r.operation_time AS
+		operation_time,
+		l.day as day, l.loan_type as loan_type, l.repay_type as
+		repay_type, r.corpus AS corpus, r.interest AS interest,
+		r.repay_day AS
+		repay_day, r.period AS period
+		from repay r JOIN loan l ON
+		r.loan_id=l.id
+		where r.`status` = '完成' and l.status = '完成'
+		AND
+		date_format(r.operation_time, '%Y-%m-%d') = date_format(CURDATE(),
+		'%Y-%m-%d') + interval ${days} day
+	</select>
+
+	<select id="getWaitRepay" resultMap="repayRM">
+		SELECT * FROM repay  WHERE handle_status = 'sended'
+	</select>
+
+</mapper>

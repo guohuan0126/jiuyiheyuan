@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.token.mapper.TokenMapper">
+	<resultMap type="AccessToken" id="tokenRM">
+		<id property="id" column="id" />
+		<result property="accountName" column="account_name" />
+		<result property="userId" column="user_id" />
+		<result property="status" column="status" />
+		<result property="createTime" column="create_time" />
+		<result property="deadline" column="deadline" />
+		<result property="type" column="type" />
+	</resultMap>
+	
+	<select id="todayCount" parameterType="string" resultType="long">
+		SELECT COUNT(id) FROM access_token
+		WHERE user_id = #{userId} AND DATEDIFF(create_time, NOW()) = 0
+	</select>
+	
+	<insert id="insert" parameterType="AccessToken">
+		INSERT INTO access_token(id, account_name, user_id, status, create_time, deadline, type)
+		VALUES(#{id}, #{accountName}, #{userId}, #{status}, #{createTime}, #{deadline}, #{type})
+	</insert>
+	
+	<update id="update" parameterType="AccessToken">
+		UPDATE access_token
+		SET status = 'invalid'
+		WHERE id = #{id}
+	</update>
+	
+	<select id="get" parameterType="string" resultMap="tokenRM">
+		SELECT * FROM access_token
+		WHERE user_id = #{userId} AND status = 'valid'
+		LIMIT 1
+	</select>
+	
+	<select id="validateToken" parameterType="map" resultMap="tokenRM">
+		SELECT * FROM access_token
+		WHERE id = #{token} 
+		<if test="userId != null">AND user_id = #{userId}</if>
+		<if test="accountName != null">AND account_name = #{accountName}</if>
+		AND status = 'valid' AND type = #{type}
+	</select>
+	
+	<insert id="saveTokenDetail" parameterType="map">
+		INSERT INTO access_token_detail(token_id, detail, time)
+		VALUES(#{tokenID}, #{detail}, NOW())
+	</insert>
+</mapper>

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.duanrong.business.platformtransfer.mapper.PlatformTransferMapper">
+	<resultMap type="platformTransfer" id="platformTransferRM">
+		<id property="id" column="id" />
+		<result property="username" column="username" />
+		<result property="time" column="time" />
+		<result property="successTime" column="success_time" />
+		<result property="status" column="status" />
+		<result property="actualMoney" column="actual_money" />
+		<result property="remarks" column="remarks" />
+		<result property="type" column="type"/>
+		<result property="loanId" column="loan_id"/>
+		<result property="repayId" column="repay_id"/>
+		<result property="orderId" column="order_id"/>
+		<association property="user" column="username"
+			resultMap="com.duanrong.business.user.mapper.UserMapper.userRM" />
+	</resultMap>
+
+	<!-- 添加 -->
+	<insert id="insert" parameterType="platformTransfer">
+		INSERT INTO platform_transfer
+		(id,username, time, success_time, status, actual_money, remarks, type, loan_id, repay_id, order_id)
+		VALUES
+		(#{id},#{username},#{time},#{successTime},#{status},#{actualMoney},#{remarks}, #{type}, #{loanId}, #{repayId}, #{orderId})
+	</insert>
+
+	<!-- 查询所有platform_transfer记录 -->
+	<select id="findAll" resultMap="platformTransferRM">
+		SELECT * FROM platform_transfer
+	</select>
+
+
+	<!-- 根据id查询platform_transfer记录 -->
+	<select id="get" resultMap="platformTransferRM" parameterType="string">
+		SELECT * FROM platform_transfer WHERE id = #{id};
+	</select>
+	
+	<!-- 根据id查询platform_transfer记录 -->
+	<select id="getMoneyByGroup" resultType="double" parameterType="platformTransfer">
+		SELECT IFNULL(sum(actual_money), 0) FROM platform_transfer where TO_DAYS(time) = TO_DAYS(NOW())
+	
+		<if test="type != null and type != ''">
+			AND type =#{type}
+		</if>
+		<if test="username != null and username != ''">
+			AND username=#{username}
+		</if>
+	</select>
+
+
+	<!-- 根据id查询platform_transfer记录 -->
+	<select id="getByLoanId" resultMap="platformTransferRM"
+		parameterType="map">
+		SELECT * FROM platform_transfer WHERE loan_id =
+		#{loanId} and repay_id = #{repayId} and type = #{type};
+	</select>
+
+
+	<!-- 根据常用loan表中字段进行组合条件查询 -->
+	<select id="getPlatformTransferGroupCondition" resultMap="platformTransferRM"
+		parameterType="platformTransfer">
+		SELECT * FROM
+		platform_transfer
+		<where>
+			<if test="id != null and id != ''">
+				AND id =#{id}
+			</if>
+			<if test="username != null and username != ''">
+				AND username = #{username}
+			</if>
+			<if test="successTime != null and successTime != ''">
+				AND success_time =#{successTime}
+			</if>
+			<if test="time != null and time != ''">
+				AND time =#{time}
+			</if>
+			<if test="status != null and status != ''">
+				AND status =#{status}
+			</if>
+			<if test="actualMoney != null and actualMoney != ''">
+				AND actual_money =#{actualMoney}
+			</if>
+			<if test="remarks != null and remarks != ''">
+				AND remarks =#{remarks}
+			</if>
+			<if test="orderId != null and orderId != ''">
+				AND order_id =#{orderId}
+			</if>
+			<if test="type != null and type != ''">
+				AND type =#{type}
+			</if>
+		</where>
+	</select>
+
+	<update id="update" parameterType="loan">
+		UPDATE platform_transfer
+		<set>
+			<if test="username != null">username=#{username},</if>
+			<if test="successTime != null">success_time=#{successTime},</if>
+			<if test="time != null">time=#{time},</if>
+			<if test="status != null">status=#{status},</if>
+			<if test="actualMoney != null">actual_money=#{actualMoney},</if>
+			<if test="remarks != null">remarks=#{remarks},</if>
+		</set>
+		WHERE id=#{id};
+	</update>
+	<select id="pageInfo" parameterType="map" resultMap="platformTransferRM">
+		SELECT r.*,u.realname as realname
+		FROM platform_transfer r left JOIN
+		user u ON r.username = u.id
+		<where>
+			<if test="userId != null and userId != ''">
+				AND r.username like '%${userId}%'
+			</if>
+
+			<if test="mnumber != null and mnumber != ''">
+				AND u.mobile_number = #{mnumber}
+			</if>
+			<if test=" realname != null and realname != ''">
+				AND u.realname like '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+		</where>
+		ORDER BY r.time DESC
+	</select>
+
+	<insert id="insertBatch" parameterType="list">
+		INSERT INTO platform_transfer
+		(id,username,time,
+		success_time,status,actual_money, remarks)
+		VALUES
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.id},#{item.username},#{item.time},#{item.successTime},#{item.status},#{item.actualMoney},#{item.remarks})
+		</foreach>
+	</insert>
+</mapper>

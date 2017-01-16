@@ -1,0 +1,16 @@
+#RW
+jdbc_url=jdbc:mysql://121.42.171.28:3306/jiuyicaifu?characterEncoding=utf-8&allowMultiQueries=true
+jdbc_username=duanrong
+jdbc_password=Fn5iXKcDLNGbHSvtPTTblj5Lho3H5BYSpjsama4zc61fKcF7FSCPTCrhVb5Eyc7wOvtUa5z3bev37+BiYSX63g==
+#R
+jdbc_url_read=jdbc:mysql://121.42.171.28:3306/jiuyicaifu?characterEncoding=utf-8
+jdbc_username_read=duanrongread
+jdbc_password_read=Egn+mjB8B3/K0BfO1wtFyr6+kx+ntOACsSZZ6pYSRn5yUmTSQeiSndi6ZC/VNRxSxsAlEQwwPuePzMnR7iMIpg==
+
+druid_initialSize=30
+druid_minIdle=30
+druid_maxActive=1000
+
+druid_maxWait=60000
+
+

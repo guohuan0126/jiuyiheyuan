@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.user.mapper.UserMoneyMapper">
+	<resultMap type="userMoney" id="userMoneyRM">
+		<id property="id" column="userbill_id" />
+		<result property="seqNum" column="seq_num" />
+		<result property="time" column="time" />
+		<result property="type" column="type" />
+		<result property="typeInfo" column="type_info" />
+		<result property="money" column="money" />
+		<result property="detail" column="detail" />
+		<result property="userId" column="user_id" />
+		<association property="user" column="user_id"
+			resultMap="com.duanrong.business.user.mapper.UserMapper.userRM"/>
+	</resultMap>
+
+	<!-- id 固定的 findPaging parameterType 固定的 pageData params.entity固定写法 -->
+	<select id="findPaging" parameterType="pageData" resultMap="userMoneyRM">
+		SELECT *, id AS userbill_id 
+		FROM user_bill
+		<where>
+			<if test="params.entity.time != null and params.entity.time != null">
+				AND time = #{params.entity.time}
+			</if>
+			<if test="params.entity.type != null and params.entity.type != null">
+				AND type = #{params.entity.type}
+			</if>
+			<if
+				test="params.entity.typeInfo != null and params.entity.typeInfo != null">
+				AND type_info = #{params.entity.typeInfo}
+			</if>
+			<if test="params.entity.money != null and params.entity.money != null">
+				AND money = #{params.entity.money}
+			</if>
+			<if test="params.entity.detail != null and params.entity.detail != null">
+				AND detail = #{params.entity.detail}
+			</if>
+			<if test="params.entity.userId != null and params.entity.userId != null">
+				AND user_id = #{params.entity.userId}
+			</if>
+		</where>
+		ORDER BY time DESC
+	</select>
+
+	<!-- 个人中心已获奖励 -->
+	<select id="getAwardTotalMoney" parameterType="string" resultType="double">
+		SELECT SUM(money) FROM user_bill 
+		WHERE user_id = #{userId}
+			AND type = 'pt_balance'
+	</select>
+
+	<!-- 获得用户奖励详情 -->
+	<select id="getAwardDetail" parameterType="string" resultMap="userMoneyRM">
+		SELECT *, id AS userbill_id 
+		FROM user_bill 
+		WHERE user_id = #{userId} 
+			AND type = 'pt_balance'
+	</select>
+
+	<select id="getMoneyByType" parameterType="map" resultType="double">
+		SELECT SUM(money) 
+		FROM user_bill
+		WHERE user_id = #{userId}
+			AND type=#{type}
+	</select>
+
+	<select id="getLastestUserMoneyByUserId" parameterType="string" resultMap="userMoneyRM">
+		SELECT *, id AS userbill_id 
+		FROM user_bill 
+		WHERE user_id = #{userId}
+		ORDER BY seq_num DESC
+		LIMIT 1
+	</select>
+
+	<insert id="insert" parameterType="userMoney">
+		INSERT INTO user_bill
+		(id, seq_num, time, type, type_info, money, detail, user_id)
+		VALUES 
+		(#{id},	#{seqNum}, #{time}, #{type}, #{typeInfo}, #{money}, #{detail}, #{userId})
+	</insert>
+	<select id="pageInfo" parameterType="map" resultMap="userMoneyRM">
+		SELECT r.*,r.id AS userbill_id,u.realname as realname
+		FROM user_bill r JOIN user u ON r.user_id = u.id
+		<where>
+		    <if test="userId != null and userId != ''">
+				AND r.user_id like '%${userId}%'
+			</if>
+			
+			<if test="mnumber != null and mnumber != ''">
+				AND u.mobile_number = #{mnumber}
+			</if>
+			<if test=" realname != null and realname != ''">
+				AND u.realname like '%${realname}%'
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(start)">
+				AND r.time &gt;= #{start}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(end)">
+				AND r.time &lt;= #{end}
+			</if>
+		</where>
+		ORDER BY r.time DESC
+	</select>
+	
+	
+	<select id="queryBalanceMoney" statementType="CALLABLE" parameterType="map">
+       	<![CDATA[
+           call user_balance(
+              #{userId,mode=IN,jdbcType=VARCHAR},
+              #{money,mode=OUT,jdbcType=DOUBLE},
+              #{frozen,mode=OUT,jdbcType=DOUBLE}
+           )   
+       	]]>
+    </select>
+</mapper>

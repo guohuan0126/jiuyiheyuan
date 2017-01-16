@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.user.mapper.RedPacketMapper">
+
+	<resultMap type="redPacket" id="redPacketRM">
+		<id property="id" column="id" />
+		<result property="mobileNumber" column="mobile_number" />
+		<result property="userId" column="user_id" />
+		<result property="openId" column="open_id" />
+		<result property="createTime" column="create_time" />
+		<result property="deadLine" column="deadline" />
+		<result property="money" column="money" />
+		<result property="rate" column="rate" />
+		<result property="sendTime" column="send_time" />
+		<result property="sendStatus" column="send_status" />
+		<result property="shareCount" column="share_count" />
+		<result property="name" column="name" />
+		<result property="ruleId" column="rule_id" />
+		<result property="type" column="type" />
+		<result property="usageDetail" column="usage_detail" />
+		<result property="usageRule" column="usage_rule" />
+		<result property="investMoney" column="invest_money" />
+		<result property="investRate" column="invest_rate" />
+		<result property="useLoanType" column="use_loan_type" />
+		<result property="useTime" column="use_time" />
+		<result property="investCycle" column="invest_cycle" />
+		<!-- <association property="user" resultMap="com.duanrong.business.user.mapper.UserMapper.userRM"></association> -->
+		 <association property="rule" column="rule_id"
+			resultMap="com.duanrong.business.user.mapper.RuleMapper.ruleRM"></association> 
+	</resultMap>
+
+	<resultMap type="rule" id="ruleRM">
+		<id property="ruleId" column="rule_id" />
+		<result property="ruleName" column="name" />
+		<result property="ruleType" column="type" />
+		<result property="sendStyle" column="send_style" />
+		<result property="getRule" column="get_rule" />
+	</resultMap>
+
+
+	<select id="findPaging" parameterType="pageData" resultMap="redPacketRM">
+
+		SELECT *, red_packet_rule.id as rule_id, red_packet_rule.name as
+		rule_name, red_packet_rule.type as rule_type FROM red_packet_detail
+		JOIN red_packet_rule ON red_packet_detail.rule_id=red_packet_rule.id
+		<where>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(params.entity.userId)">
+				AND user_id = #{params.entity.userId}
+			</if>
+
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(params.entity.mobileNumber)">
+				AND mobile_number = #{params.entity.mobileNumber}
+			</if>
+
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(params.entity.openId)">
+				AND open_id = #{params.entity.openId}
+			</if>
+
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(params.entity.sendStatus)">
+				AND send_status = #{params.entity.sendStatus}
+			</if>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(params.entity.shareCount)">
+				AND share_count = #{params.entity.shareCount}
+			</if>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(params.entity.name)">
+				AND name = #{params.entity.name}
+			</if>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(params.entity.ruleId)">
+				AND name = #{params.entity.ruleId}
+			</if>
+		</where>
+		ORDER BY create_time DESC
+	</select>
+
+
+	<select id="findAll" resultMap="redPacketRM">
+		select * from red_packet_detail
+		order by create_time
+	</select>
+
+	<select id="get" resultMap="redPacketRM" parameterType="int">
+		select *
+		from red_packet_detail where id=#{id} AND is_available = 1
+	</select>
+
+	<insert id="insert" parameterType="redPacket">
+		INSERT INTO red_packet_detail
+		(mobile_number,user_id, create_time, deadline, money,
+		rate,
+		send_status, name,
+		rule_id,type,usage_detail,usage_rule,invest_money,invest_rate,invest_cycle)
+		VALUES
+		(#{mobileNumber},#{userId},#{createTime},#{deadLine},#{money},
+		#{rate},#{sendStatus},#{name},#{ruleId},#{type},#{usageDetail},#{usageRule},#{investMoney},#{investRate},#{investCycle}
+		)
+	</insert>
+
+	<select id="update" parameterType="redPacket">						
+		update red_packet_detail
+		<set>
+			<if test="sendTime != null">
+				send_time = #{sendTime},
+			</if>
+
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(sendStatus)">
+				send_status = #{sendStatus},
+			</if>						
+		</set>
+		where id = #{id}
+	</select>
+
+	<!-- 查询未使用的红包 -->
+	<select id="updateExpired">
+		update red_packet_detail set send_status = 'expired'
+		where send_status = 'unused' and
+		DATE_FORMAT(deadline, '%Y-%m-%d') &lt; DATE_FORMAT(now(),'%Y-%m-%d') and
+		is_available = 1
+	</select>
+
+	<select id="getRuleById" resultMap="ruleRM" parameterType="int">
+		select * from red_packet_rule where id=#{id}
+	</select>
+
+	<select id="getRedPacketByRuleId" resultType="int"
+		parameterType="string">
+		select count(*) from red_packet_detail where
+		is_available = 1 and rule_id=4
+		and mobile_number=#{mobile}
+	</select>
+	
+	<update id="updateDetailMobileNumber" parameterType="map">
+		UPDATE red_packet_detail
+		<set>
+			mobile_number = #{newNumber}
+		<!-- 根据需要增加 -->
+		</set>
+		WHERE mobile_number = #{oldNumber}
+	</update>
+	
+	<update id="updateShareMobileNumber" parameterType="map">
+		UPDATE red_packet_share
+		<set>
+			mobile = #{newNumber}
+		<!-- 根据需要增加 -->
+		</set>
+		WHERE mobile = #{oldNumber}
+	</update>
+	
+	
+	
+	<insert id="batchInsert" parameterType="java.util.Map">
+		INSERT INTO red_packet_detail
+		(mobile_number,user_id, create_time,
+		deadline, money,
+		rate, send_status, name,
+		rule_id,type,usage_detail,usage_rule,invest_money,invest_rate,
+		use_loan_type, redpacket_source,invest_cycle)
+		VALUES
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.mobileNumber},#{item.userId},#{item.createTime},#{item.deadLine},#{item.money},
+			#{item.rate},#{item.sendStatus},#{item.name},#{item.ruleId},#{item.type},#{item.usageDetail},
+			#{item.usageRule},#{item.investMoney},#{item.investRate},
+			#{item.useLoanType}, #{item.redpacket_source},#{item.investCycle})
+		</foreach>
+
+	</insert>
+	
+	<select id="
+" resultType="String" parameterType="map">
+		SELECT DISTINCT red.mobile_number FROM red_packet_detail red left join user u on red.mobile_number = u.mobile_number 
+        where u.id is null and red.rule_id=#{ruleId}
+        and datediff(now(),red.create_time)=#{day}
+	</select>
+</mapper>

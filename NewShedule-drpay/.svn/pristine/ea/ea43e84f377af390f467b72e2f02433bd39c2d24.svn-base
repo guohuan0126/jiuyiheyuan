@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.repaytracking.mapper.RepayTrackingMapper">
+
+	<!-- 字段与属性映射 -->
+	<resultMap type="RepayTracking" id="RepayTrackingRM">
+		<result property="loanId" column="loan_id" />
+		<result property="loanName" column="name" />
+		<result property="contract" column="contract" />
+		<result property="loanAmount" column="loan_amount" />
+		<result property="rate" column="rate" />
+		<result property="loanType" column="loan_type" />
+		<result property="operationType" column="operation_type" />
+		<result property="beforeRepay" column="before_repay" />
+		<result property="deadline" column="deadline" />
+		<result property="day" column="day" />
+		<result property="period" column="period" />
+		<result property="repayDay" column="repay_day" />
+		<result property="corpus" column="corpus" />
+		<result property="interest" column="interest" />
+		<result property="investAmount" column="invest_amount" />
+		<result property="investTime" column="invest_time" />
+	</resultMap>
+
+	<!-- 根据用户ID查询 -->
+	<select id="getByUserId" parameterType="string" resultMap="RepayTrackingRM">
+		SELECT
+			loan.id AS loan_id,
+			loan.`name`,
+			loan.risk_instruction AS contract,
+			loan.money AS loan_amount,
+			loan.rate,
+			loan.loan_type,
+			loan.operation_type,
+			loan.before_repay,
+			loan.deadline,
+			loan.`day`,
+			repay.period,
+			repay.repay_day,
+			repay.corpus,
+			repay.interest,
+			invest.money AS invest_amount,
+			invest.time AS invest_time
+		FROM
+			repay
+		LEFT JOIN loan ON repay.loan_id = loan.id
+		LEFT JOIN invest ON invest.loan_id = loan.id
+		WHERE
+			invest.user_id = #{userId}
+		AND repay.`status` = '还款中'
+		ORDER BY
+			repay.repay_day ASC
+	</select>
+
+</mapper>

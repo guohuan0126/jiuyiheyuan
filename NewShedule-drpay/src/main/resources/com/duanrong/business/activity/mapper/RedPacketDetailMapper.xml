@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.activity.mapper.redPacketDetailMapper">
+
+	<resultMap type="RedPacketDetail" id="RedPacketDetailRM">
+		<id property="id" column="id" />
+		<result property="mobile" column="mobile_number" />
+		<result property="userId" column="user_id" />
+		<result property="openId" column="open_id" />
+		<result property="createTime" column="create_time" />
+		<result property="deadline" column="deadline" />
+		<result property="money" column="money" />
+		<result property="rate" column="rate" />
+		<result property="sendTime" column="send_time" />
+		<result property="sendStatus" column="send_status" />
+		<result property="shareCount" column="share_count" />
+		<result property="name" column="name" />
+		<result property="roleId" column="role_id" />
+		<result property="ruleId" column="rule_id" />
+		<result property="usageDetail" column="usage_detail" />
+		<result property="investMoney" column="invest_money" />
+		<result property="investRate" column="invest_rate" />
+		<result property="usageRule" column="usage_rule" />
+		
+		<result property="type" column="type" />
+		<association property="rule" column="rule_id"
+			resultMap="com.duanrong.business.activity.mapper.redPacketRuleMapper.RedPacketRuleRM" />
+	</resultMap>
+
+   <!-- 根据ID查询 -->
+	<select id="get" parameterType="int" resultMap="RedPacketDetailRM">
+		SELECT * FROM
+		red_packet_detail
+		WHERE id = #{id}
+	</select>
+    
+    <!-- 添加 -->
+	<insert id="insert" parameterType="RedPacketDetail">
+		INSERT INTO red_packet_detail
+		(mobile_number,user_id,create_time,deadline,money,rate,send_status,name,rule_id,usage_detail,invest_money,invest_rate,type,usage_rule)
+		VALUES(#{mobile},#{userId},#{createTime},#{deadline},#{money},#{rate},#{sendStatus},#{name},#{ruleId},#{usageDetail},#{investMoney},#{investRate},#{type},#{usageRule})
+	<!-- 	(mobile_number,user_id,open_id,create_time,deadline,money,rate,send_time,send_status,share_count,name,role_id,rule_id)
+		VALUES(#{mobile},#{userId},#{openId},#{createTime},#{deadline},#{money},#{rate},#{sendTime},#{sendStatus},#{shareCount},#{name},#{roleId},#{rule.id}) -->
+	</insert>
+
+    <!-- 更新 -->
+	<update id="update" parameterType="RedPacketDetail">
+		UPDATE red_packet_detail
+		<set>
+			mobile_number = #{mobile},user_id = #{userId},open_id = #{openId},create_time = #{createTime},deadline = #{deadline},
+			money = #{money},rate = #{rate},send_time = #{sendTime},send_status = #{sendStatus},share_count = #{shareCount},name = #{name},
+			role_id = #{roleId},rule_id = #{rule.id}
+		</set>
+		WHERE id = #{id}
+	</update>
+	
+	<!-- 删除 -->
+	<delete id="delete" parameterType="int" >
+	   DELETE
+	   FROM red_packet_detail
+	   WHERE id = #{id}
+	</delete>
+	 <update id="del"  parameterType="RedPacketDetail">
+	  update red_packet_detail
+            <set>
+			<if test="available != null">
+				is_available=#{available},
+			</if>
+		</set>
+		WHERE id=#{id}
+    </update>
+	
+	<!-- 分页查询 -->
+	<select id="pageLite" parameterType="RedPacketDetail" resultMap="RedPacketDetailRM" >
+	  	SELECT * FROM
+		red_packet_detail left join red_packet_rule on  red_packet_detail.id = red_packet_rule.id
+		<where>
+		<if test="sendStatus != null and sendStatus != '' ">
+			and red_packet_detail.send_status =#{sendStatus}
+		</if>
+		<if test="userId != null and userId != '' ">
+			and red_packet_detail.user_id =#{userId}
+		</if>
+		<if test="mobile != null and mobile != '' ">
+			and red_packet_detail.mobile_number =#{mobile}
+		</if>
+		<if test="usageDetail != null and usageDetail != '' ">
+			and red_packet_detail.usage_detail =#{usageDetail}
+		</if>
+		<if test="type != null and type != '' ">
+			and red_packet_detail.type =#{type}
+		</if>
+		<if test="name != null and name != '' ">
+			and red_packet_detail.name =#{name}
+		</if>	
+		<if test="1==1">
+		and is_available=1
+		</if>
+		</where>
+		ORDER BY red_packet_detail.create_time DESC
+	</select>
+</mapper>

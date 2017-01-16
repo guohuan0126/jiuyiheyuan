@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.loan.mapper.ApplyEnterpriseLoanMapper">
+	<insert id="insert" parameterType="ApplyEnterpriseLoan">
+		INSERT INTO
+		apply_enterprise_loan
+		(id, apply_time, company, company_no,
+		contact,
+		contact_mobile, deadline, description, guarantee_name,
+		has_guarantee,
+		industry, money, status, type,
+		province, city, paymentfrom,
+		purchase_time,
+		price, loanWay, contactSex)
+		VALUES(#{id}, #{applyTime},
+		#{company},
+		#{companyNo}, #{contact}, #{contactMobile}, #{deadline},
+		#{description},
+		#{guaranteeName}, #{hasGuarantee}, #{industry},
+		#{money}, #{status},
+		#{type}, #{province}, #{city}, #{paymentFrom},
+		#{purchaseTime},
+		#{price}, #{loanWay}, #{contactSex})
+	</insert>
+</mapper>

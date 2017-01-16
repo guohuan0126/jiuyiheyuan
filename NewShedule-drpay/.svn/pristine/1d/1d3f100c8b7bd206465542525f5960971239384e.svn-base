@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.autoinvest.mapper.AutoInvest">
+	<resultMap type="AutoInvest" id="AutoInvestRM">
+		<id property="userId" column="user_id" />
+		<result property="investMoney" column="invest_money" />
+		<result property="minRate" column="min_rate" />
+		<result property="maxRate" column="max_rate" />
+		<result property="minDeadline" column="min_deadline" />
+		<result property="maxDeadline" column="max_dealline" />
+		<result property="minMoney" column="minMoney" />
+		<result property="maxMoney" column="maxMoney" />
+		<result property="loanType" column="loanType" />
+		<result property="remainMoney" column="remain_money" />
+		<result property="lastAutoInvestTime" column="last_auto_invest_time" />
+		<result property="seqNum" column="seq_num" />
+		<result property="status" column="status" />
+		<association property="user" column="user_id"
+			resultMap="com.duanrong.business.user.mapper.UserMapper.userRM"/>
+	</resultMap>
+
+	<select id="get" parameterType="string" resultMap="AutoInvestRM">
+		SELECT * FROM
+		auto_invest
+		WHERE auto_invest.user_id = #{userId}
+	</select>
+
+	<insert id="insert" parameterType="AutoInvest">
+		INSERT INTO auto_invest
+		(user_id, invest_money, min_rate, max_rate, min_deadline,
+		max_dealline, minMoney, maxMoney, loanType, remain_money,
+		last_auto_invest_time, seq_num, status)
+		VALUES
+		(#{userId},
+		#{investMoney}, #{minRate}, #{maxRate}, #{minDeadline},
+		#{maxDeadline}, #{minMoney}, #{maxMoney}, #{loanType}, #{remainMoney},
+		#{lastAutoInvestTime}, #{seqNum}, #{status})
+	</insert>
+
+	<update id="update" parameterType="AutoInvest">
+		UPDATE auto_invest
+		<set>
+			<if test="investMoney != null">invest_money = #{investMoney},</if>
+			<if test="minRate != null">min_rate = #{minRate},</if>
+			<if test="maxRate != null">max_rate = #{maxRate},</if>
+			<if test="minDeadline != null">min_deadline = #{minDeadline},</if>
+			<if test="maxDeadline != null">max_dealline = #{maxDeadline},</if>
+			<if test="minMoney != null">minMoney = #{minMoney},</if>
+			<if test="maxMoney != null">maxMoney = #{maxMoney},</if>
+			<if test="remainMoney != null">remain_money = #{remainMoney},</if>
+			<if test="lastAutoInvestTime != null">last_auto_invest_time = #{lastAutoInvestTime},</if>
+			<if test="seqNum != null">seq_num = #{seqNum},</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(loanType)">
+				loanType = #{loanType},
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(status)">
+				status = #{status},
+			</if>
+		</set>
+		WHERE user_id = #{userId}
+	</update>
+			
+	<!-- 获取自动投标用户排队号 -->
+	<select id="getQueueNumber" parameterType="string" resultType="long">
+	<![CDATA[
+		SELECT COUNT(*) FROM
+		auto_invest
+		WHERE last_auto_invest_time <=
+		(
+			SELECT last_auto_invest_time FROM auto_invest
+			WHERE user_id = #{userId}
+		)
+		AND `status` = 'on'
+	]]>
+	</select>
+
+	<!-- 查询开启自动投标的总数量 -->
+	<select id="getAutoInvestConut" resultType="long">
+		SELECT COUNT(*) FROM
+		auto_invest
+		WHERE `status` = 'on'
+	</select>
+   <select id="pageLite" parameterType="AutoInvest" resultMap="AutoInvestRM">
+		SELECT r.*,u.realname as realname
+		FROM auto_invest r JOIN user u ON r.user_id = u.id
+		<where>
+			<foreach collection="conditions" index="index" item="item">
+				<if test="index == 0 and @org.apache.commons.lang3.StringUtils@isNotBlank(item)">
+					AND r.user_id like '%${item}%'
+				</if>
+				<if test="index == 1 and @org.apache.commons.lang3.StringUtils@isNotBlank(item)">
+					AND r.status = #{item}
+				</if>
+				<if test="index == 2 and @org.apache.commons.lang3.StringUtils@isNotBlank(item)">
+					AND u.realname like '%${item}%'
+				</if>
+				<if test="index == 3 and @org.apache.commons.lang3.StringUtils@isNotBlank(item)">
+					AND u.mobile_number = #{item}
+				</if>
+			</foreach> 
+			
+		</where>
+		ORDER BY r.last_auto_invest_time asc
+	</select>
+
+
+	<!-- 查询开启符合项目条件的自动投标列表 -->
+	<select id="getConsistAutoInvest" resultType="list" resultMap="AutoInvestRM" parameterType="map">
+		SELECT * FROM auto_invest
+		WHERE user_id !=#{loanUserId} AND invest_money &gt;= #{investMoney}
+		AND min_deadline &lt;= #{line} AND max_dealline &gt;= #{line} 
+		AND min_rate &lt;= #{rate} AND max_rate &gt;= #{rate} 
+		AND loanType LIKE '%${type}%'
+		AND `status` = 'on' ORDER BY last_auto_invest_time
+	</select>
+</mapper>

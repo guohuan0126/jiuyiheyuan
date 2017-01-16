@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.payment.mapper.PaymentUserRelationMapper">
+	<resultMap type="PaymentUserRelation" id="PaymentUserRelationMapper">
+		<id property="id" column="id" />
+		<result property="userId" column="user_id" />
+		<result property="token" column="token" />
+		<result property="paymentId" column="payment_id" />
+		<result property="createTime" column="create_time" />
+	</resultMap>
+
+	<select id="getUserToken" parameterType="PaymentUserRelation" resultMap="PaymentUserRelationMapper">
+		select * from payment_user_relation 
+		where user_id = #{userId} and payment_id = #{paymentId} 
+		and is_available = 1
+	</select>
+
+	<insert id="insert" parameterType="PaymentUserRelation">
+		INSERT INTO payment_user_relation 
+			(id,user_id,token,payment_id,create_time)
+		VALUES	
+			(REPLACE(UUID(),'-',''),#{userId},#{token},#{paymentId}, now())
+	</insert>
+	
+	<update id="update" parameterType="PaymentUserRelation">
+		UPDATE payment_user_relation set token=#{token}
+		WHERE id=#{id}
+	</update>
+</mapper>

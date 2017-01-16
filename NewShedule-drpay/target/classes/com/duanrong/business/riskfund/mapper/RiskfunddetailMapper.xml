@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.riskfund.mapper.RiskfunddetailMapper">
+	<resultMap type="Riskfunddetail" id="RiskfunddetailRM">
+		<id property="id" column="id" />
+		<result property="overtime" column="overtime" />
+		<result property="overmoney" column="overmoney" />
+		<result property="overrate" column="overrate" />
+		<result property="recyclingmoney" column="recyclingmoney" />
+		<result property="recyledmoney" column="recyledcmoney" />
+		<result property="time" column="time" />
+		<result property="fundid" column="fundid" />
+	</resultMap>
+   
+	<select id="find" parameterType="Riskfunddetail" resultMap="RiskfunddetailRM">
+		SELECT * FROM
+		riskfund_detail
+		WHERE fundid = #{fundid}
+	</select>
+	<update id="update" parameterType="Riskfunddetail">
+		UPDATE riskfund_detail
+		<set>
+			<if test="overmoney != null">overmoney=#{overmoney},</if>
+			<if test="overrate != null">overrate=#{overrate},</if>
+			<if test="recyclingmoney != null">recyclingmoney=#{recyclingmoney},</if>
+			<if test="recyledmoney != null">recyledcmoney=#{recyledmoney},</if>
+			<if test="time != null">time=#{time},</if>
+		</set>
+		WHERE id = #{id}
+	</update>
+</mapper>

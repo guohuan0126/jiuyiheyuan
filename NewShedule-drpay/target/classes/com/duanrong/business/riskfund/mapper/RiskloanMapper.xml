@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.riskfund.mapper.RiskloanMapper">
+	<resultMap type="Riskloan" id="RiskloanRM">
+		<id property="id" column="id" />
+		<result property="detailid" column="riskfund_detailid" />
+		<result property="loanId" column="loan_id" />
+		<result property="loanName" column="loan_name" />
+		<result property="loanmoney" column="loan_money" />
+		<result property="time" column="time" />
+	</resultMap>
+	
+
+    <select id="findList"  resultMap="RiskloanRM">
+		SELECT * from riskfund_overdueloan WHERE riskfund_detailid = #{id} and status=1
+		ORDER BY time DESC
+	</select>
+	<update id="update" parameterType="Riskloan">
+		UPDATE riskfund_overdueloan set status=0
+		WHERE id = #{id}
+	</update>
+	<!-- 添加 -->
+	<insert id="insert" parameterType="Riskloan">
+		INSERT INTO riskfund_overdueloan
+		(riskfund_detailid,loan_id,loan_name,time,loan_money,status)
+		VALUES(#{detailid},#{loanId},#{loanName},#{time},#{loanmoney},1)
+	</insert>
+</mapper>

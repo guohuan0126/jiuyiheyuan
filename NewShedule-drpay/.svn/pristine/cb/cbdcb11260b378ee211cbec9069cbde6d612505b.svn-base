@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.node.mapper.NodeMapper">
+
+	<!-- 文章  -->
+	<resultMap type="Node" id="nodeRM">
+		<id property="id" column="node_id" />
+		<result property="nodeType" column="node_type" />
+		<result property="title" column="title" />
+		<result property="subTitle" column="subtitle" />
+		<result property="status" column="status" />
+		<result property="createTime" column="create_time" />
+		<result property="updateTime" column="update_time" />
+		<result property="creator" column="creator" />
+		<result property="lastModifyUser" column="last_modify_user" />		
+		<result property="bodyId" column="body" />
+		<result property="keywords" column="keywords" />
+		<result property="description" column="description" />
+		<collection property="terms" ofType="categoryTerm" >
+		   <id property="id" column="term_id" />
+		   <result property="name" column="name" />
+		   <result property="pid" column="pid" />
+		   <result property="description" column="description" />
+		   <result property="seqNum" column="seqNum" />
+		   <result property="thumb" column="thumb" />
+		</collection>
+	</resultMap>
+	
+	<!-- 术语 -->
+	<resultMap type="categoryTerm" id="categoryTermRM">
+		<id property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="pid" column="pid" />
+		<result property="description" column="description" />		
+		<result property="thumb" column="thumb" />		
+		<result property="seqNum" column="seq_num" />
+	</resultMap>
+
+
+	<select id="sqlLiteForCategoryTerm" parameterType="categoryTerm" resultMap="categoryTermRM">
+		SELECT * FROM category_term		
+		<where>
+			<if test="id != null and id != ''">
+				and id = #{id}
+			</if>
+			<if test="name != null and name != ''">
+				and name LIKE '%${name}%'
+			</if>
+		</where>
+		ORDER BY seq_num
+	</select>
+
+	<select id="getListCategoryTerm" resultMap="categoryTermRM">
+		SELECT * FROM category_term	ORDER BY seq_num
+	</select>
+	
+	<select id="getCategorysByNodeId" parameterType="String" resultMap="categoryTermRM">
+		SELECT * FROM category_term_node ctn left join category_term ct on ctn.term_id = ct.id  where ctn.node_id = #{id} ORDER BY ct.seq_num
+	</select>
+	
+	<select id="pageLite" parameterType="Node" resultMap="nodeRM">
+		SELECT *, n.id AS node_id,ct.id AS term_id
+		FROM node n left join category_term_node ctn on n.id = ctn.node_id left join category_term ct on ctn.term_id = ct.id
+		<where>
+			<if test="id != null and id != ''">
+				AND n.id = #{id}
+			</if>
+			<if test="title != null and title != ''">
+				AND n.title LIKE '%${title}%'
+			</if>
+			<if test="status != null and status != ''">
+				AND n.status = #{status}
+			</if>							
+		</where>
+		ORDER BY n.update_time DESC
+	</select>
+	<select id="get" parameterType="string" resultMap="nodeRM">
+		SELECT *, id AS node_id
+		FROM node		
+		WHERE node.id = #{id}
+	</select>
+
+	<select id="getTermName" parameterType="string" resultType="string">
+		SELECT name FROM category_term LEFT JOIN category_term_node ON id=term_id WHERE node_id=#{nodeId}
+	</select>
+
+	<!--获取文章内容 -->
+	<select id="getBodyById" parameterType="string" resultType="string">
+		SELECT body FROM node_body WHERE id = #{bodyId}
+	</select> 
+
+	<update id="update" parameterType="Node">
+		UPDATE node
+		<set>
+			<if test="title != null and title != '' ">
+				title = #{title},
+			</if>
+			<if test="subTitle != null and subTitle != '' ">
+				subtitle = #{subTitle},
+			</if>			
+			<if test="status != null and status != '' ">
+				status = #{status},
+			</if>
+			<if test="description != null and description != '' ">
+				description = #{description},
+			</if>
+			<if test="updateTime != null and updateTime != '' ">
+				update_time = #{updateTime},
+			</if>
+			<if test="lastModifyUser != null and lastModifyUser != ''">
+				last_modify_user = #{lastModifyUser},
+			</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	
+	<update id="updateBody" parameterType="string">
+		update node_body set body=#{body} WHERE id=#{id}
+	</update>
+
+	<insert id="insertBody" parameterType="map">
+		insert into node_body(id, body) values(#{id}, #{body})
+	</insert>
+	
+	<insert id="insert" parameterType="Node">
+		insert into node(id, title, subtitle, 
+		body, status, description, create_time, creator, update_time, last_modify_user, seq_num) 
+		values(#{id}, #{title}, #{subTitle}, 
+		#{bodyId}, #{status}, #{description}, #{createTime}, #{creator}, #{updateTime}, #{lastModifyUser}, #{seqNum})
+	</insert>
+
+	<insert id="insertCategoryTerm" parameterType="categoryTerm">
+		insert into category_term(
+		id, name, description, seq_num) 
+		value(
+		#{id}, #{name}, #{description}, #{seqNum})
+	</insert>
+	
+	<update id="updateCategoryTerm" parameterType="categoryTerm">
+		update category_term
+		<set>						
+			<if test="name != null ">
+				name=#{name},
+			</if>
+			<if test="description != null ">
+				description=#{description},
+			</if>
+			<if test="seqNum != null ">
+				seq_num=#{seqNum},
+			</if>
+		</set>
+		where id = #{id}		
+	</update>
+	
+	<select id="getCategoryTermById" parameterType="string" resultMap="categoryTermRM">
+		select * from category_term where id=#{id}		
+	</select>
+	
+	<select id="getCategoryTermByIdAndName" parameterType="categoryTerm" resultMap="categoryTermRM">
+		select * from category_term where id!=#{id}	and name=#{name}	
+	</select>
+	
+	<select id="getCategoryTermByName" parameterType="string" resultMap="categoryTermRM">
+		select * from category_term where name=#{name}		
+	</select>
+	
+	<insert id="insertNodeTerm" parameterType="map">
+		insert into category_term_node(node_id, term_id) 
+		value(#{nodeId}, #{termId})
+	</insert>
+	
+	<delete id="deleteNodeTerm" parameterType="string">
+		delete from category_term_node where node_id=#{nodeId}
+	</delete>
+</mapper>

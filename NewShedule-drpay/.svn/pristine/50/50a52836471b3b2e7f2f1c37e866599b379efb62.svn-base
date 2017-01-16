@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.demand.mapper.DateRateMapper">
+	<resultMap type="DateRate" id="DateRateRM">
+		<id property="id" column="id" />
+		<result property="rate" column="rate" />
+		<result property="date" column="date" />
+		<result property="interest" column="interest" />
+		<result property="time" column="time" />
+		<result property="status" column="status" />
+	</resultMap>
+	<select id="pageInfo" parameterType="map" resultMap="DateRateRM">
+		SELECT *
+		FROM demand_treasure_dayRate
+		<where>
+			<if test="1==1">
+			 and status=1
+			</if>
+			<if test="sdate != null and sdate != ''">
+				AND DATE_FORMAT(date,'%Y-%m')=#{sdate}
+			</if>
+			<if test="year != null and year != ''">
+				AND DATE_FORMAT(date,'%Y')=#{year}
+			</if>
+			<if test="month != null and month != ''">
+				AND DATE_FORMAT(date,'%m')=#{month}
+			</if>
+		</where>
+		ORDER BY date DESC
+	</select>
+
+	<!-- 获取计息利息 -->
+	<select id="getRate" resultType="double" parameterType="java.util.Date">
+		SELECT rate
+		FROM
+		demand_treasure_dayRate WHERE 
+		date_format(date,'%Y-%m-%d') =
+		date_format(#{date},'%Y-%m-%d')-interval 1 DAY		
+		limit 1
+	</select>
+	<insert id="insert" parameterType="DateRate">
+		INSERT INTO Demand_treasure_dayRate(id, rate, date, interest,time,status) VALUES(#{id}, #{rate}, #{date}, #{interest}, #{time},1)
+	</insert>
+	<select id="get" parameterType="string" resultMap="DateRateRM">
+		SELECT *
+		FROM Demand_treasure_dayRate
+		WHERE id = #{id}
+	</select>
+	<update id="update" parameterType="DateRate">
+		UPDATE Demand_treasure_dayRate 
+		<set>
+			<if test="rate != null">
+				rate=#{rate},
+			</if>
+			<if test="interest != null">
+				interest=#{interest},
+			</if>
+			<if test="time != null">
+				time =#{time},
+			</if>
+			<if test="status != null">
+				status =#{status},
+			</if>
+		</set>
+		WHERE id=#{id}
+	</update>
+	<select id="getRateList" resultMap="DateRateRM" parameterType="java.util.Date">
+		SELECT *
+		FROM
+		demand_treasure_dayRate WHERE 
+		date_format(date,'%Y-%m-%d') =
+		date_format(#{date},'%Y-%m-%d') and status=1	
+	</select>
+</mapper>

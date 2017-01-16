@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.duanrong.business.riskfund.mapper.RiskfundMapper">
+	<resultMap type="Riskfund" id="RiskfundRM">
+		<id property="id" column="id" />
+		<result property="totalmoney" column="total_money" />
+		<result property="duemoney" column="due_money" />
+		<result property="overmoney" column="over_money" />
+		<result property="spotmoney" column="spot_money" />
+		<result property="time" column="time" />
+		<result property="type" column="type" />
+	</resultMap>
+	
+
+    <select id="findAll"  resultMap="RiskfundRM">
+		SELECT * from riskfund
+		ORDER BY time DESC
+	</select>
+	<select id="get" parameterType="int" resultMap="RiskfundRM">
+		SELECT * FROM
+		riskfund
+		WHERE id = #{id}
+	</select>
+	<update id="update" parameterType="Riskfund">
+		UPDATE Riskfund
+		<set>
+			<if test="totalmoney != null">total_money=#{totalmoney},</if>
+			<if test="duemoney != null">due_money=#{duemoney},</if>
+			<if test="overmoney != null">over_money=#{overmoney},</if>
+			<if test="spotmoney != null">spot_money=#{spotmoney},</if>
+			<if test="time != null">time=#{time},</if>
+		</set>
+		WHERE id = #{id}
+	</update>
+	<update id="updateRisk">
+	 UPDATE Riskfund as a
+SET a.total_money = (SELECT
+	sum(c.total_money)
+FROM
+	(SELECT b.total_money FROM Riskfund as b WHERE b.type IN (
+		'house',
+		'vehicle',
+		'enterprise'
+	))  as c ),
+ a.due_money = (SELECT
+	sum(m.due_money)
+FROM
+	(SELECT b.due_money FROM Riskfund as b WHERE b.type IN (
+		'house',
+		'vehicle',
+		'enterprise'
+	))  as m ),
+ a.over_money = (SELECT
+	sum(m1.over_money)
+FROM
+	(SELECT b.over_money FROM Riskfund as b WHERE b.type IN (
+		'house',
+		'vehicle',
+		'enterprise'
+	))  as m1 ),
+a.spot_money = (SELECT
+	sum(m2.spot_money)
+FROM
+	(SELECT b.spot_money FROM Riskfund as b WHERE b.type IN (
+		'house',
+		'vehicle',
+		'enterprise'
+	))  as m2 ),
+a.time=NOW()
+WHERE
+	a.type = 'all'
+	</update>
+</mapper>
